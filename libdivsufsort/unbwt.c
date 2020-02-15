@@ -46,7 +46,7 @@ static unsigned cntcalc32(const unsigned char *in, unsigned inlen, cnt_t *cnt) {
 // bi-gram based PSI array + binary search algorithm v2 (t=NUM_TOPBITS). space: 4(n+1)+4*257+4*256*256+4*(2**t) bytes. time: O(n log 256)?
 #define NUM_TOPBITS 17
 
-int obwt_unbwt_biPSIv2x(const unsigned char *__restrict T, unsigned char *__restrict U, unsigned *__restrict PSI, int n, int pidx) {					
+int obwt_unbwt_biPSIv2(const unsigned char *__restrict T, unsigned char *__restrict U, unsigned *__restrict PSI, int n, int pidx) {					
   unsigned C[257]  ={0};
   unsigned D[1<<16]={0}, *LD;
   unsigned B2S[1U << NUM_TOPBITS];
