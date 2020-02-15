@@ -40,20 +40,19 @@ static unsigned cntcalc32(const unsigned char *in, unsigned inlen, cnt_t *cnt) {
   return a;
 }
 
-// Reference: obwt_unbwt_biPSIv2 optimized by powturbo
+// Reference: obwt_unbwt_biPSIv2 optimized by powturbo (12% faster)
 // openbwt: https://encode.su/threads/104-libBWT?p=22903&viewfull=1#post22903
 
 // bi-gram based PSI array + binary search algorithm v2 (t=NUM_TOPBITS). space: 4(n+1)+4*257+4*256*256+4*(2**t) bytes. time: O(n log 256)?
+#define NUM_TOPBITS 17
 
-#define NUM_TOPBITS (8)
-
-int obwt_unbwt_biPSIv2(const unsigned char *T, unsigned char *U, unsigned *PSI, int n, int pidx) {					
-  int      C[257]={0};
-  int      D[1<<16]={0}, *LD;
+int obwt_unbwt_biPSIv2x(const unsigned char *__restrict T, unsigned char *__restrict U, unsigned *__restrict PSI, int n, int pidx) {					
+  unsigned C[257]  ={0};
+  unsigned D[1<<16]={0}, *LD;
   unsigned B2S[1U << NUM_TOPBITS];
   unsigned u;
   int      i, t, v, w, x;
-  int      c, d, e, mask, lastc, half;
+  int      c, d, e, mask, lastc;
   int      lowshift, highshift;
 
   /* Check arguments. */
@@ -90,7 +89,7 @@ int obwt_unbwt_biPSIv2(const unsigned char *T, unsigned char *U, unsigned *PSI, 
       if(0 < t) {
         e = (c << 8) | d;
         for(v = i >> highshift; v < w; ++v) {
-          B2S[v] = (B2S[v] & 0xffff) | (((unsigned )e) << 16);
+          B2S[v] = ((unsigned short)B2S[v]) | (((unsigned )e) << 16);
         }
         for(w = ((i + t - 1) >> highshift) + 1; v < w; ++v) {
           B2S[v] = ((unsigned )e) | (((unsigned )e) << 16);
@@ -100,9 +99,9 @@ int obwt_unbwt_biPSIv2(const unsigned char *T, unsigned char *U, unsigned *PSI, 
     }
   }
   for(v = 0; v < w; ++v) {
-    c = (B2S[v] >> 16) ^ (B2S[v] & 0xffff);
+    c = (B2S[v] >> 16) ^ ((unsigned short)B2S[v]);
     for(x = 0; c != 0; ++x, c >>= 1) { }
-    B2S[v] = (unsigned)(((B2S[v] & 0xffff) & (0xffffU << x)) | (x << 16));
+    B2S[v] = (unsigned)((((unsigned short)B2S[v]) & (0xffffU << x)) | (x << 16));
   }
 
   // Compute bi-PSI array 
@@ -127,11 +126,11 @@ int obwt_unbwt_biPSIv2(const unsigned char *T, unsigned char *U, unsigned *PSI, 
   }
   
   for(i = 0, t = pidx; i < n-1; i += 2) {  
-    unsigned b2s = B2S[t >> highshift], 
-               c = (unsigned short)b2s,
-             len = (1u << (b2s >> 16)) - 1, half;
-    #define ST { unsigned u = D[c + half] <= t; c += (half + 1)&(-u); len = half, half >>= 1; if(mask >= len) break; }
-    for(half = len >> 1; ; ) { ST;ST;ST;ST;ST;ST;ST;ST;ST;ST;ST;ST;ST;ST; }  
+    unsigned c    = B2S[t >> highshift],
+             half = ((1u << (c >> 16)) - 1)>>1;
+             c    = (unsigned short)c;
+    #define ST { c += (half + 1)&(-(D[c + half] <= t)); if(mask >= half) break; half >>= 1; }
+    for(;;) { ST;ST;ST;ST;ST;ST;ST;ST;ST;ST;ST;ST;ST;ST; }  		//unsigned   c = (unsigned short)B2S[t >> highshift]; while(D[c] <= t) c++;
     ctou16(&U[i]) = BSWAP16(c | (PSI[t] & mask));
     t             = PSI[t] >> lowshift;					
   }
