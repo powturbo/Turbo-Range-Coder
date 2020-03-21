@@ -330,7 +330,7 @@ int main(int argc, char* argv[]) { //mbrtest();
         case 12: rcrlexsdec( in, bsize, out); break;
         case 13: rcrlessdec( in, bsize, out); break;
         case 14: rcrlexssdec(in, bsize, out); break;
-        case 15: rcqlfcsdec( in, inlen, out); break;
+        case 15: rcqlfcsdec( in, bsize, out); break;
           #ifdef _BWT
         case 16: rcbwtsdec(  in, bsize, out, 9, 0); break;
           #endif
