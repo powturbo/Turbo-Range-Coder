@@ -447,8 +447,14 @@ size_t TEMPLATE3(rcqlfc,RC_PRED,dec)(unsigned char *in, size_t outlen, unsigned 
 }
 
   #ifdef _BWT
+    #ifdef _BWTDIV      
 #include "libdivsufsort/include/divsufsort.h"
 int obwt_unbwt_biPSIv2(const unsigned char *T, unsigned char *U, unsigned *PSI, int n, int pidx);
+    #else
+#include "libbsc/libbsc/bwt/libsais/libsais.h"
+typedef unsigned saidx_t;
+    #endif
+
 size_t TEMPLATE3(rcbwt,RC_PRED,enc)(unsigned char *in, size_t inlen, unsigned char *out, unsigned lev, unsigned thnum, unsigned lenmin) {
   unsigned char *op     = out; 
   unsigned char *_bwt   = malloc(inlen), *ip = in; if(!_bwt) { op = out+inlen; goto e; }  
@@ -464,11 +470,23 @@ size_t TEMPLATE3(rcbwt,RC_PRED,enc)(unsigned char *in, size_t inlen, unsigned ch
     } 																//else printf("r=%.2f\n", (double)iplen*100.0/inlen);
   }                    												
 
-  saidx_t    *sa = (saidx_t *)malloc(iplen*sizeof(sa[0])); if(!sa) { op = out+inlen; goto e; }
+  saidx_t   *sa = (saidx_t *)malloc(iplen*sizeof(sa[0])); if(!sa) { op = out+inlen; goto e; }
             *op++ = lenmin; 
   if(lenmin) ctou32(op) = iplen, op += 4;
+    #ifdef _BWTDIV
   *(saidx_t *)op  = divbwt(ip, _bwt, sa, iplen); 
               op += sizeof(sa[0]);
+    #else
+        int mod = iplen / 8;
+            mod |= mod >> 1; 	mod |= mod >> 2;
+            mod |= mod >> 4;  	mod |= mod >> 8;
+            mod |= mod >> 16; 	mod >>= 1;
+   unsigned idxs[256];
+   libsais_bwt_aux(ip, _bwt, sa, iplen, 0, mod + 1, idxs); 		 //libsais_bwt(ip, _bwt, sa, iplen, fs);
+   int nidxs = (unsigned char)((iplen - 1) / (mod + 1));			 
+   memcpy(op, idxs, (nidxs+1)*sizeof(idxs[0]));
+   op   +=          (nidxs+1)*sizeof(idxs[0]);    
+    #endif
   free(sa);
 
   op += rcqlfcsenc(_bwt, iplen, op);
@@ -482,14 +500,29 @@ size_t TEMPLATE3(rcbwt,RC_PRED,dec)(unsigned char *in, size_t outlen, unsigned c
   unsigned      lenmin = *ip++;
   size_t        oplen  = outlen;
   if(lenmin)    oplen  = ctou32(ip),     ip += 4;
+  
+    #ifdef _BWTDIV
   saidx_t       bwtidx = *(saidx_t *)ip; ip += sizeof(saidx_t);
-
+    #else
+        int mod  = oplen / 8;
+            mod |= mod >> 1;  mod |= mod >> 2;
+            mod |= mod >> 4;  mod |= mod >> 8;
+            mod |= mod >> 16; mod >>= 1;	
+  int nidxs = (unsigned char)((oplen - 1) / (mod + 1));			 
+  unsigned idxs[256];
+  memcpy(idxs, ip, (nidxs+1)*sizeof(idxs[0])); ip += (nidxs+1)*sizeof(idxs[0]);
+    #endif
   unsigned char *bwt = malloc(oplen),*op = out;          if(!bwt) die("malloc failed\n"); 
   rcqlfcsdec(ip, oplen, bwt);
 
   saidx_t *sa = (saidx_t *)malloc((oplen+1)*sizeof(sa[0])); if(!sa) { free(bwt); die("malloc failed\n"); }
   if(lenmin) { op = malloc(oplen); if(!op) die("malloc failed\n"); }
+    
+    #ifdef _BWTDIV
   size_t rc = obwt_unbwt_biPSIv2(bwt, op, sa, oplen, bwtidx); //size_t rc = inverse_bw_transform(bwt, op, sa, oplen, bwtidx);
+    #else
+  size_t rc = libsais_unbwt_aux(bwt, op, sa, oplen, mod+1, idxs); //libsais_unbwt(bwt, op, sa, oplen, idxs[0]);    
+    #endif
   free(sa);
   free(bwt);
 
