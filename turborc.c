@@ -38,7 +38,8 @@
 #include "xext_.c"
   #endif
 
-#define MAGIC     0x00004352 
+#define MAGIC     0x153 // 12 bits
+#define BLKMAX    3584
 #define CODEC_MAX 32
 static int verbose,lenmin=64;
 enum { E_FOP=1, E_FCR, E_FRD, E_FWR, E_MEM, E_CORR, E_MAG, E_CODEC, E_FSAME };
@@ -86,7 +87,7 @@ unsigned bench(unsigned char *in, unsigned n, unsigned char *out, unsigned char 
     case 14: TMBENCH("",l=rcrlexssenc(in, n, out),n); pr(l,n); TMBENCH2("24-rcrlexss RLE o8b strong              ",l==n?memcpy(cpy,out,n):rcrlexssdec(out, n, cpy), n); break;
     case 15: TMBENCH("",l=rcqlfcsenc( in, n, out),n); pr(l,n); TMBENCH2("25-rcqlfcs  QLFC simple                 ",l==n?memcpy(cpy,out,n):rcqlfcsdec( out, n, cpy), n); break;
       #ifdef _BWT
-    case 16: TMBENCH("",l=rcbwtsenc(  in, n, out,9,0,lenmin),n); pr(l,n); TMBENCH2("26-bwt                                  ",l==n?memcpy(cpy,out,n):rcbwtsdec(  out, n, cpy,9,0), n); break;
+    case 16: TMBENCH("",l=rcbwtsenc(  in, n, out,9,0,lenmin),n); pr(l,n); TMBENCH2("26-bwt                       ",l==n?memcpy(cpy,out,n):rcbwtsdec(  out, n, cpy,9,0), n); break;
       #endif
     case 17: TMBENCH("",l=rcqlfcssenc(in, n, out),n); pr(l,n); TMBENCH2("27-rcqlfcss QLFC strong                 ",l==n?memcpy(cpy,out,n):rcqlfcssdec(out, n, cpy), n); break;
       #ifdef _NZ
@@ -135,7 +136,7 @@ static void usage(char *pgm) {
   fprintf(stderr, "         BWT+rc     : 26 (simple)\n");
     #endif
   fprintf(stderr, "         Gamma+rc   : 30/33=gamma8, 31/34=gamma16, 32/34=gamma32 (simple/strong)\n");
-  fprintf(stderr, " -b#     #: block size in log2 (10..31 ,default %d)\n", 31);
+  fprintf(stderr, " -b#     #: block size in MB (default %d)\n", 1<<10);
   fprintf(stderr, " -d      decompress\n");
   fprintf(stderr, " -v      verbose\n");
   fprintf(stderr, " -o      write on standard output\n");
@@ -155,9 +156,10 @@ static void usage(char *pgm) {
 } 
 
 int main(int argc, char* argv[]) { //mbrtest();
-  int   xstdout = 0, xstdin = 0, decomp = 0, codec = 0, blog = 30, dobench = 0, cmp = 1;
-  int   c, digit_optind = 0;
-  char *scmd = NULL;
+  int      xstdout = 0, xstdin = 0, decomp = 0, codec = 0, dobench = 0, cmp = 1;
+  unsigned _bsize = 1024;
+  int      c, digit_optind = 0;
+  char     *scmd = NULL;
 
   for(;;) {
     int this_option_optind = optind ? optind : 1, optind = 0;
@@ -176,7 +178,7 @@ int main(int argc, char* argv[]) { //mbrtest();
       case 't': xtrunc++; break;
       case 'o': xstdout++; break;
       case 'v': verbose++; break;
-      case 'b': blog = atoi(optarg); if(blog<15) blog=15; if(blog > 31) blog=31; break;
+      case 'b': _bsize = atoi(optarg); if(_bsize<1) _bsize=1; if(_bsize > BLKMAX) _bsize=BLKMAX; break;
       case 'e': scmd = optarg; dobench++; break;
       case 'I': if((tm_Rep  = atoi(optarg))<=0) tm_rep =tm_Rep=1; break;
       case 'J': if((tm_Rep2 = atoi(optarg))<=0) tm_rep =tm_Rep2=1; break;
@@ -197,7 +199,7 @@ int main(int argc, char* argv[]) { //mbrtest();
   }
 
   #define ERR(e) do { rc = e; /*printf("line=%d ", __LINE__);*/ goto err; } while(0)
-  unsigned bsize = 1u << blog;
+  unsigned bsize = _bsize * Mb;
   int  rc = 0, inlen;
   char *in = NULL, *out = NULL, *cpy = NULL; 
 
@@ -218,7 +220,6 @@ int main(int argc, char* argv[]) { //mbrtest();
       fseek(fi, 0, SEEK_SET);
     
       unsigned b = (filen < bsize)?filen:bsize; 					if(verbose>1) printf("bsize=%u ", bsize);
-      //n = filen; 
 
       in  = malloc(b+64);     if(!in)  ERR(E_MEM);
       out = malloc(b+64);     if(!out) ERR(E_MEM);
@@ -266,7 +267,7 @@ int main(int argc, char* argv[]) { //mbrtest();
   FILE *fi = xstdin ?stdin :fopen(finame, "rb"); if(!fi) { perror(finame); return 1; }
   FILE *fo = xstdout?stdout:fopen(foname, "wb"); if(!fo) { perror(finame); return 1; }
   if(!decomp) {
-    l = blog<<24 | codec << 16 | MAGIC; 
+    l = _bsize << 20 | codec << 12 | MAGIC; 
     if(fwrite(&l, 1, 4, fo) != 4) ERR(E_FWR);             folen = 4;      // blocksize
     in  = malloc(bsize);
     out = malloc(bsize); if(!in || !out) ERR(E_MEM); 
@@ -304,10 +305,10 @@ int main(int argc, char* argv[]) { //mbrtest();
     }                                                             if(verbose) printf("compress: '%s'  %d->%d\n", finame, filen, folen);                                                                    
   } else { // Decompress
     if(fread(&l, 1, 4, fi) != 4) ERR(E_FRD);                  filen = 4;
-    if((l&0xffffu) != MAGIC) ERR(E_MAG);
-    if((blog = l>>24) < 16 || blog>31) ERR(E_CORR);
-    if((codec = (char)(l>>16)) > CODEC_MAX) ERR(E_CODEC);
-    bsize = 1 << blog;
+    if((l&0xfffu) != MAGIC)                 ERR(E_MAG);
+    if((_bsize = l>>20) > BLKMAX)           ERR(E_CORR);
+    if((codec = (char)(l>>12)) > CODEC_MAX) ERR(E_CODEC);
+    bsize = _bsize * Mb;
     in  = malloc(bsize); 
     out = malloc(bsize); if(!in || !out) ERR(E_MEM); 
 
