@@ -101,8 +101,9 @@ CFLAGS+=-D_BWT -D_BWTDIV
 else
 CFLAGS+=-D_LIBBSC -ICSC/src/libcsc -DLIBBSC_SORT_TRANSFORM_SUPPORT 
 #B=../../tb/
-LIBBWT+=$(B)libbsc/libbsc/libbsc/libbsc.o $(B)libbsc/libbsc/coder/coder.o $(B)libbsc/libbsc/coder/qlfc/qlfc.o $(B)libbsc/libbsc/coder/qlfc/qlfc_model.o $(B)libbsc/libbsc/platform/platform.o $(B)libbsc/libbsc/filters/detectors.o \
-	$(B)libbsc/libbsc/filters/preprocessing.o $(B)libbsc/libbsc/adler32/adler32.o $(B)libbsc/libbsc/bwt/bwt.o $(B)libbsc/libbsc/bwt/libsais/libsais.o $(B)libbsc/libbsc/st/st.o $(B)libbsc/libbsc/lzp/lzp.o
+LIBBWT+=$(B)libbsc/libbsc/bwt/libsais/libsais.o $(B)libbsc/libbsc/platform/platform.o $(B)libbsc/libbsc/bwt/bwt.o 
+#$(B)libbsc/libbsc/libbsc/libbsc.o $(B)libbsc/libbsc/coder/coder.o $(B)libbsc/libbsc/coder/qlfc/qlfc.o $(B)libbsc/libbsc/coder/qlfc/qlfc_model.o  $(B)libbsc/libbsc/filters/detectors.o \
+#	$(B)libbsc/libbsc/filters/preprocessing.o $(B)libbsc/libbsc/adler32/adler32.o $(B)libbsc/libbsc/st/st.o $(B)libbsc/libbsc/lzp/lzp.o
 CFLAGS+=-D_BWT
 endif
 
