@@ -1,0 +1,3 @@
+[submodule "libbsc"]
+	path = libbsc
+	url = https://github.com/IlyaGrebnov/libbsc.git
