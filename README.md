@@ -1,4 +1,4 @@
-TurboRC: Turbo Range Coder[![Build Status](https://travis-ci.org/powturbo/Turbo-Range-Coder.svg?branch=master)](https://travis-ci.org/powturbo/Turbo-Range-Coder)
+TurboRC: Turbo Range Coder[![Build Status](https://travis-ci.com/powturbo/Turbo-Range-Coder.svg?branch=master)](https://travis-ci.com/powturbo/Turbo-Range-Coder)
 ======================================
 * **Fastest Range Coder / Arithmetic Coder**
   * 100% C (C++ headers). 
@@ -11,10 +11,11 @@ TurboRC: Turbo Range Coder[![Build Status](https://travis-ci.org/powturbo/Turbo-
   * Easy connection to bit, nibble or byte predictors. Several built-in predictors
   * stdin/stdout file compressor included
   * Built-in order0, order1, Run Length Encoding, VLC/Gamma Coding, Move-To-Front/QLFC
-  * :new: Fast full BWT:Burrows-Wheeler compression/decompression w/
+  * Fast full BWT:Burrows-Wheeler compression/decompression w/
     QLFC:Quantized Local Frequency Coding and lzp preprocessing
-  * :new: lzp preprocessor
-  * :new: static + adaptive cdf - cumulative distribution functions
+  * new (2021.09): BWT libsais from libbsc + divsufsort included
+  * lzp preprocessor
+  * static + adaptive cdf - cumulative distribution functions
 
 ## Benchmark
    see also [Entropy Coder Benchmark](https://sites.google.com/site/powturbo/entropy-coder) 
@@ -89,7 +90,7 @@ Use gamma coding only, if most of the values are small
 ###### Linux, MacOS, Windows (MingW), Clang,... (see also makefile)
 		make
 	or
-		make BWT=1                                 "include BWT
+		make BWT=1                                 "include BWT (default libsais)
      
 ###### Windows visual c++
 		nmake /f makefile.vs
@@ -116,4 +117,4 @@ See examples in "turborcs.c"
 * **References:**
   * <a name="a"></a>[Entropy Coder Benchmark](https://sites.google.com/site/powturbo/entropy-coder) 
 
-Last update:  13 FEB 2020
+Last update:  09 SEP 2021
