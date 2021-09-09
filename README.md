@@ -1,4 +1,6 @@
-TurboRC: Turbo Range Coder[![Build Status][travisDevBadge]][https://travis-ci.com/powturbo/Turbo-Range-Coder]
+TurboRC: Turbo Range Coder[![Build Status][travisDevBadge]][travisLink]
+
+[travisLink]: https://travis-ci.com/powturbo/Turbo-Range-Coder
 ======================================
 * **Fastest Range Coder / Arithmetic Coder**
   * 100% C (C++ headers). 
