@@ -87,7 +87,7 @@ Use gamma coding only, if most of the values are small
 
 ## Compile:
         Download or clone TurboRC
-		git clone git://github.com/powturbo/Turbo-Range-Coder.git
+		git clone --recursive git://github.com/powturbo/Turbo-Range-Coder.git
 		cd Turbo-Range-Coder
         
 ###### Linux, MacOS, Windows (MingW), Clang,... (see also makefile)
