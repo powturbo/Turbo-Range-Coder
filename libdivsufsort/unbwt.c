@@ -8,8 +8,6 @@
 #define BSWAP16(a) bswap16(a)
   #endif  
 
-//------------------------------------- Fastest Histogram : https://github.com/powturbo/TurboHist -------------------------------------------
-
 // Reference: obwt_unbwt_biPSIv2 optimized by powturbo (15% faster)
 // openbwt: https://encode.su/threads/104-libBWT?p=22903&viewfull=1#post22903
 
