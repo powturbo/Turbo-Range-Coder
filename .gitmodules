@@ -1,3 +1,6 @@
 [submodule "libbsc"]
 	path = libbsc
 	url = https://github.com/IlyaGrebnov/libbsc.git
+[submodule "libsais"]
+	path = libsais
+	url = https://github.com/IlyaGrebnov/libsais.git
