@@ -1,5 +1,5 @@
 /**
-    Copyright (C) powturbo 2013-2020
+    Copyright (C) powturbo 2013-2022
     GPL v3 License
 
     This program is free software; you can redistribute it and/or modify
@@ -22,22 +22,30 @@
     - email    : powturbo [_AT_] gmail [_DOT_] com
 **/
 // TurboRC: Range Coder - simple predictor (16 bits counter)
-#define _RC_S_
-#define RC_PRED s
+#define RC_PRDID 1
+#define RC_PRD s
 
   #ifdef RC_MACROS
 #define mbu unsigned short
-#define mbu_p(_mb_) *(_mb_) 
+#define mbu_p(_mb_,_prm0_) (*(_mb_))
   #else
 typedef unsigned short mbu;
-static inline int mbu_p(mbu *mb) { return (*mb); } // get probability 
+static inline int mbu_p(mbu *mb, int _prm0_) { return (*mb); } // get probability 
   #endif
 
-#define mbu_probinit() (1<<(RC_BITS-1))            // initial probability 0.5
-#define mbu_init(_m_, _p0_) { *(_m_) = _p0_; }     // Init predictor 
+#define mbu_probinit()      (1<<(RC_BITS-1))       // initial probability 0.5
+#define mbu_init(_m_, _p0_) { *(_m_) = _p0_; }     // predictor init
 
-#define mbu_update0(_mb_, _mbp_, _prm0_, _prm1_) (*(_mb_) = (_mbp_) + (((1u<<RC_BITS)- (_mbp_)) >> 5)) // Predictor update for bit 0
-#define mbu_update1(_mb_, _mbp_, _prm0_, _prm1_) (*(_mb_) = (_mbp_) - ((_mbp_) >> 5))                  // Predictor update for bit 1
+  #ifdef RATE_S // rate (=_prm0_) as parameter
+#define RCPRM  //,unsigned RCPRM0
+#define RCPRMC //,RCPRM0
+#define mbu_update0(_mb_, _mbp_, _prm0_, _prm1_) (*(_mb_) = (_mbp_) + (((1u<<RC_BITS)- (_mbp_)) >> _prm0_))  // Predictor update for bit 0
+#define mbu_update1(_mb_, _mbp_, _prm0_, _prm1_) (*(_mb_) = (_mbp_) - ((_mbp_) >> _prm0_))                   // Predictor update for bit 1
+  #else
+#define RCPRM
+#define RCPRMC
+#define mbu_update0(_mb_, _mbp_, _prm0_, _prm1_) (*(_mb_) = (_mbp_) + (((1u<<RC_BITS)- (_mbp_)) >> 5))  // Predictor update for bit 0
+#define mbu_update1(_mb_, _mbp_, _prm0_, _prm1_) (*(_mb_) = (_mbp_) - ((_mbp_) >> 5))                   // Predictor update for bit 1
+  #endif
 
 #include "mbc.h"
-
