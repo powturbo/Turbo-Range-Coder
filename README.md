@@ -33,7 +33,7 @@ TurboRC: Turbo Range Coder
         ./turborc -e0 inputfile -Ou         " raw 32 bits input
         ./turborc -e0 inputfile -Ft         " text inputfile (one integer/line) 
         ./turborc -e0 inputfile -Fc         " text file with multiple integer entries (separated by non-digits characters ex. 456,32,54)
-		./turborc -e0 inputfile -Fc -v5     " like prev., display the first 100 values read
+        ./turborc -e0 inputfile -Fc -v5     " like prev., display the first 100 values read
         ./turborc -e0 inputfile -Fcf        " text file with multiple floating-point entries (separated by non-digits characters ex. 456.56,32.1,54)
         ./turborc -e0 inputfile -Fru -Ob    " convert raw 32 bits input to bytes before processing possibly truncating large values
 
