@@ -1,4 +1,4 @@
-# Copyright (C) powturbo 2015-2019
+# Copyright (C) powturbo 2015-2022
 # nmake "NCODEC1=1" "NCODEC2=1" /f makefile.msc
 # or
 # nmake "AVX2=1" /f makefile.msc
@@ -15,7 +15,7 @@ LIB_LIB = libttrc.lib
 LIB_DLL = turborc.dll
 LIB_IMP = turborc.lib
 
-OBJS	= turborcss.obj turborcs.obj  
+OBJS	= rc_ss.obj rc_s.obj rccdf.obj rccm_s.obj rccm_ss.obj rcutil.obj bec_b.obj 
 
 !IF "$(AVX2)" == "1"
 DEFS = $(DEFS) /D__AVX2__
