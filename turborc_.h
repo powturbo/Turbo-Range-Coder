@@ -1,5 +1,5 @@
 /**
-    Copyright (C) powturbo 2013-2020
+    Copyright (C) powturbo 2013-2022
     GPL v3 License
 
     This program is free software; you can redistribute it and/or modify
@@ -84,14 +84,14 @@
 
 //--------------------------- Input/Output --------------------------------------------------------
   #ifdef RC_BSWAP
-#define _RC_BSWAP(a) TEMPLATE3(bswap, _, RC_IO)(a) 
+#define _RC_BSWAP(a) T3(bswap, _, RC_IO)(a) 
   #else
 #define _RC_BSWAP(a) (a)
   #endif
 
-#define rcout_t TEMPLATE3(uint,RC_IO,_t)
-#define RCPUT(_x_,_op_) { TEMPLATE2(ctou, RC_IO)(_op_) = _RC_BSWAP(_x_); _op_ += (RC_IO/8); }
-#define RCGET(_ip_) ((rcout_t)_RC_BSWAP(TEMPLATE2(ctou, RC_IO)(_ip_))), _ip_ += (RC_IO/8)
+#define rcout_t T3(uint,RC_IO,_t)
+#define RCPUT(_x_,_op_) { T2(ctou, RC_IO)(_op_) = _RC_BSWAP(_x_); _op_ += (RC_IO/8); }
+#define RCGET(_ip_) ((rcout_t)_RC_BSWAP(T2(ctou, RC_IO)(_ip_))), _ip_ += (RC_IO/8)
 
 //--------------------------- Renormalization -----------------------------------------------------
   #if RC_IO == 8
@@ -107,8 +107,8 @@
 
 //------------------------- Initialization encode ----------------------------------------------------
 #define rcencdef(rcrange,rclow) RC_BG; rcrange_t rcrange,rclow;
-
 #define rceinit(rcrange,rclow) { rclow = 0; rcrange = (rcrange_t)-1; RC_LOGINI; }
+#define rcencdec(rcrange,rclow) rcencdef(rcrange,rclow);rceinit(rcrange,rclow)
 
   #ifdef RC_MACROS
 #define rceflush(rcrange, rclow, op) {\
@@ -154,6 +154,7 @@ static void _rceflush_(rcrange_t rcrange, rcrange_t rclow, unsigned char **_op) 
     rccode = (rccode << RC_IO) | RCGET(_ip_);\
   }\
 }
+#define rcdecdec(rcrange, rccode, _ip_) rcdecdef(rcrange, rccode);rcdinit(rcrange, rccode, _ip_)
 
 //********************************** Multisymbol (byte-wise/nibble,...) range coder ****************************************************************
   #ifdef RC_MULTISYMBOL
@@ -236,26 +237,47 @@ static void div32init(void) { if(!_div32ini) { DIVTINI32(_div32lut, DIV_BITS); _
 #define cdfenc(rcrange,rclow, cdf, _x_, op) _rccdfenc(rcrange,rclow, cdf[_x_], cdf[_x_+1], op)
 
 //---------- CDF decode w/ linear search for small cdfs (ex. 16 symbols)
+// linear symbol search
 #define _cdflget(rcrange,rccode, _cdf_, _x_) { _x_ = 0; while(_cdf_[_x_+1]*rcrange <= rccode) ++_x_; }
-#define _cdflget16(rcrange,rccode, _cdf_, _x_, _label_) {\
-  rcrange_t _r1,\
-  _r0 = _cdf_[ 1]*rcrange;\
-  _r1 = _cdf_[ 2]*rcrange; if(_r0 > rccode) { _x_ = 0; goto _label_; }\
-  _r0 = _cdf_[ 3]*rcrange; if(_r1 > rccode) { _x_ = 1; goto _label_; }\
-  _r1 = _cdf_[ 4]*rcrange; if(_r0 > rccode) { _x_ = 2; goto _label_; }\
-  _r0 = _cdf_[ 5]*rcrange; if(_r1 > rccode) { _x_ = 3; goto _label_; }\
-  _r1 = _cdf_[ 6]*rcrange; if(_r0 > rccode) { _x_ = 4; goto _label_; }\
-  _r0 = _cdf_[ 7]*rcrange; if(_r1 > rccode) { _x_ = 5; goto _label_; }\
-  _r1 = _cdf_[ 8]*rcrange; if(_r0 > rccode) { _x_ = 6; goto _label_; }\
-  _r0 = _cdf_[ 9]*rcrange; if(_r1 > rccode) { _x_ = 7; goto _label_; }\
-  _r1 = _cdf_[10]*rcrange; if(_r0 > rccode) { _x_ = 8; goto _label_; }\
-  _r0 = _cdf_[11]*rcrange; if(_r1 > rccode) { _x_ = 9; goto _label_; }\
-  _r1 = _cdf_[12]*rcrange; if(_r0 > rccode) { _x_ =10; goto _label_; }\
-  _r0 = _cdf_[13]*rcrange; if(_r1 > rccode) { _x_ =11; goto _label_; }\
-  _r1 = _cdf_[14]*rcrange; if(_r0 > rccode) { _x_ =12; goto _label_; }\
-  _r0 = _cdf_[15]*rcrange; if(_r1 > rccode) { _x_ =13; goto _label_; }\
-                           if(_r0 > rccode) { _x_ =14; goto _label_; } _x_=15; _label_:;\
+
+  #if defined(__AVX2__) && RC_SIZE == 32
+// avx2 symbol search  
+#define mm256_cmpgt_epu32(_a_, _b_) _mm256_cmpgt_epi32(_mm256_xor_si256(_a_, _mm256_set1_epi32(0x80000000)), _mm256_xor_si256(_b_, _mm256_set1_epi32(0x80000000)))
+
+#define _cdflget16(rcrange,rccode, _cdf_, _x_) {\
+  __m256i  _v = _mm256_loadu_si256((__m256i const *)_cdf_);\
+  __m256i _v0 = _mm256_cvtepu16_epi32(_mm256_castsi256_si128(_v));\
+  __m256i _v1 = _mm256_cvtepu16_epi32(_mm256_extracti128_si256(_v,1));\
+          _v0 = _mm256_mullo_epi32(_v0, _mm256_set1_epi32(rcrange));\
+          _v1 = _mm256_mullo_epi32(_v1, _mm256_set1_epi32(rcrange));\
+          _v0 =  mm256_cmpgt_epu32(_v0, _mm256_set1_epi32(rccode));\
+          _v1 =  mm256_cmpgt_epu32(_v1, _mm256_set1_epi32(rccode));  /*unsigned _m = _mm256_movemask_epi8(_mm256_permute4x64_epi64(_mm256_packs_epi32(_v0, _v1),0xd8));_x_ = (ctz32(_m)>>1)-1;*/\
+  unsigned _m = _mm256_movemask_ps(_mm256_castsi256_ps(_v1))<<8 | _mm256_movemask_ps(_mm256_castsi256_ps(_v0)); _x_ = ctz32(_m+(1<<16))-1;\
 }
+  #else
+// linear symbol search optimized
+#define _cdflget16(rcrange,rccode, _cdf_, _x_) {\
+  for(;;) { rcrange_t _r1,\
+    _r0 = _cdf_[ 1]*rcrange;\
+    _r1 = _cdf_[ 2]*rcrange; if(_r0 > rccode) { _x_ = 0; break; }\
+    _r0 = _cdf_[ 3]*rcrange; if(_r1 > rccode) { _x_ = 1; break; }\
+    _r1 = _cdf_[ 4]*rcrange; if(_r0 > rccode) { _x_ = 2; break; }\
+    _r0 = _cdf_[ 5]*rcrange; if(_r1 > rccode) { _x_ = 3; break; }\
+    _r1 = _cdf_[ 6]*rcrange; if(_r0 > rccode) { _x_ = 4; break; }\
+    _r0 = _cdf_[ 7]*rcrange; if(_r1 > rccode) { _x_ = 5; break; }\
+    _r1 = _cdf_[ 8]*rcrange; if(_r0 > rccode) { _x_ = 6; break; }\
+    _r0 = _cdf_[ 9]*rcrange; if(_r1 > rccode) { _x_ = 7; break; }\
+    _r1 = _cdf_[10]*rcrange; if(_r0 > rccode) { _x_ = 8; break; }\
+    _r0 = _cdf_[11]*rcrange; if(_r1 > rccode) { _x_ = 9; break; }\
+    _r1 = _cdf_[12]*rcrange; if(_r0 > rccode) { _x_ =10; break; }\
+    _r0 = _cdf_[13]*rcrange; if(_r1 > rccode) { _x_ =11; break; }\
+    _r1 = _cdf_[14]*rcrange; if(_r0 > rccode) { _x_ =12; break; }\
+    _r0 = _cdf_[15]*rcrange; if(_r1 > rccode) { _x_ =13; break; }\
+                             if(_r0 > rccode) { _x_ =14; break; }\
+    _x_=15; break;\
+  }\
+}
+  #endif
 
 #define cdflget(rcrange,rccode, _cdf_, _cdfn_, _x_, _ip_) {\
   _rccdfrange(rcrange); \
@@ -263,9 +285,9 @@ static void div32init(void) { if(!_div32ini) { DIVTINI32(_div32lut, DIV_BITS); _
   _rccdfupdate(rcrange,rccode, _cdf_[_x_], _cdf_[_x_+1],_ip_);\
 }
 
-#define cdflget16(rcrange,rccode, _cdf_, _cdfn_, _x_, _ip_, _label_) {\
+#define cdflget16(rcrange,rccode, _cdf_, _x_, _ip_) {\
   _rccdfrange(rcrange);\
-  _cdflget16(rcrange,rccode, _cdf_, _x_, _label_);\
+  _cdflget16(rcrange,rccode, _cdf_, _x_);\
   _rccdfupdate(rcrange,rccode, _cdf_[_x_], _cdf_[_x_+1],_ip_);\
 }
 
@@ -288,7 +310,7 @@ static void div32init(void) { if(!_div32ini) { DIVTINI32(_div32lut, DIV_BITS); _
 
 //------ Decode division or reciprocal multiplication ------------------------------------
 
-//linear search
+//_inear search
 #define _cdfvlget(_cdf_, _cdfnum_, _cdfp, _x_) { _x_ = 0; while(_cdf_[_x_+1] <= _cdfp) ++_x_; }
 
 #define cdfvlget(rcrange,rccode, _cdf_, _cdfn_, _x_, _ip_) {\
@@ -298,7 +320,7 @@ static void div32init(void) { if(!_div32ini) { DIVTINI32(_div32lut, DIV_BITS); _
   _rccdfupdate(rcrange,rccode, _cdf_[_x_], _cdf_[_x_+1], _ip_);\
 } 
 
-// Binary search
+//Binary search
 #define _cdfvbget(_cdf_, _cdfnum_, _cdfp, _x_) {\
   _x_ = 0; unsigned _high = _cdfnum_;\
   while(_x_ + 1 < _high) {\
@@ -369,50 +391,63 @@ static void div32init(void) { if(!_div32ini) { DIVTINI32(_div32lut, DIV_BITS); _
   #endif // MULTISYMBOL
 
 // **************************** bitwise range coder *************************************************************************
-// _predp_               : predicted probability  
-// _pred_                : predictor object
-// _predupd0_/_predupd1_ : bit 0/1 update functions for predictor _pred_ 
-// _prm_                 : predictor parameters
+// _mbp_             : predicted probability  
+// _mb_              : predictor 
+// _mbupd0_/_mbupd1_ : bit 0/1 update functions for predictor _mb_ 
+// _prm_             : predictor parameters
 
 //----- Fast flag read + check bit / update predictor (usage see: mb_vint.h ----------------
-#define if_rc0(rcrange, rccode, _predp_,_ip_) unsigned _predp = _predp_; _rcdnorm_(rcrange,rccode,_ip_); rcrange_t _rcx = (rcrange >> RC_BITS) * (_predp); if(rccode <  _rcx)
-#define if_rc1(rcrange, rccode, _predp_,_ip_) unsigned _predp = _predp_; _rcdnorm_(rcrange,rccode,_ip_); rcrange_t _rcx = (rcrange >> RC_BITS) * (_predp); if(rccode >= _rcx)
+#define if_rc0(rcrange, rccode, _mbp_,_ip_) unsigned _predp = _mbp_; _rcdnorm_(rcrange,rccode,_ip_); rcrange_t _rcx = (rcrange >> RC_BITS) * (_predp); if(rccode <  _rcx)
+#define if_rc1(rcrange, rccode, _mbp_,_ip_) unsigned _predp = _mbp_; _rcdnorm_(rcrange,rccode,_ip_); rcrange_t _rcx = (rcrange >> RC_BITS) * (_predp); if(rccode >= _rcx)
     
-#define rcupdate0(rcrange, rccode, _predupd0_, _pred_,_prm0_,_prm1_) { RC_BD(0); rcrange  = _rcx;                 _predupd0_(_pred_, _predp,_prm0_,_prm1_); }
-#define rcupdate1(rcrange, rccode, _predupd1_, _pred_,_prm0_,_prm1_) { RC_BD(1); rcrange -= _rcx; rccode -= _rcx; _predupd1_(_pred_, _predp,_prm0_,_prm1_); }
+#define rcupdate0(rcrange, rccode, _mbupd0_, _mb_,_prm0_,_prm1_) { RC_BD(0); rcrange  = _rcx;                 _mbupd0_(_mb_, _predp,_prm0_,_prm1_); }
+#define rcupdate1(rcrange, rccode, _mbupd1_, _mb_,_prm0_,_prm1_) { RC_BD(1); rcrange -= _rcx; rccode -= _rcx; _mbupd1_(_mb_, _predp,_prm0_,_prm1_); }
 
 //--- encode bit -----
-#define rcbe(rcrange,rclow, _predp_, _predupd0_,_predupd1_, _pred_,_prm0_,_prm1_,_op_, _bit_) do {\
-  rcrange_t _rcx = (rcrange >> RC_BITS) * (_predp_);\
-  if(unlikely(_bit_)) { RC_BE(1); rcrange -= _rcx; rcrange_t ilow = rclow; rclow += _rcx; _rccarry_(ilow, rclow, _op_); _predupd1_(_pred_, _predp_, _prm0_, _prm1_); }\
-  else {                RC_BE(0); rcrange  = _rcx;                                                                      _predupd0_(_pred_, _predp_, _prm0_, _prm1_); }\
+#define rcbe(rcrange,rclow, _mbp_, _mbupd0_,_mbupd1_, _mb_,_prm0_,_prm1_,_op_, _bit_) do {\
+  rcrange_t _rcx = (rcrange >> RC_BITS) * (_mbp_);\
+  if(unlikely(_bit_)) { RC_BE(1); rcrange -= _rcx; rcrange_t ilow = rclow; rclow += _rcx; _rccarry_(ilow, rclow, _op_); _mbupd1_(_mb_,_mbp_, _prm0_,_prm1_); }\
+  else {                RC_BE(0); rcrange  = _rcx;                                                                      _mbupd0_(_mb_,_mbp_, _prm0_,_prm1_); }\
+} while(0)
+
+#define rcbme(rcrange,rclow, _mbp_, _mbupd0_,_mbupd1_, _mb_,_prm0_,_prm1_,_op_, _bit_, _mb1_, _mb2_, _sse2_) do {\
+  rcrange_t _rcx = (rcrange >> RC_BITS) * (_mbp_);\
+  if(unlikely(_bit_)) { RC_BE(1); rcrange -= _rcx; rcrange_t ilow = rclow; rclow += _rcx; _rccarry_(ilow, rclow, _op_); _mbupd1_(_mb_,_mbp_, _prm0_,_prm1_, _mb1_,_mb2_,_sse2_); }\
+  else {                RC_BE(0); rcrange  = _rcx;                                                                      _mbupd0_(_mb_,_mbp_, _prm0_,_prm1_, _mb1_,_mb2_,_sse2_); }\
 } while(0)
 
 //--- encode bit + renorm -----
-#define rcbenc(rcrange,rclow, _predp_,_predupd0_,_predupd1_, _pred_,_prm0_,_prm1_,_op_, _bit_) do {\
+#define rcbenc( rcrange,rclow, _mbp_,_mbupd0_,_mbupd1_, _mb_,_prm0_,_prm1_,_op_, _bit_) do {\
   _rcenorm_(rcrange,rclow,_op_);\
-  rcbe(rcrange, rclow, _predp_, _predupd0_,_predupd1_, _pred_,_prm0_,_prm1_,_op_, _bit_);\
+  rcbe(rcrange, rclow, _mbp_, _mbupd0_,_mbupd1_, _mb_,_prm0_,_prm1_,_op_, _bit_);\
 } while(0)
 
+#define rcbmenc(rcrange,rclow, _mbp_,_mbupd0_,_mbupd1_, _mb_,_prm0_,_prm1_,_op_, _bit_, _mb1_, _mb2_, _sse2_) do {\
+  _rcenorm_(rcrange,rclow,_op_);\
+  rcbme(rcrange, rclow, _mbp_, _mbupd0_,_mbupd1_, _mb_,_prm0_,_prm1_,_op_, _bit_, _mb1_, _mb2_, _sse2_);\
+} while(0)
+
+
 //--- decode bit -----
-#define rcbd(rcrange, rccode, _predp_, _predupd0_,_predupd1_, _pred_,_prm0_,_prm1_, _x_) do { \
-  rcrange_t _rcx = (rcrange >> RC_BITS) * (_predp_);\
-  if(rccode < _rcx) { RC_BD(0); rcrange  = _rcx;                 _predupd0_(_pred_, _predp_, _prm0_, _prm1_); _x_ += _x_;   }\
-  else {              RC_BD(1); rcrange -= _rcx; rccode -= _rcx; _predupd1_(_pred_, _predp_, _prm0_, _prm1_); _x_ += _x_+1; }\
+#define rcbd(rcrange, rccode, _mbp_, _mbupd0_,_mbupd1_, _mb_,_prm0_,_prm1_, _x_) do { \
+  rcrange_t _rcx = (rcrange >> RC_BITS) * (_mbp_);\
+  if(rccode < _rcx) { RC_BD(0); rcrange  = _rcx;                 _mbupd0_(_mb_,_mbp_, _prm0_,_prm1_); _x_ += _x_;   }\
+  else {              RC_BD(1); rcrange -= _rcx; rccode -= _rcx; _mbupd1_(_mb_,_mbp_, _prm0_,_prm1_); _x_ += _x_+1; }\
+} while(0)
+
+#define rcbmd(rcrange, rccode, _mbp_, _mbupd0_,_mbupd1_, _mb_,_prm0_,_prm1_, _x_, _mb1_, _mb2_, _sse2_) do { \
+  rcrange_t _rcx = (rcrange >> RC_BITS) * (_mbp_);\
+  if(rccode < _rcx) { RC_BD(0); rcrange  = _rcx;                 _mbupd0_(_mb_,_mbp_, _prm0_,_prm1_, _mb1_,_mb2_,_sse2_); _x_ += _x_;   }\
+  else {              RC_BD(1); rcrange -= _rcx; rccode -= _rcx; _mbupd1_(_mb_,_mbp_, _prm0_,_prm1_, _mb1_,_mb2_,_sse2_); _x_ += _x_+1; }\
 } while(0)
 
 //--- decode bit +  renorm -----
-#define rcbdec(rcrange, rccode, _predp_, _predupd0_,_predupd1_, _pred_,_prm0_,_prm1_, _ip_, _x_) do {\
+#define rcbdec( rcrange,rccode, _mbp_, _mbupd0_,_mbupd1_, _mb_,_prm0_,_prm1_, _ip_, _x_) do {\
   _rcdnorm_(rcrange,rccode,_ip_); \
-  rcbd(rcrange, rccode, _predp_, _predupd0_,_predupd1_, _pred_,_prm0_,_prm1_, _x_);\
+  rcbd(rcrange,rccode,  _mbp_, _mbupd0_,_mbupd1_,_mb_,_prm0_,_prm1_, _x_);\
 } while(0)
 
-//--- example multiple predictors with multiple parameters -----
-#define rcbencode6(rcrange, rclow, _predp_, _predupd0_, _predupd1_, _pred_, _o0_, _o0p_, _o1_, _o1p_, _u1_, _u2_,_op_, _bit_) do {\
-  unsigned _predp_ = _predp_; \
-  _rcenorm_(rcrange,rclow,_op_); \
-  rcrange_t _rcx = (rcrange >> RC_BITS) * _predp_;\
-  if(_bit_) { rcrange -= _rcx; rcrange_t ilow = rclow; rclow += _rcx; _rccarry_(ilow, rclow, _op_); _predupd1_(_pred_, _predp_, _o0_, _o0p_, _o1_, _o1p_, _u1_, _u2_); }\
-  else {      rcrange  = _rcx;                                                                      _predupd0_(_pred_, _predp_, _o0_, _o0p_, _o1_, _o1p_, _u1_, _u2_); }\
+#define rcbmdec(rcrange,rccode, _mbp_, _mbupd0_,_mbupd1_, _mb_,_prm0_,_prm1_, _ip_,_x_, _mb1_,_mb2_,_sse2_) do {\
+  _rcdnorm_(rcrange,rccode,_ip_); \
+  rcbmd(rcrange,rccode, _mbp_, _mbupd0_,_mbupd1_,_mb_,_prm0_,_prm1_, _x_, _mb1_,_mb2_,_sse2_);\
 } while(0)
-
