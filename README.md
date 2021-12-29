@@ -12,9 +12,9 @@ TurboRC: Turbo Range Coder
   * Easy connection to bit, nibble or byte predictors. 
   * Several built-in predictors: simple, dual speed, fsm
   * Built-in order0, order1, order2, Sliding Context, Context mixing,
-  *          Run Length Encoding, Gamma Coding, Rice Coding,
-  *          Bit entropy coding, VLC (Variable Length Coding) for large integers, 
-  *          MTF (Move-To-Front) / QLFC (Quantized Local Frequency Coding)
+            Run Length Encoding, Gamma Coding, Rice Coding,
+            Bit entropy coding, VLC (Variable Length Coding) for large integers, 
+            MTF (Move-To-Front) / QLFC (Quantized Local Frequency Coding)
   * Fast full 8/16 bits BWT: Burrows-Wheeler compression/decompression w/
     preprocessing : lzp and utf-8
     postprocessing: QLFC (Quantized Local Frequency Coding), RLE and Bit entropy coder
