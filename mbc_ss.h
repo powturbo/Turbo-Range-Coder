@@ -1,5 +1,5 @@
 /**
-    Copyright (C) powturbo 2013-2020
+    Copyright (C) powturbo 2013-2022
     GPL v3 License
 
     This program is free software; you can redistribute it and/or modify
@@ -21,20 +21,18 @@
     - twitter  : https://twitter.com/powturbo
     - email    : powturbo [_AT_] gmail [_DOT_] com
 **/
-// TurboRC: Range Coder - dual predictor (two 16 bits counters) 
-#define _RC_SS_
-#define RC_PRED ss
+// TurboRC: Range Coder - dual speed predictor (two 16 bits counters) 
+#define RC_PRDID 2
+#define RC_PRD ss
 
-  #ifndef RCPRM0
-#define RCPRM0 3    //lz: 4,5  bwt:3,6
-#define RCPRM1 6
-  #endif  
+#define RCPRM ,unsigned RCPRM0, unsigned RCPRM1
+#define RCPRMC ,RCPRM0, RCPRM1
 
   #ifndef _MBC_SS_H
 #include "conf.h" // _PACKED
 #define _MBC_SS_H
 #pragma pack(1) 
-typedef struct { unsigned short p,q; } _PACKED mbu;
+typedef struct { unsigned short p,q; } _PACKED mbu; //p:fast,q:slow   o0:5,8 o1:4,6 o2:2,5 bwt:4,7
 #pragma pack()
   #endif
 
@@ -46,9 +44,9 @@ typedef struct { unsigned short p,q; } _PACKED mbu;
 #define mbu_probinit() (1<<(RC_BITS-1))
 
 #ifdef RC_MACROS
-#define mbu_p(_mb_) (((_mb_)->p+(_mb_)->q)>>(17-RC_BITS))
+#define mbu_p(_mb_,_prm0_) (((_mb_)->p+(_mb_)->q)>>(17-RC_BITS))
 #else
-static inline int mbu_p(mbu *bm) { return (bm->p+bm->q)>>(17-RC_BITS); }
+static inline int mbu_p(mbu *bm, int _prm0_) { return (bm->p+bm->q)>>(17-RC_BITS); }
 #endif
 
 // Predictor update for bit 0/1
@@ -59,4 +57,3 @@ static inline int mbu_p(mbu *bm) { return (bm->p+bm->q)>>(17-RC_BITS); }
                                                   (_mb_)->q -= (_mb_)->q >> _prm1_
 
 #include "mbc.h"
-
