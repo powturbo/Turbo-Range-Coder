@@ -1,5 +1,5 @@
 /**
-    Copyright (C) powturbo 2013-2020
+    Copyright (C) powturbo 2013-2022
     GPL v3 License
 
     This program is free software; you can redistribute it and/or modify
@@ -29,6 +29,7 @@
 #define MBC_DEF(  _m_, _cxbits_) mbu       _m_[1<<(_cxbits_+1)][1<<(4+2)]
 // Predictor init
 #define MBC_INIT( _m_, _cxbits_) mbu_init2(_m_,1<<(_cxbits_+1), 1<<(4+2))
+#define MBC_DEC(  _m_, _cxbits_) MBC_DEF(  _m_, _cxbits_); MBC_INIT( _m_, _cxbits_)
 
 #define LITSX8(_cx_, _cxbits_) (((_cx_) >> _cxbits_) << 4) |
 #define MBC_(_cx_, _cxbits_) (_cxbits_==8?(unsigned char)(_cx_):((_cx_) & ((1<<_cxbits_)-1)))
@@ -62,4 +63,3 @@
   _m = &_mh[(_y & 0xf) << 2 | 1]; mbu_dec(rcrange,rccode, _m,_prm0_,_prm1_,_ip_, _y);\
   _m = &_mh[(_y & 0xf) << 2    ]; mbu_dec(rcrange,rccode, _m,_prm0_,_prm1_,_ip_, _y); _cx_ = _cx_ << 4 | _y & 0xf;\
 }
-
