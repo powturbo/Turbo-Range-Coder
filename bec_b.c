@@ -27,7 +27,7 @@
 #define IN_BECTAB
 #include "bec_.h"
 #include "bec.h"
-#include "stmb_.h"     
+#include "bec_bstm.h"     
 
 ectab_t bectab[ECN][ECN][ECN][ECN]
 #if ECN == 8
