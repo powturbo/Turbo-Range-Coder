@@ -120,7 +120,7 @@ uint64_t strtots(char *p, char **pq, int type) {  // string to timestamp
   } if(_op_+_osize_ > _out__) goto end;\
 }
 
-size_t befgen(FILE *fi, unsigned char *out, size_t outsize, int fmt, int isize, int osize, int kid, int skiph, int decs, int divs, int keysep, int mdelta) {
+size_t befgen(FILE *fi, unsigned char *out, size_t outsize, int fmt, int isize, int osize, int kid, int skiph, int decs, int divs, char *keysep, int mdelta) {
   unsigned char *op = out, *out_ = out+outsize;                             
   unsigned ovf = 0;
   #define LSIZE (1024*16)
@@ -139,8 +139,8 @@ size_t befgen(FILE *fi, unsigned char *out, size_t outsize, int fmt, int isize, 
   switch(fmt) {
     case T_TXT:
     case T_TIM32:
-    case T_TIM64:                                                           if(verbose>1) printf("reading text lines. pre=%.2f, col=%d, sep=%s\n", pre, kid, keysep?keysep:"");
-      while(fgets(s, LSIZE, fi)) {  //printf("'%s' ", s);
+    case T_TIM64:                                                           if(verbose>1) printf("reading text lines. pre=%.2f, col=%d, sep='%s'\n", pre, kid, keysep?keysep:"");
+      while(fgets(s, LSIZE, fi)) {                                          //printf("'%s' ", s);
         unsigned char *p = s,*q;
         int k = 0, keyid = 1, c;
         s[strlen(s) - 1] = 0;
@@ -555,8 +555,8 @@ static void usage(char *pgm) {
 
 int main(int argc, char* argv[]) {
   unsigned _bsize = 1536, prdid = RC_PRD_S;
-  int      xstdout=0, xstdin=0, decomp=0, codec=0, dobench=0, cmp=1, c, digit_optind=0, decs=0, divs=0, skiph=0, isize=4, dfmt=0, mdelta=0, keysep=0, kid=0, osize=1;
-  char     *scmd = NULL, prids[8]="s";													//fdbg = fopen("test.dat", "wb"); if(!fdbg) perror("fopen failed");
+  int      xstdout=0, xstdin=0, decomp=0, codec=0, dobench=0, cmp=1, c, digit_optind=0, decs=0, divs=0, skiph=0, isize=4, dfmt=0, mdelta=0, kid=0, osize=1;
+  char     *scmd = NULL, prids[8]="s", *keysep=NULL;													//fdbg = fopen("test.dat", "wb"); if(!fdbg) perror("fopen failed");
   
     #ifndef _WIN32 
   { const  rlim_t kStackSize = 100 * 1024 * 1024; 
@@ -713,7 +713,7 @@ int main(int argc, char* argv[]) {
 	  }
 	  for(;;) {															
         n = dfmt?befgen(fi, in, b, dfmt, isize, osize, kid, skiph, decs, divs, keysep, mdelta):fread(in, 1, b, fi); 
-		if(n<=0) break; 															if(verbose>1) printf("read=%u ", n);
+		if(n<=0) break; 															if(verbose>1) printf("read=%u\n", n);
 	    nblk++;
         char *p = (scmd && (scmd[0] != '0' || scmd[1]))?scmd:_scmd;	
 		  
