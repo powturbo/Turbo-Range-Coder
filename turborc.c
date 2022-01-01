@@ -353,7 +353,7 @@ RCGEN2(rcrz,  8)
 RCGEN2(rcrz, 16)
 RCGEN2(rcrz, 32)
 
-RCGEN2(rcv,  16)    // vlc
+RCGEN2(rcv,  16)    // Turbo vlc
 RCGEN2(rcv,  32)
 RCGEN2(rcvz, 16)
 RCGEN2(rcvz, 32)
@@ -437,16 +437,16 @@ unsigned bench(unsigned char *in, unsigned n, unsigned char *out, unsigned char 
             if(z==2){TMBENCH("",l=rcrzenc16(  in,n,out,r),n);     pr(l,n); TMBENCH2("29:rcr-16    rice zigzag                ",l==n?memcpy(cpy,out,n):rcrzdec16( out,n,cpy,r), n); break;}
             if(z==4){TMBENCH("",l=rcrzenc32(  in,n,out,r),n);     pr(l,n); TMBENCH2("29:rcr-32    rice zigzag                ",l==n?memcpy(cpy,out,n):rcrzdec32( out,n,cpy,r), n);} break;
 	  
-    case 30:if(z==2){TMBENCH("",l=rcvenc16(   in,n,out,r),n);     pr(l,n); TMBENCH2("30:rcv-16    vlc8                       ",l==n?memcpy(cpy,out,n):rcvdec16( out,n,cpy,r), n); break;}
-            if(z==4){TMBENCH("",l=rcvenc32(   in,n,out,r),n);     pr(l,n); TMBENCH2("30:rcv-32    vlc8                       ",l==n?memcpy(cpy,out,n):rcvdec32( out,n,cpy,r), n);} break;
-    case 31:if(z==4){TMBENCH("",l=rcveenc32(  in,n,out,r),n);     pr(l,n); TMBENCH2("31:rcve-32   vlc12                      ",l==n?memcpy(cpy,out,n):rcvedec32( out,n,cpy,r), n); } break;
-    case 32:if(z==2){TMBENCH("",l=rcvzenc16(  in,n,out,r),n);     pr(l,n); TMBENCH2("32:rcvz-16   vlc8 zigzag                ",l==n?memcpy(cpy,out,n):rcvzdec16( out,n,cpy,r), n); break;}
-            if(z==4){TMBENCH("",l=rcvzenc32(  in,n,out,r),n);     pr(l,n); TMBENCH2("32:rcvz-32   vlc8 zigzag                ",l==n?memcpy(cpy,out,n):rcvzdec32( out,n,cpy,r), n);} break;
-    case 33:if(z==4){TMBENCH("",l=rcvezenc32( in,n,out,r),n);     pr(l,n); TMBENCH2("33:rcvez-32  vlc12 zigzag               ",l==n?memcpy(cpy,out,n):rcvezdec32( out,n,cpy,r), n);} break;
-    case 34:if(z==2){TMBENCH("",l=rcvgenc16(  in,n,out,r),n);     pr(l,n); TMBENCH2("34:rcvg-16   vlc8 gamma                 ",l==n?memcpy(cpy,out,n):rcvgdec16( out,n,cpy,r), n); break;}
-            if(z==4){TMBENCH("",l=rcvgenc32(  in,n,out,r),n);     pr(l,n); TMBENCH2("34:rcvg-32   vlc8 gamma                 ",l==n?memcpy(cpy,out,n):rcvgdec32( out,n,cpy,r), n); } break;
-    case 35:if(z==2){TMBENCH("",l=rcvgzenc16( in,n,out,r),n);     pr(l,n); TMBENCH2("35:rcvgz-16  vlc8 gamma zigzag          ",l==n?memcpy(cpy,out,n):rcvgzdec16( out,n,cpy,r), n); break;}
-            if(z==4){TMBENCH("",l=rcvgzenc32( in,n,out,r),n);     pr(l,n); TMBENCH2("35:rcvgz-32  vlc8 gamma zigzag          ",l==n?memcpy(cpy,out,n):rcvgzdec32( out,n,cpy,r), n);} break;
+    case 30:if(z==2){TMBENCH("",l=rcvenc16(   in,n,out,r),n);     pr(l,n); TMBENCH2("30:rcv-16    Turbo vlc8                 ",l==n?memcpy(cpy,out,n):rcvdec16( out,n,cpy,r), n); break;}
+            if(z==4){TMBENCH("",l=rcvenc32(   in,n,out,r),n);     pr(l,n); TMBENCH2("30:rcv-32    Turbo vlc8                 ",l==n?memcpy(cpy,out,n):rcvdec32( out,n,cpy,r), n);} break;
+    case 31:if(z==4){TMBENCH("",l=rcveenc32(  in,n,out,r),n);     pr(l,n); TMBENCH2("31:rcve-32   Turbo vlc12                ",l==n?memcpy(cpy,out,n):rcvedec32( out,n,cpy,r), n); } break;
+    case 32:if(z==2){TMBENCH("",l=rcvzenc16(  in,n,out,r),n);     pr(l,n); TMBENCH2("32:rcvz-16   Turbo vlc8 zigzag          ",l==n?memcpy(cpy,out,n):rcvzdec16( out,n,cpy,r), n); break;}
+            if(z==4){TMBENCH("",l=rcvzenc32(  in,n,out,r),n);     pr(l,n); TMBENCH2("32:rcvz-32   Turbo vlc8 zigzag          ",l==n?memcpy(cpy,out,n):rcvzdec32( out,n,cpy,r), n);} break;
+    case 33:if(z==4){TMBENCH("",l=rcvezenc32( in,n,out,r),n);     pr(l,n); TMBENCH2("33:rcvez-32  Turbo vlc12 zigzag         ",l==n?memcpy(cpy,out,n):rcvezdec32( out,n,cpy,r), n);} break;
+    case 34:if(z==2){TMBENCH("",l=rcvgenc16(  in,n,out,r),n);     pr(l,n); TMBENCH2("34:rcvg-16   Turbo vlc8 gamma           ",l==n?memcpy(cpy,out,n):rcvgdec16( out,n,cpy,r), n); break;}
+            if(z==4){TMBENCH("",l=rcvgenc32(  in,n,out,r),n);     pr(l,n); TMBENCH2("34:rcvg-32   Turbo vlc8 gamma           ",l==n?memcpy(cpy,out,n):rcvgdec32( out,n,cpy,r), n); } break;
+    case 35:if(z==2){TMBENCH("",l=rcvgzenc16( in,n,out,r),n);     pr(l,n); TMBENCH2("35:rcvgz-16  Turbo vlc8 gamma zigzag    ",l==n?memcpy(cpy,out,n):rcvgzdec16( out,n,cpy,r), n); break;}
+            if(z==4){TMBENCH("",l=rcvgzenc32( in,n,out,r),n);     pr(l,n); TMBENCH2("35:rcvgz-32  Turbo vlc8 gamma zigzag    ",l==n?memcpy(cpy,out,n):rcvgzdec32( out,n,cpy,r), n);} break;
 
     case 40:if(m<16){TMBENCH("",l=rc4csenc(   in,n,out),n);       pr(l,n); TMBENCH2("40:rc4cs     bitwise nibble static      ",l==n?memcpy(cpy,out,n):rc4csdec(  out,n,cpy), n); } break;            // Static
     case 41:if(m<16){TMBENCH("",l=rc4senc(    in,n,out),n);       pr(l,n); TMBENCH2("41:rc4s      bitwise nibble adaptive    ",l==n?memcpy(cpy,out,n):rc4sdec(   out,n,cpy), n); } break;           // Adaptive
@@ -460,12 +460,12 @@ unsigned bench(unsigned char *in, unsigned n, unsigned char *out, unsigned char 
             else {   TMBENCH("",l=rccdfienc(  in,n,out),n);       pr(l,n); TMBENCH2("47:cdfi      byte   adaptive interleaved",l==n?memcpy(cpy,out,n):rccdfidec( out,n,cpy), n); } break;
     case 48:         TMBENCH("",l=rccdfenc8(  in,n,out),n);       pr(l,n); TMBENCH2("48:cdf-8     vnibble                    ",l==n?memcpy(cpy,out,n):rccdfdec8( out,n,cpy), n); break;
     case 49:         TMBENCH("",l=rccdfienc8( in,n,out),n);       pr(l,n); TMBENCH2("49:cdfi-8    vnibble interleaved        ",l==n?memcpy(cpy,out,n):rccdfidec8(out,n,cpy), n); break; 
-    case 50:if(z==2){TMBENCH("",l=rccdfuenc16(in,n,out),n);       pr(l,n); TMBENCH2("50:cdf-16    vlc6                       ",l==n?memcpy(cpy,out,n):rccdfudec16(out,n,cpy), n); break; }
-            if(z==4){TMBENCH("",l=rccdfuenc32(in,n,out),n);       pr(l,n); TMBENCH2("50:cdf-32    vlc6                       ",l==n?memcpy(cpy,out,n):rccdfudec32(out,n,cpy), n);} break;
-    case 51:if(z==2){TMBENCH("",l=rccdfvenc16(in,n,out),n);       pr(l,n); TMBENCH2("51:cdf-16    vlc7                       ",l==n?memcpy(cpy,out,n):rccdfvdec16(out,n,cpy), n); break;}
-            if(z==4){TMBENCH("",l=rccdfvenc32(in,n,out),n);       pr(l,n); TMBENCH2("51:cdf-32    vlc7                       ",l==n?memcpy(cpy,out,n):rccdfvdec32(out,n,cpy), n);} break;
-    case 52:if(z==2){TMBENCH("",l=rccdfvzenc16(in,n,out),n);      pr(l,n); TMBENCH2("52:cdf-16    vlc7 zigzag                ",l==n?memcpy(cpy,out,n):rccdfvzdec16(out,n,cpy), n); break;}
-            if(z==4){TMBENCH("",l=rccdfvzenc32(in,n,out),n);      pr(l,n); TMBENCH2("52:cdf-32    vlc7 zigzag                ",l==n?memcpy(cpy,out,n):rccdfvzdec32(out,n,cpy), n);} break;			
+    case 50:if(z==2){TMBENCH("",l=rccdfuenc16(in,n,out),n);       pr(l,n); TMBENCH2("50:cdf-16    Turbo vlc6                 ",l==n?memcpy(cpy,out,n):rccdfudec16(out,n,cpy), n); break; }
+            if(z==4){TMBENCH("",l=rccdfuenc32(in,n,out),n);       pr(l,n); TMBENCH2("50:cdf-32    Turbo vlc6                 ",l==n?memcpy(cpy,out,n):rccdfudec32(out,n,cpy), n);} break;
+    case 51:if(z==2){TMBENCH("",l=rccdfvenc16(in,n,out),n);       pr(l,n); TMBENCH2("51:cdf-16    Turbo vlc7                 ",l==n?memcpy(cpy,out,n):rccdfvdec16(out,n,cpy), n); break;}
+            if(z==4){TMBENCH("",l=rccdfvenc32(in,n,out),n);       pr(l,n); TMBENCH2("51:cdf-32    Turbo vlc7                 ",l==n?memcpy(cpy,out,n):rccdfvdec32(out,n,cpy), n);} break;
+    case 52:if(z==2){TMBENCH("",l=rccdfvzenc16(in,n,out),n);      pr(l,n); TMBENCH2("52:cdf-16    Turbo vlc7 zigzag          ",l==n?memcpy(cpy,out,n):rccdfvzdec16(out,n,cpy), n); break;}
+            if(z==4){TMBENCH("",l=rccdfvzenc32(in,n,out),n);      pr(l,n); TMBENCH2("52:cdf-32    Turbo vlc7 zigzag          ",l==n?memcpy(cpy,out,n):rccdfvzdec32(out,n,cpy), n);} break;			
     #define ID_LAST 59
     #define ID_MEMCPY 59 
     case ID_MEMCPY:  TMBENCH("", memcpy(out,in,n) ,n); pr(n,n);            TMBENCH2("59:memcpy                               ", memcpy(cpy,out,n), n);  l=n; break;
@@ -492,17 +492,17 @@ static void usage(char *pgm) {
   fprintf(stderr, "\n Usage: %s <options> <infile1> <outfile>\n", pgm);
   fprintf(stderr, "<options>\n");
   fprintf(stderr, " -# #: compression codec (0:all)\n");
-  fprintf(stderr, "   Range Coder    : 1/2/3=order 0/1/2, 4/5=Order 8b,15b (context slide), 6/7:16-bits o0/o1, 6/7/8:32bits o0/o1/o2\n");
-  fprintf(stderr, "   Context mixing : 9/10/11= O1/O2/O1+run\n");
-  fprintf(stderr, "   RLE+rc         : 12/14=o0/o1, 13/15=16-bits o0/o1\n");
-  fprintf(stderr, "   varin8         : 16\n");
-  fprintf(stderr, "   QLFC+rc        : 17\n");
-  fprintf(stderr, "   Gamma+rc       : 26=8/16/32 bits (+option: -Ob/Os/Ou)\n");
-  fprintf(stderr, "   Gamma+delta+rc : 27=8/16/32 bits\n");
-  fprintf(stderr, "   Rice+rc        : 28=8/16/32 bits\n");
-  fprintf(stderr, "   Rice+delta+rc  : 29=8/16/32 bits\n");
-  fprintf(stderr, "   VLC+rc+bitio   : 30/31/34: 16/32 bits\n");
-  fprintf(stderr, "   VLC zigzag     : 32/33/35: 16/32 bits\n");
+  fprintf(stderr, "   Range Coder       : 1/2/3=order 0/1/2, 4/5=Order 8b,15b (context slide), 6/7:16-bits o0/o1, 6/7/8:32bits o0/o1/o2\n");
+  fprintf(stderr, "   Context mixing    : 9/10/11= O1/O2/O1+run\n");
+  fprintf(stderr, "   RLE+rc            : 12/14=o0/o1, 13/15=16-bits o0/o1\n");
+  fprintf(stderr, "   varin8            : 16\n");
+  fprintf(stderr, "   QLFC+rc           : 17\n");
+  fprintf(stderr, "   Gamma+rc          : 26=8/16/32 bits (+option: -Ob/Os/Ou)\n");
+  fprintf(stderr, "   Gamma+delta+rc    : 27=8/16/32 bits\n");
+  fprintf(stderr, "   Rice+rc           : 28=8/16/32 bits\n");
+  fprintf(stderr, "   Rice+delta+rc     : 29=8/16/32 bits\n");
+  fprintf(stderr, "   Turbo VLC+rc+bitio: 30/31/34: 16/32 bits\n");
+  fprintf(stderr, "   Turbo VLC zigzag  : 32/33/35: 16/32 bits\n");
     #ifdef _BWT
   fprintf(stderr, "   BWT+rc         : 20 options: l#  #:0:store, 1:bit ec, 2:simple rc, 3:dual rc\n");
     #endif
@@ -551,7 +551,9 @@ static void usage(char *pgm) {
   fprintf(stderr, "Ex.:   turborc -e0 file -Os\n"); 
   fprintf(stderr, "       benchmark file with 16 bits input\n"); 
   fprintf(stderr, "Ex.:   turborc -e0 file -Ft -Ou\n"); 
-  fprintf(stderr, "       convert text file to 16 bits integers, then benchmark\n"); 
+  fprintf(stderr, "       convert text file to 32 bits integers, then benchmark\n"); 
+  fprintf(stderr, "Ex.:   turborc -e0 file -Ft -K2 -Ou\n"); 
+  fprintf(stderr, "       convert csv text file to 32 bits integers, then benchmark the integers at column 2\n"); 
   exit(1);
 } 
 
