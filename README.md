@@ -10,19 +10,20 @@ TurboRC: Turbo Range Coder
   * 32 or 64 bits range coder. Big + Little endian
   * Renormalization output 8,16 or 32 bits 
   * Easy connection to bit, nibble or byte predictors. 
-  * Several built-in predictors: simple, dual speed, fsm
+  * Several built-in predictors: simple, dual speed, :new:fsm
   * Built-in order0, order1, order2, Sliding Context, Context mixing,<br/>
-            - Run Length Encoding, Gamma Coding, Rice Coding,<br/>
-            - Bit entropy coding,<br/>
-            - Turbo VLC: novel Variable Length Coding for large integers, <br/>
+            - Run Length Encoding, Gamma Coding, :new:Rice Coding,<br/>
+            - :new:Bit entropy coding,<br/>
+            - :new:Turbo VLC: novel Variable Length Coding for large integers, <br/>
             - MTF (Move-To-Front) / QLFC (Quantized Local Frequency Coding)<br/>
   * Fast full 8/16 bits BWT: Burrows-Wheeler compression/decompression w/
-    - preprocessing : lzp and utf-8
-    - postprocessing: QLFC (Quantized Local Frequency Coding), RLE and Bit entropy coder
-  * BWT libsais libbsc + optimized libdivsufsort included
+    - preprocessing : lzp and :wew:utf-8
+    - postprocessing: QLFC (Quantized Local Frequency Coding), :new:RLE and :new:Bit entropy coder
+  * BWT :new:libsais + optimized libdivsufsort included
   * static + adaptive cdf - cumulative distribution functions
   * stdin/stdout file compressor included
   * TurboRC App for benchmarking all the functions and test allmost all byte, integer and floating point file types.
+  * :new:read and convert text, csv or binary files to 8/16/32 bits before processing
 
 ## Usage examples
         ./turborc -e0   inputfile           " benchmark all basic functions
