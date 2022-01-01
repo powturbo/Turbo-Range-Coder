@@ -22,7 +22,7 @@ TurboRC: Turbo Range Coder
   * BWT :new:libsais + optimized libdivsufsort + :new:optimized inverse bwt included
   * static + adaptive cdf - cumulative distribution functions
   * stdin/stdout file compressor included
-  * TurboRC App for benchmarking all the functions and test allmost all byte, integer and floating point file types.
+  * TurboRC App for benchmarking all the functions and test allmost all byte, integer, floating point, date and timestamp file types.
     - :new:read and convert text, csv or binary files to 8/16/32 bits before processing
     - :new:set predictor and parameters at the command line
 
