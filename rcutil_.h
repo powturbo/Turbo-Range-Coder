@@ -56,10 +56,11 @@
   #endif
 
 //----------- BWT -------------------
-#define BWT_RDONLY (1<<30)  // input is read only, no overwrite
-#define BWT_BWT16  (1<<29)  // 16 bits bwt
-#define BWT_PREP16 (1<<28)  // preprocessor output 16 bits 
-#define BWT_LZP    (1<<27)  // Force lzp
+#define BWT_RDONLY  (1<<30)  // input is read only, no overwrite
+#define BWT_BWT16   (1<<29) // 16 bits bwt
+#define BWT_PREP8   (1<<28)   // preprocessor output 8-16 bits 
+#define BWT_LZP     (1<<27)  // Force lzp
+#define BWT_VERBOSE (1<<26)  // verbose
 
 //-------------------------- mtf: move to front (8 bits) -----------------------------------------------------------
   #ifdef __AVX2__ // Get position of existing c
