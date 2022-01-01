@@ -11,7 +11,7 @@ TurboRC: Turbo Range Coder
   * Renormalization output 8,16 or 32 bits 
   * Easy connection to bit, nibble or byte predictors. 
   * Several built-in predictors: simple, dual speed, :new:fsm
-  * Built-in order0, order1, order2, Sliding Context, Context mixing,<br/>
+  * Built-in order0, order1, order2, Sliding Context, :new:Context mixing,<br/>
             - Run Length Encoding, Gamma Coding, :new:Rice Coding,<br/>
             - :new:Bit entropy coding,<br/>
             - :new:Turbo VLC: novel Variable Length Coding for large integers, <br/>
