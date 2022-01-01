@@ -184,7 +184,7 @@
   _x_ = _x; \
 }
 
-//------------------------------- Fast VLC with exponent coded in gamma and mantissa in bitio --------------------------------------------------------
+//------------------------------- Turbo VLC with exponent coded in gamma range coder and mantissa in bitio --------------------------------------------------------
 #define mbvenc(_rcrange_,_rclow_, _mg0_,_mgu_,_mgb_,_prm0_,_prm1_,_op_, _x_, _bw_, _br_,_vn_, _vb_) do { unsigned _vx = _x_;\
   if(_vx >= vlcfirst(_vn_)+_vb_) { \
     unsigned _expo, _ma, _mb;\
@@ -205,7 +205,7 @@
   } _x_ = _vx;\
 }
 
-//------------------------------ structured/segmented encoding: encode/decode small integers up to MBU3LEN -----------------------------------------
+//------------------------------ Structured/Segmented encoding: encode/decode small integers up to MBU3LEN -----------------------------------------
 /*Example : nb0=3 bits, nb1=5 bits, nb2=8 bits
 1          :  0                 1
 01xxx      :  1 -   9 = 1+  8   8
@@ -272,3 +272,4 @@
 }  while(0)
 
 #define mbu3dec(_rcrange_,_rccode_, _mbf_,_mb0_,_nb0_,_mb1_,_nb1_,_mb2_,_nb2_,_prm0_,_prm1_,_ip_, _x_) _mbu3dec(_rcrange_,_rccode_, _mbf_,_mb0_,_nb0_,_mb1_,_nb1_,_mb2_,_nb2_,_prm0_,_prm1_,_ip_, _x_, ;, ;)
+
