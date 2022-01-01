@@ -128,19 +128,19 @@ size_t T3(rcbwt,RC_PRD,enc)(unsigned char *in, size_t inlen, unsigned char *out,
   unsigned char *op    = out;              
   unsigned char *bwt   = vmalloc(inlen+1024), *ip = in; if(!bwt) { op = out+inlen; goto e; }  // inlen + space for bwt indexes idxns
   size_t        iplen  = inlen;
-  unsigned      lenmin = _lenmin, xbwt16 = (_lenmin & BWT_BWT16)?0x80:0; lenmin &= lenmin & 0x3ff;
-
-  if(lenmin) {  
+  unsigned      lenmin = _lenmin, xbwt16 = (_lenmin & BWT_BWT16)?0x80:0, verbose = _lenmin & BWT_VERBOSE; lenmin &= lenmin & 0x3ff; 
+																				
+  if(lenmin) {  																if(verbose) { printf("lenmin=%u ", lenmin);fflush(stdout); } 
     ip    = bwt;
     iplen = utf8enc(in, inlen, ip, _lenmin);									// try utf8 preprocessing
-	if(iplen != inlen) lenmin = 0x1f;  											// lenmin = 31 for utf8enc success
+	if(iplen != inlen) lenmin = 0x1f;   										// lenmin = 31 for utf8enc success
 	else {
       lenmin = ((lenmin>480?480:lenmin)+15)/16; 								// lenmin 0-30, 31:utf8enc
       ip     = bwt;
       iplen  = lzpenc(in, inlen, ip, lenmin*16);
-	  if(iplen+(inlen>>4)+256 > inlen && !forcelzp) { 							/*Not enough saving*/ //printf("r=%.2fNoLzp ", lenmin*16, (double)iplen*100.0/inlen); 
+	  if(iplen+(inlen>>4)+256 > inlen && !forcelzp) { /*Not enough saving*/		if(verbose) { printf("r=%.2fNoLzp ", lenmin*16, (double)iplen*100.0/inlen);fflush(stdout); }  
         ip = in; iplen = inlen; lenmin = 0;		
-      } 																		//else printf("r=%.2fLzp ",  (double)iplen*100.0/inlen);
+      } 																		else if(verbose) { printf("r=%.2fLzp ",  (double)iplen*100.0/inlen);fflush(stdout); } 
 	}
   } 
   *op++ = lenmin|xbwt16; 
@@ -153,10 +153,12 @@ size_t T3(rcbwt,RC_PRD,enc)(unsigned char *in, size_t inlen, unsigned char *out,
     #else
   unsigned idxs[256], iplen_ = xbwt16?(iplen/2):iplen, mod = calcmod(iplen_), idxsn = (unsigned char)((iplen_-1) / (mod + 1)); // TODO:truncate to mod 8
   *op++ = idxsn; 
-  saidx_t *sa = (saidx_t *)vmalloc((iplen_+2)*sizeof(sa[0])); if(!sa) { op = out+inlen; goto e; }
+  saidx_t *sa = (saidx_t *)vmalloc((iplen_+2)*sizeof(sa[0])); if(!sa) { op = out+inlen; goto e; }	if(verbose) { printf("xbwt16=%u ", xbwt16>0);fflush(stdout); } 
 	#ifdef _LIBSAIS16	                                                                        
-  if(xbwt16) { unsigned rc = libsais16_bwt_aux(ip, bwt, sa, iplen_, 0, 0, mod+1, idxs); if(iplen & 1) bwt[iplen-1] = ip[iplen-1]; }
-  else
+  if(xbwt16) { 																	if(verbose) { printf("-"); fflush(stdout); } 
+    unsigned rc = libsais16_bwt_aux(ip, bwt, sa, iplen_, 0, 0, mod+1, idxs); 	if(verbose) { printf("+"); fflush(stdout); } 
+    if(iplen & 1) bwt[iplen-1] = ip[iplen-1]; 
+  }  else 
 	#endif
 	libsais_bwt_aux(ip, bwt, sa, iplen,  0, 0, mod+1, idxs); 		         //libsais_bwt(ip, bwt, sa, iplen, fs);
   memcpy(op, idxs, (idxsn+1)*sizeof(idxs[0]));
