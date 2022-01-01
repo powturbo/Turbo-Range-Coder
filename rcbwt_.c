@@ -216,7 +216,7 @@ size_t T3(rcbwt,RC_PRD,dec)(unsigned char *in, size_t outlen, unsigned char *out
   rc = obwt_unbwt_biPSIv2(bwt, op, sa, oplen, bwtidx);
     #else
 	  #ifdef _LIBSAIS16 
-  if(xbwt16) { printf("");rc = libsais16_unbwt_aux(bwt, op, sa, oplen_, 0, mod+1, idxs); if(oplen & 1) op[oplen-1] = bwt[oplen-1]; }
+  if(xbwt16) { rc = libsais16_unbwt_aux(bwt, op, sa, oplen_, 0, mod+1, idxs); if(oplen & 1) op[oplen-1] = bwt[oplen-1]; }
   else
 	  #endif
     rc = libsais_unbwt_aux(bwt, op, sa, oplen, 0, mod+1, idxs); 						//libsais_unbwt(bwt, op, sa, oplen, idxs[0]);  
