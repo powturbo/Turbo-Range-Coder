@@ -22,23 +22,27 @@ TurboRC: Turbo Range Coder
   * BWT :new:libsais + optimized libdivsufsort + :new:optimized inverse bwt included
   * static + adaptive cdf - cumulative distribution functions
   * stdin/stdout file compressor included
+  
   * TurboRC App for benchmarking all the functions and test allmost all byte, integer and floating point file types.
   * :new:read and convert text, csv or binary files to 8/16/32 bits before processing
+  * :new:set predictor and parameters at the command line
 
 ## Usage examples
-        ./turborc -e0   inputfile           " benchmark all basic functions
-        ./turborc -e20  inputfile           " byte gamma coding + rc
-        ./turborc -e11,14 inputfile
-        ./turborc -e0 -pss -r47 inputfile   " use dual speed predictor with parameters 4 and 7
-        ./turborc -e0 -psf -r1 inputfile    " use FSM predictor with filename "FSM1.txt"
-        ./turborc -e0 inputfile -Os         " raw 16 bits input
-        ./turborc -e0 inputfile -Ou         " raw 32 bits input
-        ./turborc -e0 inputfile -Ft         " text inputfile (one integer/line) 
-        ./turborc -e0 inputfile -Fc         " text file with multiple integer entries (separated by non-digits characters ex. 456,32,54)
-        ./turborc -e0 inputfile -Fc -v5     " like prev., display the first 100 values read
-        ./turborc -e0 inputfile -Fcf        " text file with multiple floating-point entries (separated by non-digits characters ex. 456.56,32.1,54)
-        ./turborc -e0 inputfile -Fru -Ob    " convert raw 32 bits input to bytes before processing possibly truncating large values
-        ./turborc -e0 inputfile -Ft -K3 -Ou  " convert column 3 of a csv text file to 32 bits integers
+        ./turborc -e0   file           " benchmark all basic functions using the default simple predictor
+        ./turborc -e20  file           " byte gamma coding + rc
+        ./turborc -e11,14 file
+        ./turborc -e0 -pss -r47 file   " use dual speed predictor with parameters 4 and 7
+        ./turborc -e0 -psf -r1 file    " use FSM predictor with filename "FSM1.txt"
+        ./turborc -e0 file -Os         " raw 16 bits input
+        ./turborc -e0 file -Ou         " raw 32 bits input
+        ./turborc -e0 file -Ft         " text file (one integer/line) 
+        ./turborc -e0 file -Fc         " text file with multiple integer entries (separated by non-digits characters ex. 456,32,54)
+        ./turborc -e0 file -Fc -v5     " like prev., display the first 100 values read
+        ./turborc -e0 file -Fcf        " text file with multiple floating-point entries (separated by non-digits characters ex. 456.56,32.1,54)
+        ./turborc -e0 file -Fru -Ob    " convert raw 32 bits input to bytes before processing possibly truncating large values
+        ./turborc -e0 file -Ft -K3 -Ou " convert column 3 of a csv text file to 32 bits integers
+        ./turborc -e0 file -pss -r47   " benchmark all basic functions using the dual speed predictor with paramters 4 and 7
+        ./turborc -e0 file -psf -r1    " benchmark all basic functions using the fsm predictor with the paramter file FSM1.txt
 
 ## Benchmark
    see also [Entropy Coder Benchmark](https://sites.google.com/site/powturbo/entropy-coder) 
