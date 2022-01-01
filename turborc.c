@@ -37,6 +37,7 @@
   #endif
  
 #include "rcutil_.h"
+#include "rcutil.h"
 #include "time_.h"
 #include "turborc.h"
 #include "bec.h"
@@ -271,7 +272,7 @@ int memcheck(unsigned char *in, unsigned n, unsigned char *cpy) {
 //************************ TurboRC functions *******************************************
 // functions parameters
 extern int fsm[]; // fsm global array declared as fsm_t in rc_s.c "
-unsigned bwtx, forcelzp, xprep16=-1, xsort;
+unsigned bwtx, forcelzp, xprep8, xsort;
 int BGFREQMIN = 50, BGMAX = 250, itmax;
 
   #ifdef _SF
@@ -382,9 +383,9 @@ size_t rcbwtdec(unsigned char *in, size_t outlen, unsigned char *out, int prdid)
 //********************************************************************************************************
 //FILE *fdbg;
 #define ID_RC16 8
-#define bwtflag(z) (z==2?BWT_BWT16:0) | (xprep16?BWT_PREP16:0) | forcelzp | xsort <<14 | itmax <<10 | lenmin
+#define bwtflag(z) (z==2?BWT_BWT16:0) | (xprep8?BWT_PREP8:0) | forcelzp | (verbose?BWT_VERBOSE:0) | xsort <<14 | itmax <<10 | lenmin
 unsigned bench(unsigned char *in, unsigned n, unsigned char *out, unsigned char *cpy, int id, int r, int z) {
-  unsigned l = 0, m = 0x100, flag = bwtflag(z);
+  unsigned l = 0, m = 0x100, flag = bwtflag(z);                             
   cdf_t cdf[0x100+1]; 
   if(xnibble) 										// use only low nibble
     for(int i = 0; i < n; i++) in[i] &= 0xf;
@@ -468,13 +469,14 @@ unsigned bench(unsigned char *in, unsigned n, unsigned char *out, unsigned char 
     #define ID_LAST 59
     #define ID_MEMCPY 59 
     case ID_MEMCPY:  TMBENCH("", memcpy(out,in,n) ,n); pr(n,n);            TMBENCH2("59:memcpy                               ", memcpy(cpy,out,n), n);  l=n; break;
-    case 60:         TMBENCH("",l=lzpenc(  in,n,out,lenmin),n);   pr(l,n); TMBENCH2("60:lzp                                  ",l==n?memcpy(cpy,out,n):lzpdec(    out,n,cpy,lenmin), n); break;
-    case 61:{ unsigned *sa=malloc((n+1)*sizeof(sa[0]));if(!sa) die("malloc of '' failed\n", n*4);
+    case 60:{ unsigned *sa=malloc((n+1)*sizeof(sa[0]));if(!sa) die("malloc of '' failed\n", n*4);
 	  #ifdef _BWTDIV
-	                 TMBENCH("",l=divbwt(in,out,sa,n),n);         pr(n,n); TMBENCH2("61:divbwt                               ",obwt_unbwt_biPSIv2(out,cpy,sa,n,l), n); free(sa); } break; //ctou32(out)=l; fwrite(out,1,n+4,fdbg); 
+	                 TMBENCH("",l=divbwt(in,out,sa,n),n);         pr(n,n); TMBENCH2("60:bwt libdivsufsort                    ",obwt_unbwt_biPSIv2(out,cpy,sa,n,l), n); free(sa); } break; //ctou32(out)=l; fwrite(out,1,n+4,fdbg); 
       #elif defined(_LIBSAIS)
-	                 TMBENCH("",l=libsais_bwt(in,out,sa,n,0,0),n);pr(n,n); TMBENCH2("61:libsais bwt                          ",libsais_unbwt(out,cpy,sa,n,0,l), n); free(sa);} break;
+	                 TMBENCH("",l=libsais_bwt(in,out,sa,n,0,0),n);pr(n,n); TMBENCH2("60:bwt libsais                          ",libsais_unbwt(out,cpy,sa,n,0,l), n); free(sa);} break;
 	  #endif
+    case 61:         TMBENCH("",l=lzpenc(  in,n,out,lenmin),n);   pr(l,n); TMBENCH2("61:lzp                                  ",l==n?memcpy(cpy,out,n):lzpdec(    out,n,cpy,lenmin), n); break;
+    case 62:         TMBENCH("",l=utf8enc(  in,n,out, flag),n);   pr(l,n); TMBENCH2("62:utf8 preprocessor                    ",l==n?memcpy(cpy,out,n):utf8dec(   out,n,cpy), n); break;
       #ifdef _EXT
     #include "xturborc.c"
       #endif
@@ -584,7 +586,7 @@ int main(int argc, char* argv[]) {
         if(optarg) printf(" with arg %s", optarg);  printf ("\n");
         break;
 		
-	  case 'f': xprep16++; break;	  
+	  case 'f': xprep8=1; break;	  
       case 'F': { char *s = optarg;    // Input format
 	    switch(*s) {
           case 'c': dfmt = T_CHAR; s++; break;
@@ -626,6 +628,7 @@ int main(int argc, char* argv[]) {
       case 'n': xnibble++; break;
       case 'o': xstdout++; break;
       case 'v': verbose = atoi(optarg); break;
+	  
       case 'X': bwtx++;    break;
       case 'S': xsort = atoi(optarg); break;
       case 'z': forcelzp = BWT_LZP; break;
@@ -652,8 +655,7 @@ int main(int argc, char* argv[]) {
         unsigned l = atoi(optarg); decomp = 0;
         if(l >= 0 && l <= 9) {
           codec = (c-'0')*10 + l;                                  //printf("codec=%d\n", codec);fflush(stdout);
-          if(codec>=0 && codec<=23)
-            break; 
+          if(codec>=0 && codec<=99) break; 
         }
       }
       case 'h':
@@ -661,8 +663,7 @@ int main(int argc, char* argv[]) {
         usage(argv[0]);
         exit(0); 
     }
-  }
-  if(xprep16==-1) xprep16 = osize==2?1:0;
+  } 																							
   #define ERR(e) do { rc = e; printf("line=%d ", __LINE__); goto err; } while(0)
   size_t bsize = _bsize * Mb;
   int  rc = 0, inlen;
@@ -760,7 +761,7 @@ int main(int argc, char* argv[]) {
 
   if(xstdout) foname = "stdout";
   else {
-	if(optind+1 >= argc) { fprintf(stderr, "destination file not specified\n");exit(-1); }
+	if(optind+1 >= argc) { fprintf(stderr, "destination file not specified or wrong number of parameters\n");exit(-1); }
     foname = argv[optind+1];                                                                 
     if(!decomp) {
       int len = strlen(foname), xext = len>3 && !strncasecmp(&foname[len-3], ".rc", 3);
@@ -786,22 +787,22 @@ int main(int argc, char* argv[]) {
 
     while((inlen = fread(in, 1, bsize, fi)) > 0) {        filen += inlen;
       switch(codec) {		  
-        case  0: l=inlen; memcpy(out, in, inlen);    break;
-        case  1: l=rcenc(    in, inlen, out, prdid); break;
-        case  2: l=rccenc(   in, inlen, out, prdid); break;
-        case  3: l=rcc2enc(  in, inlen, out, prdid); break;
-        case  4: l=rcxenc(   in, inlen, out, prdid); break;
-        case  5: mbcset(15); l=rcx2enc(  in, inlen, out, prdid); break;
-        case  9: l=rcmsenc(  in, inlen, out);        break;
-        case 10: l=rcm2senc( in, inlen, out);        break;
-        case 12: l=rcrleenc( in, inlen, out, prdid); break;
-        case 14: l=rcrle1enc(in, inlen, out, prdid); break;
-        case 17: l=rcqlfcenc(in, inlen, out, prdid); break;
-        case 18: l=becenc8(  in, inlen, out);        break;
-        case 19: l=becenc16( in, inlen, out);        break;
-//		case 21: l = utf8enc( in, inlen, out, bwtflag(osize) ); break; 
+        case  0: l = inlen; memcpy(out, in, inlen);    break;
+        case  1: l = rcenc(    in, inlen, out, prdid); break;
+        case  2: l = rccenc(   in, inlen, out, prdid); break;
+        case  3: l = rcc2enc(  in, inlen, out, prdid); break;
+        case  4: l = rcxenc(   in, inlen, out, prdid); break;
+        case  5: mbcset(15); l = rcx2enc(  in, inlen, out, prdid); break;
+        case  9: l = rcmsenc(  in, inlen, out);        break;
+        case 10: l = rcm2senc( in, inlen, out);        break;
+        case 12: l = rcrleenc( in, inlen, out, prdid); break;
+        case 14: l = rcrle1enc(in, inlen, out, prdid); break;
+        case 17: l = rcqlfcenc(in, inlen, out, prdid); break;
+        case 18: l = becenc8(  in, inlen, out);        break;
+        case 19: l = becenc16( in, inlen, out);        break;
+		case 62: l = utf8enc( in, inlen, out, bwtflag(osize)); break; 
 	      #ifdef _BWT
-        case 20: l=rcbwtenc( in, inlen, out, prdid, bwtflag(osize)); break;
+        case 20: l = rcbwtenc( in, inlen, out, prdid, bwtflag(osize)); break;
 	      #endif		
         default: ERR(E_CODEC); 
       }
@@ -853,6 +854,7 @@ int main(int argc, char* argv[]) {
 	      #ifdef _BWT
         case 20: rcbwtdec(  out, l, cpy, prdid); break;
           #endif
+        case 62: utf8dec(   in, bsize, out);        break;
         default: ERR(E_CODEC); 
       }  
       if(fwrite(out, 1, bsize, fo) != bsize) ERR(E_FWR);     folen += bsize;                                  
