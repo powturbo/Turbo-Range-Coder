@@ -24,7 +24,7 @@
 
 // Turbo Range Coder: templates include
 // Symbols:   8,16,32 bits integers 16/32 floating point, 
-// Coding:    structured/segmented, gamma, rice, vlc (variable length coding for large integers)
+// Coding:    structured/segmented, gamma, rice, Turbo vlc (variable length coding for large integers)
 // Order:     0,1,2,sliding context
 // predictor: context,zigzag delta, context mixing
 
@@ -967,7 +967,7 @@ size_t T3(rcrle1,RC_PRD,dec16)(unsigned char *in, size_t _outlen, unsigned char 
   }
 }
 
-//-------- Variable Length Code for large integers: 16+32 bits similar to µ-Law/Extra Bit Codes encoding ------------------------
+//-------- Turbo VLC: Variable Length Code for large integers: 16+32 bits similar to µ-Law/Extra Bit Codes encoding ------------------------
 // Usage: Lz77 Offsets, Large alphabet/ Integers
 #define OV 4
 #define OVERFLOWR(_in_, _inlen_, _p_,_p__)	if(_p_+12 > _p__) { memcpy(out, _in_, _inlen_); op = out_; goto e; }
@@ -1013,7 +1013,7 @@ size_t T3(rcv,RC_PRD,dec16)(unsigned char *in, size_t _outlen, unsigned char *_o
   }
 }
 
-//---- 16 bits zigzag delta --------------
+//---- Turbo vlc: 16 bits zigzag delta --------------
 size_t T3(rcvz,RC_PRD,enc16)(unsigned char *_in, size_t _inlen, unsigned char *out RCPRM) {
   unsigned char *op = out+4, *out_ = out+_inlen, *op_=out_;
   uint16_t      *in = (uint16_t *)_in, *ip, cx = 0;
@@ -1051,7 +1051,7 @@ size_t T3(rcvz,RC_PRD,dec16)(unsigned char *in, size_t _outlen, unsigned char *_
   }
 }
 
-// 32 bits -----------
+// Turbo vlc 32 bits -----------
 #define CX32(_x_) ((_x_)>>24)
 
 size_t T3(rcv,RC_PRD,enc32)(unsigned char *_in, size_t _inlen, unsigned char *out RCPRM) {
@@ -1090,7 +1090,7 @@ size_t T3(rcv,RC_PRD,dec32)(unsigned char *in, size_t _outlen, unsigned char *_o
   }
 }
 
-// 32 bits zigzag delta -----------
+// Turbo vlc 32 bits + zigzag delta -----------
 size_t T3(rcvz,RC_PRD,enc32)(unsigned char *_in, size_t _inlen, unsigned char *out RCPRM) { 
   unsigned char *op = out+4, *out_ = out+_inlen, *op_=out_;
   uint32_t      *in = (uint32_t *)_in, *ip, cx = 0;
@@ -1127,7 +1127,7 @@ size_t T3(rcvz,RC_PRD,dec32)(unsigned char *in, size_t _outlen, unsigned char *_
   }
 }
 
-//---- VLC with exponent coded in gamma and mantissa in bitio -----------------------------------
+//---- Turbo VLC with exponent coded in gamma and mantissa in bitio -----------------------------------
 size_t T3(rcvg,RC_PRD,enc16)(unsigned char *_in, size_t _inlen, unsigned char *out RCPRM) {
   unsigned char *op = out+4, *out_ = out+_inlen, *op_=out_;
   uint16_t      *in = (uint16_t *)_in, *ip, cx = 0;
@@ -1264,7 +1264,7 @@ size_t T3(rcvgz,RC_PRD,dec32)(unsigned char *in, size_t _outlen, unsigned char *
   }
 }
 
-//---- 32 bits: Large exponent -----------------------
+//---- Turbo VLC - 32 bits: Large exponent -----------------------
 #define VNE 7 // 12 bits (7 = 12-5) Exponent
 #define VBE VLC_VB12
 
@@ -1305,7 +1305,7 @@ size_t T3(rcve,RC_PRD,dec32)(unsigned char *in, size_t _outlen, unsigned char *_
   }
 }
 
-//---- 32 bits: zigzag delta
+//----  Turbo VLC 32 bits: zigzag delta
 size_t T3(rcvez,RC_PRD,enc32)(unsigned char *_in, size_t _inlen, unsigned char *out RCPRM) {
   unsigned char *op = out+4, *out_ = out+_inlen, *op_=out_;
   uint32_t      *in = (uint32_t *)_in, *ip, cx = 0;
