@@ -374,7 +374,7 @@ size_t rccdfienc8(unsigned char *in, size_t inlen, unsigned char *out) {
   e:return op0 - out;
 }
 
-//--- VLC 16-bits
+//----- Turbo VLC with 7 bits exponent : 16-bits 
 size_t rccdfvenc16(unsigned char *_in, size_t _inlen, unsigned char *out) { 
   unsigned char *op = out+4, *out_ = out+_inlen, *op_=out_;
   uint16_t      *in = (uint16_t *)_in, *ip;
@@ -414,7 +414,7 @@ size_t rccdfvdec16(unsigned char *in, size_t _outlen, unsigned char *_out) {
   return outlen;
 }  
 
-//--- VLC 16-bits
+//----- Turbo VLC with 7 bits exponent : 16-bits + zigzag delta
 size_t rccdfvzenc16(unsigned char *_in, size_t _inlen, unsigned char *out) { 
   unsigned char *op = out+4, *out_ = out+_inlen, *op_=out_;
   uint16_t      *in = (uint16_t *)_in, *ip, cx = 0;
@@ -454,7 +454,8 @@ size_t rccdfvzdec16(unsigned char *in, size_t _outlen, unsigned char *_out) {
   }
   return outlen;
 }
-//--- VLC 32-bits
+
+//----- Turbo VLC with 7 bits exponent : 32-bits
 size_t rccdfvenc32(unsigned char *_in, size_t _inlen, unsigned char *out) { 
   unsigned char *op = out+4, *out_ = out+_inlen, *op_=out_;
   uint32_t      *in = (uint32_t *)_in, *ip;
@@ -493,6 +494,7 @@ size_t rccdfvdec32(unsigned char *in, size_t _outlen, unsigned char *_out) {
   return outlen;
 }  
 
+//----- Turbo VLC with 7 bits exponent : 32-bits + zigzag delta
 size_t rccdfvzenc32(unsigned char *_in, size_t _inlen, unsigned char *out) { 
   unsigned char *op = out+4, *out_ = out+_inlen, *op_=out_;
   uint32_t      *in = (uint32_t *)_in, *ip, cx = 0;
@@ -532,7 +534,7 @@ size_t rccdfvzdec32(unsigned char *in, size_t _outlen, unsigned char *_out) {
   return outlen;
 }  
 
-//--- VLC 16-bits
+//----- Turbo VLC with 6 bits exponent : 16-bits 
 size_t rccdfuenc16(unsigned char *_in, size_t _inlen, unsigned char *out) { 
   unsigned char *op = out+4, *out_ = out+_inlen, *op_=out_;
   uint16_t      *in = (uint16_t *)_in, *ip;
@@ -572,7 +574,7 @@ size_t rccdfudec16(unsigned char *in, size_t _outlen, unsigned char *_out) {
   return outlen;
 }  
 
-//--- VLC 32-bits
+//----- Turbo VLC with 6 bits exponent : 32-bits
 size_t rccdfuenc32(unsigned char *_in, size_t _inlen, unsigned char *out) { 
   unsigned char *op = out+4, *out_ = out+_inlen, *op_=out_;
   uint32_t      *in = (uint32_t *)_in, *ip;
