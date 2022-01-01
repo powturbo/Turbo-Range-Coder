@@ -19,7 +19,7 @@ TurboRC: Turbo Range Coder
   * Fast full 8/16 bits BWT: Burrows-Wheeler compression/decompression w/
     - preprocessing : lzp and :wew:utf-8
     - postprocessing: QLFC (Quantized Local Frequency Coding), :new:RLE and :new:Bit entropy coder
-  * BWT :new:libsais + optimized libdivsufsort included
+  * BWT :new:libsais + optimized libdivsufsort + :new:optimized inverse bwt included
   * static + adaptive cdf - cumulative distribution functions
   * stdin/stdout file compressor included
   * TurboRC App for benchmarking all the functions and test allmost all byte, integer and floating point file types.
