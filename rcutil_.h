@@ -208,9 +208,9 @@ static inline int            zigzagdec32(unsigned x)       { return x >> 1 ^ -(x
 #define bitdinir( _bw_,_br_,_ip_)        bitdini(_bw_,_br_),_ip_ -= sizeof(_bw_)
 #define bitdnormr(_bw_,_br_,_ip_)        _bw_  = *(bitget_t *)(_ip_ -= _br_>>3), _br_ &= 7 //, _bw_  <<= _br_
 
-//-------------- VLC --------------------------------------------------------------
-//expo: 1=63 2=123, 3=239 4=463 5=895 6=1727 7=3327
-#define VLC_VB6    0
+//-------------- Turbo VLC : Variable Length Coding for large integers with exponent + mantissa ----------------------------------------------------------
+//exponent base for the bit size vlcbits: 1=63 2=123, 3=239 4=463 5=895 6=1727 7=3327
+#define VLC_VB6    0  
 #define VLC_VB7    4 
 #define VLC_VB8   16
 #define VLC_VB9   48
@@ -271,3 +271,4 @@ void histrcalc8(unsigned char *__restrict in, unsigned inlen, unsigned *__restri
 #ifdef __cplusplus
 }
 #endif
+
