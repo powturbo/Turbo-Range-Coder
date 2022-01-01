@@ -13,12 +13,13 @@ TurboRC: Turbo Range Coder
   * Several built-in predictors: simple, dual speed, fsm
   * Built-in order0, order1, order2, Sliding Context, Context mixing,<br/>
             - Run Length Encoding, Gamma Coding, Rice Coding,<br/>
-            - Bit entropy coding, VLC (Variable Length Coding) for large integers, <br/>
+            - Bit entropy coding,<br/>
+            - Turbo VLC: novel Variable Length Coding for large integers, <br/>
             - MTF (Move-To-Front) / QLFC (Quantized Local Frequency Coding)<br/>
   * Fast full 8/16 bits BWT: Burrows-Wheeler compression/decompression w/
-    preprocessing : lzp and utf-8
-    postprocessing: QLFC (Quantized Local Frequency Coding), RLE and Bit entropy coder
-  * BWT libsais from libbsc + divsufsort included
+    - preprocessing : lzp and utf-8
+    - postprocessing: QLFC (Quantized Local Frequency Coding), RLE and Bit entropy coder
+  * BWT libsais libbsc + optimized libdivsufsort included
   * static + adaptive cdf - cumulative distribution functions
   * stdin/stdout file compressor included
   * TurboRC App for benchmarking all the functions and test allmost all byte, integer and floating point file types.
@@ -36,6 +37,7 @@ TurboRC: Turbo Range Coder
         ./turborc -e0 inputfile -Fc -v5     " like prev., display the first 100 values read
         ./turborc -e0 inputfile -Fcf        " text file with multiple floating-point entries (separated by non-digits characters ex. 456.56,32.1,54)
         ./turborc -e0 inputfile -Fru -Ob    " convert raw 32 bits input to bytes before processing possibly truncating large values
+        ./turborc -e0 inputfile -Ft -K3 -Ou  " convert column 3 of a csv text file to 32 bits integers
 
 ## Benchmark
    see also [Entropy Coder Benchmark](https://sites.google.com/site/powturbo/entropy-coder) 
