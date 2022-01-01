@@ -84,22 +84,24 @@ void vfree(void *address) {
     #endif
 }
 
-//--------------------------- lzp preprocessor (lenmin >= 32) ------------------------------------------------------------------------
+//--------------------------- convert i/o to big endian -----------------------------
   #if defined(__BYTE_ORDER__) && (__BYTE_ORDER__ == __ORDER_BIG_ENDIAN__)
+#define BSWAP16(a) a 
 #define BSWAP32(a) a 
 #define BSWAP64(a) a 
   #else
+#define BSWAP16(a) bswap16(a)
 #define BSWAP32(a) bswap32(a)
 #define BSWAP64(a) bswap64(a)
   #endif 
-  
+//--------------------------- lzp preprocessor (lenmin >= 32) ------------------------------------------------------------------------  
 #ifndef NO_COMP
 #define H_BITS      16 										// hash table size 
 #define HASH32(_x_) (((_x_) * 123456791) >> (32-H_BITS))
 #define emitmatch(_l_,_op_) { unsigned _l = _l_-lenmin+1; *_op_++ = 255; while(_l >= 254) { *_op_++ = 254;  _l -= 254; OVERFLOW(in,inlen,out,op,goto end); } *_op_++ = _l; }
 #define emitch(_ch_,_op_)   { *_op_++ = _ch_; if(_ch_ == 255) *_op_++ = 0; OVERFLOW(in,inlen, out, op, goto end); }
 
-size_t lzpenc(unsigned char *in, size_t inlen, unsigned char *out, unsigned lenmin) {	
+size_t lzpenc(unsigned char *__restrict in, size_t inlen, unsigned char *__restrict out, unsigned lenmin) {	
   unsigned      htab[1<<H_BITS] = {0},cl, cx;
   unsigned char *ip = in, *cp, *op = out;
   if(lenmin < 32) lenmin = 32;
@@ -163,7 +165,7 @@ size_t lzpdec(unsigned char *in, size_t outlen, unsigned char *out, unsigned len
 // QLFC=MTF-Backward: number of different symbols until the next occurrence (number of symbols will be seen before the next one)
 // MTF:  number of different symbols since the last occurence  (number of symbols were seen until the current one)
 // References: https://ieeexplore.ieee.org/document/1402216
-uint8_t *rcqlfc(uint8_t *in, size_t n, uint8_t *out, uint8_t *r2c) {
+uint8_t *rcqlfc(uint8_t *__restrict in, size_t n, uint8_t *__restrict out, uint8_t *__restrict r2c) {
   unsigned char f[1<<8] = {0};
   uint8_t *ip, *op = out;
   int m;
@@ -209,7 +211,7 @@ uint8_t *rcqlfc(uint8_t *in, size_t n, uint8_t *out, uint8_t *r2c) {
        
 //------------------------------------------- utf8 preprocessing -----------------------------------------------
 #ifndef NO_COMP
-//------------- Integer VLC for symbol dictionary coding
+//------------- Integer VLC for symbol dictionary coding ----------
 #define VB_B2  4  							//6: max. 4276351=41407f   5: 2171071=2120bf   4:1118431=1110df  3:592111=908ef
 #define VB_BA2 (255 - (1<<VB_B2))  
 
@@ -228,50 +230,7 @@ uint8_t *rcqlfc(uint8_t *in, size_t n, uint8_t *out, uint8_t *r2c) {
   else                           { _x_ = ctou16(_ip_) + ((_x_ - VB_BA2 ) << 16) + VB_OFS2; _ip_ += 2;}\
 } while(0)
 
-//-----------------------------------------------------------
-#pragma pack(1) 
-typedef struct { unsigned c, cnt; unsigned short id; } _PACKED sym_t;
-#pragma pack() 
-
-static ALWAYS_INLINE unsigned cid(unsigned c) {
-  if(c >=      0  && c <=     0xff) return 0; // 1 byte
-  if(c >=  0x2E80 && c <=   0x2F00) return 2; // cjk radicals supplement
-  if(c >=  0x3400 && c <=   0x4DC0) return 2; // 2 bytes
-  if(c >=  0x4E00 && c <=   0xA000) return 2;
-  if(c >=  0x9FA6 && c <=   0x9FCC) return 2;
-  if(c >=  0xF900 && c <=   0xFB00) return 2; // compatibility ideographs
-  if(c >     0xff && c <=   0xffff) return 1; 
-  if(c >= 0x20000 && c <=  0x2A6E0) return 3; // 3 bytes 
-  if(c >= 0x2A700 && c <   0x2B740) return 3; 
-  if(c >= 0x2B740 && c <   0x2B820) return 3;
-  if(c >= 0x2B820 && c <=  0x2CEB0) return 3; //included as of Unicode 8.0
-  if(c >= 0x2F800 && c <=  0x2FA20) return 3;   
-  if(c >   0xffff && c <= 0xffffff) return 4; 
-  return 5;                                   // 4 bytes
-}
-
-#define SC(_x_) cid(_x_)
-
-#define CMPA(_a_,_b_,_t_) ((*(_t_ *)(_a_) > *(_t_ *)(_b_)) - (*(_t_ *)(_a_) < *(_t_ *)(_b_)))
-#define CMPD(_a_,_b_,_t_) ((*(_t_ *)(_a_) < *(_t_ *)(_b_)) - (*(_t_ *)(_a_) > *(_t_ *)(_b_)))
-
-#define CMPSA(_a_,_b_, _t_, e) (((((_t_ *)_a_)->e) > (((_t_ *)_b_)->e)) - ((((_t_ *)_a_)->e) < (((_t_ *)_b_)->e)))
-#define CMPSD(_a_,_b_, _t_, e) (((((_t_ *)_a_)->e) < (((_t_ *)_b_)->e)) - ((((_t_ *)_a_)->e) > (((_t_ *)_b_)->e)))
-
-#define CMPSFA(_a_,_b_, _t_, _e_) (( SC(((_t_ *)_a_)->_e_) > SC(((_t_ *)_b_)->_e_)) - ( SC(((_t_ *)_a_)->_e_) < SC(((_t_ *)_b_)->_e_)))
-
-static inline int cmpua(const void *a, const void *b) { return CMPA(a,b,uint32_t); }
-static inline int cmpud(const void *a, const void *b) { return CMPD(a,b,uint32_t); }
-
-static inline int cmpsna(const void *a, const void *b) { return CMPSA(a,b,sym_t,cnt); }
-static inline int cmpsnd(const void *a, const void *b) { return CMPSD(a,b,sym_t,cnt); }
-static inline int cmpsca(const void *a, const void *b) { return CMPSA(a,b,sym_t,c  ); }
-
-static inline int cmpsiaca(const void *a, const void *b) { int c; if(c = CMPSA(a,b,sym_t,id ))       return c; return CMPSA(a,b,sym_t,c); }
-static inline int cmpsiand(const void *a, const void *b) { int c; if(c = CMPSA(a,b,sym_t,id ))       return c; return CMPSD(a,b,sym_t,cnt); }
-static inline int cmpsndca(const void *a, const void *b) { int c; if(c = CMPSD(a,b,sym_t,cnt))       return c; return CMPSA(a,b,sym_t,c  ); }
-static inline int cmpscand(const void *a, const void *b) { int c; if(c = CMPSFA(a,b,sym_t,c)) return c; return CMPSD(a,b,sym_t,cnt); }
-
+//------------ utf-8 to code point -------------------------------
 #define UTF8LENMASK(_c_, _m_, _l_) \
        if ((_c_ & 0xe0) == 0xc0) { _l_ = 2; _m_ = 0x1f; }\
   else if ((_c_ & 0xf0) == 0xe0) { _l_ = 3; _m_ = 0x0f; }\
@@ -297,136 +256,194 @@ static inline int cmpscand(const void *a, const void *b) { int c; if(c = CMPSFA(
   }\
 }
 
-#define FPUSH(in,_n_, nmax, _u_, _l_, _hash_) do { in[_n_].c = _u_; in[_n_].id = _l_; in[_n_++].cnt = 1; _hash_[chash(_u_)] = _n_; } while(0);
-
+//------------- hash table : open adressing with linear probing --------------------------------------------------
 #define HASH32(_x_) (((_x_) * 123456791))
-#define HBITS 26
-#define chash(_c_) (HASH32(_c_) >> (32-HBITS))
-#define CGET( _a_, _hash_, _c_, _i_) { unsigned _h = chash(_c_); while(       _a_[_i_ = _hash_[_h]-1].c != _c_) _h = (_h+1)&((1<<HBITS)-1); }
-#define CFIND(_a_, _hash_, _c_, _i_) { unsigned _h = chash(_c_); while((_i_=_hash_[_h]) && _a_[_i_-1].c != _c_) _h = (_h+1)&((1<<HBITS)-1); _i_--; }
-#define REHASH( _a_, _n_, _hash_) { memset(_hash_, 0, (1<<HBITS)*sizeof(_hash_[0])); for(int _i = 0; _i < _n_; _i++)                 _hash_[chash(_a_[_i].c)] = _i+1; }
-#define REHASHV(_a_, _n_, _hash_) { memset(_hash_, 0, (1<<HBITS)*sizeof(_hash_[0])); for(int _i = 0; _i < _n_; _i++) if(_a_[_i].cnt) _hash_[chash(_a_[_i].c)] = _i+1; }
+#define SYMBITS     16
+#define HBITS       (SYMBITS+1)
+#define chash(_c_)  (HASH32(_c_) >> (32-HBITS))
 
-static unsigned char *symsput(sym_t *f, unsigned fn, unsigned char *out, unsigned flag) {	
+#define HNEW(_htab_, _c_, _h_) do { _h_ = chash(_c_); while(_htab_[_h_]) _h_ = (_h+1)&((1<<HBITS)-1); } while(0) // search unused slot
+
+																	// add item with key c and value v to the array a with the hash slot h
+#define CADD(    _a_, _htab_, _c_, _n_, _h_, _v_) { _a_[_n_].c = _c_; /*_a_[_n_].v = _v_;*/ _a_[_n_++].cnt = 1; _htab_[_h_] = _n_; }
+																	// get index i in a for a previously added key c
+#define CGET(    _a_, _htab_, _c_, _i_)           { unsigned _h = chash(_c_); while(_a_[_i_ = _htab_[_h]-1].c != _c_) _h = (_h+1)&((1<<HBITS)-1); }
+																	// return index i of key c if found, otherwise the first available empty hash slot h
+#define CFIND(   _a_, _htab_, _c_, _i_, _h_)      { _h_ = chash(_c_); while((_i_=_htab_[_h_]) && _a_[_i_-1].c != _c_) _h_ = (_h_+1)&((1<<HBITS)-1); --_i_; }
+                                                                    // rehash all items in a
+#define CREHASH( _a_, _htab_, _n_)                { unsigned _i; memset(_htab_, 0, (1<<HBITS)*sizeof(_htab_[0])); for(_i = 0; _i < _n_; _i++) { unsigned _h; HNEW(_htab_,_a_[_i].c, _h); _htab_[_h] = _i+1;}  }
+																	// rehash all items in, except when count is zero (deleted items)
+#define CREHASHN(_a_, _htab_, _n_)                { unsigned _i; memset(_htab_, 0, (1<<HBITS)*sizeof(_htab_[0])); for(_i = 0; _i < _n_; _i++) if(_a_[_i].cnt) { unsigned _h; HNEW(_htab_,_a_[_i].c, _h); _htab_[_h] = _i+1; } }
+
+//------------------------- utf-8 (1-gramm)) preprocessor ---------------------------------------------------------	
+#pragma pack(1)
+typedef struct { unsigned c, cnt; /*unsigned short v;*/ } _PACKED sym_t;  // c=key,  cnt=count, v=value (=cid function)
+#pragma pack() 
+
+static ALWAYS_INLINE unsigned cid(unsigned c) {                            // utf-8 classification
+  if(c >=      0  && c <=     0xff) return 0; // 1 byte
+  if(c >=  0x2E80 && c <=   0x2F00) return 2; // cjk radicals supplement
+  if(c >=  0x3400 && c <=   0x4DC0) return 2; // 2 bytes
+  if(c >=  0x4E00 && c <=   0xA000) return 2;
+  if(c >=  0x9FA6 && c <=   0x9FCC) return 2;
+  if(c >=  0xF900 && c <=   0xFB00) return 2; // compatibility ideographs
+  if(c >     0xff && c <=   0xffff) return 1; 
+  if(c >= 0x20000 && c <=  0x2A6E0) return 3; // 3 bytes 
+  if(c >= 0x2A700 && c <   0x2B740) return 3; 
+  if(c >= 0x2B740 && c <   0x2B820) return 3;
+  if(c >= 0x2B820 && c <=  0x2CEB0) return 3; //included as of Unicode 8.0
+  if(c >= 0x2F800 && c <=  0x2FA20) return 3;   
+  if(c >   0xffff && c <= 0xffffff) return 4; 
+  return 5;                                   // 4 bytes
+}
+
+// qsort compare functions --------------------------------
+#define SC(_x_) cid(_x_)
+
+#define CMPA(_a_,_b_,_t_)         ((*(_t_ *)(_a_) > *(_t_ *)(_b_)) - (*(_t_ *)(_a_) < *(_t_ *)(_b_)))
+#define CMPD(_a_,_b_,_t_)         ((*(_t_ *)(_a_) < *(_t_ *)(_b_)) - (*(_t_ *)(_a_) > *(_t_ *)(_b_)))
+
+#define CMPSA(_a_,_b_, _t_, _v_)  (((((_t_ *)_a_)->_v_) > (((_t_ *)_b_)->_v_)) - ((((_t_ *)_a_)->_v_) < (((_t_ *)_b_)->_v_)))
+#define CMPSD(_a_,_b_, _t_, _v_)  (((((_t_ *)_a_)->_v_) < (((_t_ *)_b_)->_v_)) - ((((_t_ *)_a_)->_v_) > (((_t_ *)_b_)->_v_)))
+
+#define CMPSFA(_a_,_b_, _t_, _v_) (( SC(((_t_ *)_a_)->_v_) > SC(((_t_ *)_b_)->_v_)) - ( SC(((_t_ *)_a_)->_v_) < SC(((_t_ *)_b_)->_v_)))
+
+// qsort compare: a=ascending  d=descending
+// unsigned 
+static inline int cmpua(const void *a, const void *b) { return CMPA(a,b,uint32_t); }
+static inline int cmpud(const void *a, const void *b) { return CMPD(a,b,uint32_t); }
+
+// struct sym_t : n = count, c = key.  na:count ascending, nd:count descending,  ca: key c ascending
+static inline int cmpsna(const void *a, const void *b) { return CMPSA(a,b,sym_t,cnt); }
+static inline int cmpsnd(const void *a, const void *b) { return CMPSD(a,b,sym_t,cnt); }
+static inline int cmpsca(const void *a, const void *b) { return CMPSA(a,b,sym_t,c  ); }
+
+// struct sym_t : n = count, c = key, v = value
+//static inline int cmpsvaca(const void *a, const void *b) { int c; if(c = CMPSA(a,b,sym_t,v ))  return c; return CMPSA(a,b,sym_t,c); }    
+//static inline int cmpsvand(const void *a, const void *b) { int c; if(c = CMPSA(a,b,sym_t,v ))  return c; return CMPSD(a,b,sym_t,cnt); }
+static inline int cmpsndca(const void *a, const void *b) { int c; if(c = CMPSD(a,b,sym_t,cnt)) return c; return CMPSA(a,b,sym_t,c  ); }
+static inline int cmpscand(const void *a, const void *b) { int c; if(c = CMPSFA(a,b,sym_t,c))  return c; return CMPSD(a,b,sym_t,cnt); }
+
+// symbol table output 
+static unsigned char *symsput(sym_t *stab, unsigned stabn, unsigned char *out, unsigned flag) {	
   unsigned char *op = out+1, *p; 
   out[0] = flag;
 
-  ctou16(op) = fn; op += 2; p = op; op += 1+2+2;                    
-  int i=0, v=0,u;
-         while(i < fn) { if(f[i].c >     0xff) break;               *op++      = f[i++].c; }                                         *p = i; 
-  v = 0; while(i < fn) { if(f[i].c >   0xffff) break;               ctou16(op) = bswap16(f[i++].c);              op += 2; } ctou16(p+1) = i; 
-  v = 0; while(i < fn) { if(f[i].c > 0xffffff) break; u = f[i++].c; *op++      = u>>16; ctou16(op) = bswap16(u); op += 2; } ctou16(p+3) = i; 
-  v = 0; while(i < fn) {                                            ctou32(op) = bswap32(f[i++].c);              op += 4; }
+  ctou16(op) = stabn; op += 2; p = op; op += 1+2+2;                    
+  unsigned i=0, v=0,u;
+         while(i < stabn) { if(stab[i].c >     0xff) break;               *op++      = stab[i++].c; }                                   *p    = i;
+  v = 0; while(i < stabn) { if(stab[i].c >   0xffff) break;               ctou16(op) = BSWAP16(stab[i++].c);           op += 2; } ctou16(p+1) = i;
+  v = 0; while(i < stabn) { if(stab[i].c > 0xffffff) break; u = stab[i++].c; *op++   = u>>16; ctou16(op) = BSWAP16(u); op += 2; } ctou16(p+3) = i;
+  v = 0; while(i < stabn) {                                               ctou32(op) = BSWAP32(stab[i++].c);           op += 4; }
   return op;
 }
 
-unsigned utf8enc(unsigned char *in, size_t inlen, unsigned char *out, unsigned flag) { 
+unsigned utf8enc(unsigned char *__restrict in, size_t inlen, unsigned char *__restrict out, unsigned flag) { 
   unsigned char *ip, *op = out;
-  sym_t    *f     = calloc(1<<17, sizeof(f[0])); 
-  unsigned *fhash = calloc((1<<HBITS), sizeof(fhash[0])), fn = 0, nmax = 1<<17, xprep16 = flag & BWT_PREP16, itmax = (flag>>10) & 0xf, xsort = (flag>>14) & 0x3, cnt;
-  
+  sym_t    stab[(1<<SYMBITS)]={0}; 			
+  unsigned stabh[1<<HBITS]={0},        
+           stabn = 0, xprep8 = flag & BWT_PREP8, verbose = flag & BWT_VERBOSE, itmax = (flag>>10) & 0xf, xsort = (flag>>14) & 0x3, cnt;
+                                                                                if(verbose) { printf("utf8enc: xsort=%u prep8=%d ", xsort, xprep8); fflush(stdout); } //unsigned st_crd=0;
   for(ip = in; ip < in+inlen;) {												// build the symbol dictionary
-    unsigned c, ci, l;											   	
-    UCGET(ip, c, l); 
-	if(!l) { op = out+inlen; goto e; } 											// invalid utf8
-	CFIND(f, fhash, c, ci); 
-	if(ci != -1) f[ci].cnt++; 
-	else { 
-	  FPUSH(f,fn,nmax, c, l, fhash);
-	  if(fn > 0xffff) { op=out+inlen; goto e; }								    // max. number of symbols is 64k
+    unsigned c, ci, l=1, h;											   	
+    UCGET(ip, c, l); 			   
+	if(!l) { op = out+inlen; 													if(verbose) { printf("'invalid utf-8 symbol'\n");fflush(stdout); } 
+	  goto e; 
+	} 																			// convert to code point + utf-8 validity check
+    CFIND(stab, stabh, c, ci, h); 
+	if(ci != -1) stab[ci].cnt++; 
+	else {                          
+	  if(stabn >= (1<<SYMBITS)-1) { 											// max. number of symbols is 64k
+	    op = out+inlen; 														if(verbose) { printf("number of symbol > 64k\n");fflush(stdout); } 
+	    goto e; 
+	  }  						
+	  CADD(stab, stabh, c, stabn, h, cid(c)); 
 	}
   }
-  
+																				if(verbose) { printf("num symbols='%u'. sort='%s' ", stabn, xsort?"freq":"sym+freq");fflush(stdout); } 
   switch(xsort) {
-    case 0: qsort(f, fn, sizeof(sym_t), cmpscand); break;						// sort by code group + count (bwt mode)
-    case 1: qsort(f, fn, sizeof(sym_t), cmpsnd); break;  						// sort by count   
+    case 0: qsort(stab, stabn, sizeof(sym_t), cmpscand); break;					// sort by code group + count (bwt mode)
+    case 1: qsort(stab, stabn, sizeof(sym_t), cmpsnd); break;  					// sort by count   
   }   
   
   unsigned cnt8 = 0; cnt = 0; 
-  for(int i=0; i < fn; i++) { if(f[i].c <= 0xff) cnt8+=f[i].cnt; cnt+=f[i].cnt; } 
-  double r = (double)cnt8*100.0 / (double)cnt; 								
-  if(r > 50.0) return inlen;                    								// enough saving for converting to 16-bits?
-  REHASH(f, fn, fhash);		
+  for(int i=0; i < stabn; i++) { if(stab[i].c <= 0xff) cnt8+=stab[i].cnt; cnt+=stab[i].cnt; } 
+  cnt8 = (uint64_t)cnt8*128 / cnt; 						                        if(verbose) { printf("ratio='%u' ", cnt8);fflush(stdout); } 		
+  if(cnt8 > 64) return inlen;                    								// enough saving for converting to 16-bits?
 
+  CREHASH(stab, stabh, stabn);		                                            // rehash after sort
   op = out; 														
-  if(itmax <= 1 || xprep16) op = symsput(f, fn, op, xprep16?1:0);				// output the dictionary 				
+  if(itmax <= 1 || !xprep8) op = symsput(stab, stabn, op, xprep8?1:0);		    // output the dictionary 				
   unsigned hdlen = op - out; 
-  if(hdlen & 1) *op++ = 0; 														// offset to data must be even
+  if(hdlen & 1) *op++ = 0; 														// offset to data must be even for 16 bits bwt
   
-  if(itmax>1 || xprep16) { 														  
+  if(itmax>1 || !xprep8) { 							                            if(verbose) { printf("'16 bits output' "); fflush(stdout); } 
     if((op-out)+cnt*2 >= (inlen*255)/256-8) { op = out+inlen; goto e;}; 		// check overflow in case of 16 bits
-	for(ip = in; ip < in+inlen;) { 
-	  unsigned c,l,ci; 
-	  UCGET(ip, c, l); 
-	  CGET(f, fhash, c, ci); 
-	  ctou16(op) = bswap16(ci); op += 2; 
+	for(ip = in; ip < in+inlen;) {                    							// 16 bits output 
+	  unsigned c, l, ci; 
+	  UCGET(ip, c, l); 															
+	  CGET(stab, stabh, c, ci); 												//if(ci>=stabn || stab[ci].c != c || !stab[ci].cnt) die("utf8enc: Fatal error in CGET\n");
+	  ctou16(op) = BSWAP16(ci); op += 2;                                        
 	}
-  } else  																	
-    for(ip = in; ip < in+inlen;) { 
-      unsigned c,l,ci; 
+  } else  {	                               										if(verbose) { printf("'8-16 bits output' ");fflush(stdout); }
+    for(ip = in; ip < in+inlen;) { 												// 8-16 bits output
+      unsigned c, l, ci; 
       UCGET(ip, c, l); 
-	  CGET(f, fhash, c, ci); 
+	  CGET(stab, stabh, c, ci); 
 	  vbput24(op, ci); 															OVERFLOW(in,inlen,out, op, goto e);  
 	}
-
-  e:if(f) free(f); 
-  if(fhash) free(fhash);
-  return op - out;
+  }																				if(verbose) { printf("len='%u' ", op-out);fflush(stdout); }																				
+  e: return op - out;															
 }
 #endif
 
 //--------------------------- decode ---------------------
-static ALWAYS_INLINE size_t utf8len(uint32_t cp) {
-  if(cp <=     0x7f) return 1;
-  if(cp <=    0x7FF) return 2;
-  if(cp <=   0xFFFF) return 3;
-  if(cp <= 0x1FFFFF) return 4;
-  return 0;
+#define ctoutf8(op, _c_) { \
+  unsigned _c = _c_;\
+  if( _c <=     0x7f) {      *op++ = _c; continue; } \
+  if( _c <=    0x7ff) { ctou16(op) = 0x80c0 |  (_c & 0x3f) <<8 | _c>>6;                                    op   += 2; continue; }\
+  if( _c <=   0xffff) { ctou16(op) = 0x80e0 | ((_c & 0xfc0) >> 6) << 8 | _c >> 12; op+=2; *op++ = 0x80 | (_c & 0x3f); continue; }\
+                      { ctou32(op) = 0x808080f0u | (_c & 0x3f)<<24 | (_c & 0xfc0)<<10 | (_c & 0x3f000) >> 4 | _c >> 18; op+=4;  }\
 }
-
-#define ctoutf8(op, _c_) { unsigned c = _c_;\
-  switch (utf8len(c)) {\
-    case 0:	break;			/*invalid*/\
-	case 1:	*op++ = c; break;\
-	case 2:	ctou16(op) = 0x80c0 | (c & 0x3f)<<8 | c>>6; op+=2; break;\
-	case 3:	ctou16(op) = 0x80e0 | ((c & 0xfc0) >> 6) << 8 | c >> 12; op+=2; *op++ = 0x80 | (c & 0x3f); break;\
-	case 4: ctou32(op) = 0x808080f0u | (c & 0x3f)<<24 | (c & 0xfc0)<<10 | (c & 0x3f000) >> 4 | c >> 18; op+=4; break;\
-  }\
-}
-
-unsigned symsget(unsigned *sym, unsigned char **_in, unsigned *flag) {	
+ 
+unsigned symsget(unsigned *sym, unsigned char **_in, unsigned *flag) {
   unsigned char *in = *_in, *ip = in; 
-  unsigned m0,m1,m2,fn,i=0; *flag = *ip++; fn = ctou16(ip); ip+=2;
-  m0 = *ip++; m1 = ctou16(ip); ip += 2; m2 = ctou16(ip); ip += 2;
+  unsigned      m0,m1,m2,stabn,i = 0; 
   
-  while(i < m0) sym[i++] =                                            *ip++;                       					
-  while(i < m1) sym[i++] = bswap16(ctou16(ip)),                       ip+=2;
-  while(i < m2) sym[i++] = (unsigned)ip[0]<<16|bswap16(ctou16(ip+1)), ip+=3; 		
-  while(i < fn) sym[i++] = bswap32(ctou32(ip)),                       ip+=4;        			
+  *flag = *ip++; 
+  stabn = ctou16(ip); ip+=2;													//printf("symnum=%u ", stabn);
+  m0    = *ip++;
+  m1    = ctou16(ip); ip += 2; 
+  m2    = ctou16(ip); ip += 2;  										//printf("m0=%u,m1=%u,m2=%u ", m0,m1,m2);						
+  while(i < m0) sym[i++] =                                              *ip++;                       					
+  while(i < m1) sym[i++] = BSWAP16(ctou16(ip)),                         ip+=2;
+  while(i < m2) sym[i++] = (unsigned)ip[0]<<16 | BSWAP16(ctou16(ip+1)), ip+=3; 		
+  while(i < stabn) sym[i++] = BSWAP32(ctou32(ip)),                      ip+=4;        			
 
-  if((ip-in) &1 ) ip++;  // align to even offset
+  if((ip-in) & 1) ip++; // align to even offset
   *_in = ip;
-  return fn;
+  return stabn;
 }
 
-unsigned utf8dec(unsigned char *in, size_t outlen, unsigned char *out) {
+unsigned utf8dec(unsigned char *__restrict in, size_t outlen, unsigned char *__restrict out) {
   unsigned char *op = out, *ip = in; 
-  unsigned flag,sym[1<<16], fn = symsget(sym, &ip, &flag); 
+  unsigned flag, sym[1<<16], stabn = symsget(sym, &ip, &flag);          
   
   if(flag & 1) 
-    for(; op < out+outlen; ip += 2) { 
-      uint16_t u = bswap16(ctou16(ip)); 
-	  ctoutf8(op, sym[u]); 						
-    }	
-  else 
 	while(op < out+outlen) { 
       unsigned u; 
 	  vbget24(ip, u); 
 	  ctoutf8(op, sym[u]); 
 	}
+  else   	  
+    for(; op < out+outlen; ip += 2) { 
+      unsigned ci = BSWAP16(ctou16(ip)); 
+	  ctoutf8(op, sym[ci]); 						
+    }	
   return 0;
 }
 
+//--------------------------- Turbohist: https://github.com/powturbo/Turbo-Histogram ----------
 #define CSIZE (256 + 8)
 typedef unsigned cnt_t;
 
@@ -439,7 +456,7 @@ typedef unsigned cnt_t;
 #define HISTEND8(_c_,_cnt_) HISTEND(_c_,8,_cnt_)
 #define HISTEND4(_c_,_cnt_) HISTEND(_c_,4,_cnt_)
 
-//--------------------  64 bits ---------------------------------------------------
+//--------------------  64 bits ------------------------------------
   #if defined(__i386__) || defined(__x86_64__) 
 #define CU64(_u_,_o_,_c_) { unsigned _x = _u_;\
   c[0    ][(unsigned char )_x    ]+=_c_;\
