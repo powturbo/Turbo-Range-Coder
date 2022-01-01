@@ -26,13 +26,13 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-size_t lzpenc(unsigned char *in, size_t inlen,  unsigned char *out, unsigned lenmin);
-size_t lzpdec(unsigned char *in, size_t outlen, unsigned char *out, unsigned lenmin);
+size_t lzpenc(unsigned char *__restrict in, size_t inlen,  unsigned char *__restrict out, unsigned lenmin);
+size_t lzpdec(unsigned char *__restrict in, size_t outlen, unsigned char *__restrict out, unsigned lenmin);
 
-unsigned char *rcqlfc(unsigned char *in, size_t n, unsigned char *out, unsigned char *rank);
+unsigned char *rcqlfc(unsigned char *__restrict in, size_t n, unsigned char *__restrict out, unsigned char *__restrict r2c);
 
-unsigned utf8enc(unsigned char *in, size_t inlen, unsigned char *out, unsigned flag);
-unsigned utf8dec(unsigned char *in, size_t outlen, unsigned char *out);
+unsigned utf8enc(unsigned char *__restrict in, size_t inlen, unsigned char *__restrict out, unsigned flag);
+unsigned utf8dec(unsigned char *__restrict in, size_t outlen, unsigned char *__restrict out);
 #ifdef __cplusplus
 }
 #endif
