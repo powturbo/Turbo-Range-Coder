@@ -39,13 +39,21 @@ static inline int mbu_p(mbu *mb, int _prm0_) { return (*mb); } // get probabilit
   #ifdef RATE_S // rate (=_prm0_) as parameter
 #define RCPRM  //,unsigned RCPRM0
 #define RCPRMC //,RCPRM0
-#define mbu_update0(_mb_, _mbp_, _prm0_, _prm1_) (*(_mb_) = (_mbp_) + (((1u<<RC_BITS)- (_mbp_)) >> _prm0_))  // Predictor update for bit 0
-#define mbu_update1(_mb_, _mbp_, _prm0_, _prm1_) (*(_mb_) = (_mbp_) - ((_mbp_) >> _prm0_))                   // Predictor update for bit 1
+#define mbu_update( _mb_, _mbp_, _prm0_, _prm1_, _bit_) *(_mb_) = (_mbp_) - ((((_mbp_) - (-_bit_ & (1<<RC_BITS))) >> _prm0_) + _bit_)
+#define mbu_update0(_mb_, _mbp_, _prm0_, _prm1_) mbu_update( _mb_, _mbp_, _prm0_, _prm1_, 0)
+#define mbu_update1(_mb_, _mbp_, _prm0_, _prm1_) mbu_update( _mb_, _mbp_, _prm0_, _prm1_, 1)
   #else
 #define RCPRM
 #define RCPRMC
-#define mbu_update0(_mb_, _mbp_, _prm0_, _prm1_) (*(_mb_) = (_mbp_) + (((1u<<RC_BITS)- (_mbp_)) >> 5))  // Predictor update for bit 0
-#define mbu_update1(_mb_, _mbp_, _prm0_, _prm1_) (*(_mb_) = (_mbp_) - ((_mbp_) >> 5))                   // Predictor update for bit 1
+    #if 0
+#define mbu_update1(_mb_, _mbp_, _prm0_, _prm1_) (*(_mb_) = (_mbp_) + (((1u<<RC_BITS)- (_mbp_)) >> 5))  // Predictor update for bit 0
+#define mbu_update0(_mb_, _mbp_, _prm0_, _prm1_) (*(_mb_) = (_mbp_) - ((_mbp_) >> 5))                   // Predictor update for bit 1
+#define mbu_update( _mb_, _mbp_, _prm0_, _prm1_, _bit_) (_bit_)?mbu_update1(_mb_, _mbp_, _prm0_, _prm1_):mbu_update0(_mb_, _mbp_, _prm0_, _prm1_)
+    #else
+#define mbu_update( _mb_, _mbp_, _prm0_, _prm1_, _bit_) *(_mb_) = (_mbp_) - ((((_mbp_) - (-_bit_ & (1<<RC_BITS))) >> 5) + _bit_)
+#define mbu_update0(_mb_, _mbp_, _prm0_, _prm1_) *(_mb_) = (_mbp_) - ((_mbp_) >> 5)
+#define mbu_update1(_mb_, _mbp_, _prm0_, _prm1_) *(_mb_) = (_mbp_) - ( (((_mbp_) - (1<<RC_BITS)) >> 5) + 1)
+    #endif
   #endif
 
 #include "mbc.h"
