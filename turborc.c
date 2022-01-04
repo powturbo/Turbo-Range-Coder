@@ -114,9 +114,9 @@ uint64_t strtots(char *p, char **pq, int type) {  // string to timestamp
 
 #define EPUSH(_op_, _out__, _osize_, _u_) {\
   switch(abs(_osize_)) {\
-	case 1:       *_op_++ = _u_;            break;\
-	case 2: ctou16(_op_)  = _u_; _op_ += 2; break;\
-	case 4: ctou32(_op_)  = _u_; _op_ += 4; break;\
+	case 1:       *_op_++ = _u_;            if(u >       0xffu) ovf++;break;\
+	case 2: ctou16(_op_)  = _u_; _op_ += 2; if(u >     0xffffu) ovf++;break;\
+	case 4: ctou32(_op_)  = _u_; _op_ += 4; if(u > 0xffffffffu) ovf++;break;\
     case 8: ctou64(_op_)  = _u_; _op_ += 8; break;\
   } if(_op_+_osize_ > _out__) goto end;\
 }
@@ -177,7 +177,7 @@ size_t befgen(FILE *fi, unsigned char *out, size_t outsize, int fmt, int isize, 
         }
       }
       break;
-    case T_CHAR:                                                              if(verbose>1) printf("reading char file. pre=%.2f\n", pre);
+    case T_CHAR:                                                           if(verbose>1) printf("reading char file. pre=%.2f\n", pre);
       for(;;) {
         char *p = s,*q;
         int c;
@@ -194,9 +194,12 @@ size_t befgen(FILE *fi, unsigned char *out, size_t outsize, int fmt, int isize, 
             u = pre>1.0?round(strtod(s, &q)*pre):strtod(s, &q) - mdelta;
           } else {
             *p = 0;
-            u = strtoll(s, &p, 10) - mdelta;
+			unsigned char *q = s; 
+			while((*q < '0' || *q > '9') && *q != '-' && *q == '+' && *q != 'e' && *q != 'E' && *q != '.') q++;
+			if(q == p) continue;
+            u = strtoll(q, &p, 10) - mdelta;
           }
-          EPUSH(op,out_,osize,u);                                         if(verbose>=5 && (op-out)/osize < 100 || verbose>=9) printf("%s->%lld ", s, (int64_t)u);
+          EPUSH(op,out_,osize,u);                                         if(verbose>=5 && (op-out)/osize < 100 || verbose>=9) printf("'%s'->%lld ", s, (int64_t)u);
         } else {
           while((c = getc(fi)) >= '0' && c <= '9' || c == '-')
             if(p - s < LSIZE) *p++ = c;
@@ -563,13 +566,13 @@ int main(int argc, char* argv[]) {
   char     *scmd = NULL, prids[8]="s", *keysep=NULL;													//fdbg = fopen("test.dat", "wb"); if(!fdbg) perror("fopen failed");
   
     #ifndef _WIN32 
-  { const  rlim_t kStackSize = 100 * 1024 * 1024; 
+  { const  rlim_t kStackSize = 20 * 1024 * 1024; 
     struct rlimit rl; 
     int rc = getrlimit(RLIMIT_STACK, &rl);
     if (!rc && rl.rlim_cur < kStackSize) { 
       rl.rlim_cur = kStackSize; 
 	  if(rc = setrlimit(RLIMIT_STACK, &rl)) { 
-	    fprintf(stderr, "setrlimit returned rc = %d\n", rc); 
+	    fprintf(stderr, "setrlimit failed. rc = %d. set stack size to '20971520'\n", rc); 
 	  }
     }
   }
