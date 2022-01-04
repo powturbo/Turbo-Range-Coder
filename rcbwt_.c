@@ -154,12 +154,12 @@ size_t T3(rcbwt,RC_PRD,enc)(unsigned char *in, size_t inlen, unsigned char *out,
   unsigned idxs[256], iplen_ = xbwt16?(iplen/2):iplen, mod = calcmod(iplen_), idxsn = (unsigned char)((iplen_-1) / (mod + 1)); // TODO:truncate to mod 8
   *op++ = idxsn; 
   saidx_t *sa = (saidx_t *)vmalloc((iplen_+2)*sizeof(sa[0])); if(!sa) { op = out+inlen; goto e; }	if(verbose) { printf("xbwt16=%u ", xbwt16>0);fflush(stdout); } 
-	#ifdef _LIBSAIS16	                                                                        
+	  #ifdef _LIBSAIS16	                                                                        
   if(xbwt16) { 																	if(verbose) { printf("-"); fflush(stdout); } 
     unsigned rc = libsais16_bwt_aux(ip, bwt, sa, iplen_, 0, 0, mod+1, idxs); 	if(verbose) { printf("+"); fflush(stdout); } 
     if(iplen & 1) bwt[iplen-1] = ip[iplen-1]; 
   }  else 
-	#endif
+	  #endif
 	libsais_bwt_aux(ip, bwt, sa, iplen,  0, 0, mod+1, idxs); 		         //libsais_bwt(ip, bwt, sa, iplen, fs);
   memcpy(op, idxs, (idxsn+1)*sizeof(idxs[0]));
   op   +=          (idxsn+1)*sizeof(idxs[0]);    
