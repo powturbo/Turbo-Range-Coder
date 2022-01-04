@@ -46,8 +46,7 @@ ifneq (,$(filter Windows%,$(OS)))
 #  CC=gcc
 #  CXX=g++
   ARCH=x86_64
-  LDFLAGS+=-Wl,--stack,327712768
-#  8194304
+  LDFLAGS+=-Wl,--stack,20971520
 else
   OS := $(shell uname -s)
   ARCH := $(shell uname -m)
@@ -95,9 +94,10 @@ else ifeq ($(PGO), 2)
 CFLAGS+=-fprofile-use 
 endif
 
-ifeq ($(OS),$(filter $(OS),Linux GNU/kFreeBSD GNU OpenBSD FreeBSD DragonFly NetBSD MSYS_NT Haiku))
+ifeq ($(OS),$(filter $(OS),Darwin Linux GNU/kFreeBSD GNU OpenBSD FreeBSD DragonFly NetBSD MSYS_NT Haiku))
 #LDFLAGS+=-lrt
-LDFLAGS+=-lm
+LDFLAGS+=-lm 
+#-Wl,--stack_size -Wl,20971520
 endif
 
 ifeq ($(EXTRC), 1)
@@ -141,8 +141,17 @@ endif
 
 all: turborc
 
+transpose.o: transpose.c
+	$(CC) -O3 $(CFLAGS) $(COPT) -c -DUSE_SSE -falign-loops transpose.c -o transpose.o
+
+transpose_sse.o: transpose.c
+	$(CC) -O3 $(CFLAGS) $(COPT) -DSSE2_ON $(_SSE) -falign-loops -c transpose.c -o transpose_sse.o
+
+transpose_avx2.o: transpose.c
+	$(CC) -O3 $(CFLAGS) $(COPT) -DAVX2_ON $(_AVX2) -falign-loops -c transpose.c -o transpose_avx2.o
+
 ifneq ($(NOCOMP), 1)
-LIB=rc_ss.o rc_s.o rccdf.o rcutil.o bec_b.o rccm_s.o rccm_ss.o rccm_sf.o
+LIB=rc_ss.o rc_s.o rccdf.o rcutil.o bec_b.o rccm_s.o rccm_ss.o rccm_sf.o transpose.o transpose_sse.o transpose_avx2.o
 endif
 ifeq ($(BWT), 1)
 LIB+=rcbwt_ss.o
