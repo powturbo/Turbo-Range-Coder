@@ -207,17 +207,17 @@ size_t T3(rcc,RC_PRD,enc16)(unsigned char *_in, size_t _inlen, unsigned char *ou
   uint16_t      *in = (uint16_t *)_in, *ip, cx = 0, ema = 0;
   INDEC;
   rcencdec(rcrange,rclow);                       							 
-  MBU_DEC2(mb1, 1<< 8, 1<<8); 
-  MBU_DEC2(mb0, 1<<16, 1<<8);   												 
+  MBU_DEC2( mb1, 1<< 8, 1<<8); 
+  MBU_NEWI2(mb0, 1<<16, 1<<8);  												 
   
   for(ip = in; ip < in+inlen; ip++) {	 
 	uint16_t r = ip[0];
 	mb8enc(rcrange,rclow, mb1[cx], RCPRM0,RCPRM1, op, r>>8);       cx = cx <<8 | r>>8;	
-	mb8enc(rcrange,rclow, mb0[cx], RCPRM0,RCPRM1, op, (uint8_t)r); 			
+	mb8enc(rcrange,rclow, &mb0[cx*(1<<8)], RCPRM0,RCPRM1, op, (uint8_t)r); 			
 	cx = (uint8_t)cx;
   }
   rceflush(rcrange,rclow, op);
-  e:return op - out;
+  e:free(mb0); return op - out;
 }
 
 size_t T3(rcc,RC_PRD,dec16)(unsigned char *in, size_t _outlen, unsigned char *_out RCPRM) {
@@ -225,15 +225,16 @@ size_t T3(rcc,RC_PRD,dec16)(unsigned char *in, size_t _outlen, unsigned char *_o
   uint16_t      *out   = (uint16_t *)_out, *op, cx = 0, ema = 0;
   OUTDEC;
   rcdecdec(rcrange,rccode, ip);               					
-  MBU_DEC2(mb1, 1<<8, 1<<8);  
-  MBU_DEC2(mb0, 1<<16, 1<<8); 								
+  MBU_DEC2( mb1, 1<<8,  1<<8);  
+  MBU_NEWI2(mb0, 1<<16, 1<<8); //MBU_DEC2(mb0, 1<<16, 1<<8); 								
  
   for(op = out; op < out+outlen; op++) { 
     unsigned ch;               								
 	mb8dec(rcrange,rccode, mb1[cx],RCPRM0,RCPRM1, ip, ch); 
-	mb8dec(rcrange,rccode, mb0[cx<<8 | ch],RCPRM0,RCPRM1, ip, cx); 	
+	mb8dec(rcrange,rccode, &mb0[(cx<<8 | ch)*(1<<8)],RCPRM0,RCPRM1, ip, cx); 	
     *op = ch << 8 | cx;  cx = ch; 						
   }
+  free(mb0);
 }
 
 //---Order 7bs  : 32 bits integer, 32 bits floating point -----------------------
@@ -249,8 +250,8 @@ size_t T3(rcc,RC_PRD,enc32)(unsigned char *_in, size_t _inlen, unsigned char *ou
   rcencdec(rcrange,rclow);                       
   MBU_DEC2(mb3,  1<<XN, 1<<8);  
   MBU_DEC2(mb2,  1<< 8, 1<<8);  
-  MBU_DEC2(mb1,  1<<XN1, 1<<8);  
-  MBU_DEC2(mb0,  1<<XN1, 1<<8);     			  
+  MBU_DEC2(mb1, 1<<XN1, 1<<8);  
+  MBU_DEC2(mb0, 1<<XN1, 1<<8);     			  
   
   for(ip = in; ip < in+inlen; ip++) { 
 	uint32_t r = ip[0],x; 			    
@@ -287,26 +288,26 @@ size_t T3(rcc,RC_PRD,dec32)(unsigned char *in, size_t _outlen, unsigned char *_o
 #define XNS       12
 #define XN        (XNS-1)
 #define CX32(_x_) (((_x_)>>(32-XNS)) & ((1u<<(XN))-1))
-size_t T3(rcc2,RC_PRD,enc32)(unsigned char *_in, size_t _inlen, unsigned char *out RCPRM) { 
+size_t T3(rcc2,RC_PRD,enc32)(unsigned char *_in, size_t _inlen, unsigned char *out RCPRM) {
   unsigned char *op = out;
   uint32_t      *in = (uint32_t *)_in, *ip, cx = 0;
   INDEC;
   rcencdec(rcrange,rclow);                     
   MBU_DEC2(mb3,  1<<XN, 1<<8);  
-  MBU_DEC2(mb2,  1<< 8, 1<<8);  
-  MBU_DEC2(mb1,  1<<XN1, 1<<8);  
-  MBU_DEC2(mb0,  1<<XN1, 1<<8);  
+  MBU_DEC2(mb2,  1<< 8, 1<<8);   
+  MBU_NEWI2(mb1, 1<<XN1, 1<<8); 
+  MBU_NEWI2(mb0, 1<<XN1, 1<<8);
 
   for(ip = in; ip < in+inlen; ip++) { 
     uint32_t r = ip[0],x; 			    	
-	mbu *mb = mb3[cx = CX32(cx)];  mb8enc(rcrange,rclow, mb,RCPRM0,RCPRM1, op,        cx =   r>>24 ); 
-	     mb = mb2[cx];             mb8enc(rcrange,rclow, mb,RCPRM0,RCPRM1, op, x = (uint8_t)(r>>16)); cx = cx << 8 | x;
-	     mb = mb1[BZHI32(cx,XN1)]; mb8enc(rcrange,rclow, mb,RCPRM0,RCPRM1, op, x = (uint8_t)(r>> 8)); cx = cx << 8 | x;
-	     mb = mb0[BZHI32(cx,XN1)]; mb8enc(rcrange,rclow, mb,RCPRM0,RCPRM1, op,     (uint8_t)(r    ));
+	mbu *mb = mb3[cx = CX32(cx)];            mb8enc(rcrange,rclow, mb,RCPRM0,RCPRM1, op,        cx =   r>>24 ); 
+	     mb = mb2[cx];                       mb8enc(rcrange,rclow, mb,RCPRM0,RCPRM1, op, x = (uint8_t)(r>>16)); cx = cx << 8 | x;
+	     mb = &mb1[BZHI32(cx,XN1)*(1<<8)]; mb8enc(rcrange,rclow, mb,RCPRM0,RCPRM1, op, x = (uint8_t)(r>> 8)); cx = cx << 8 | x;
+	     mb = &mb0[BZHI32(cx,XN1)*(1<<8)]; mb8enc(rcrange,rclow, mb,RCPRM0,RCPRM1, op,     (uint8_t)(r    ));
     cx = r;																						 OVERFLOW(_in,_inlen,out, op, goto e);
   }
   rceflush(rcrange,rclow, op);														
-  e:return op - out;
+  e:free(mb1);free(mb0); return op - out;
 }
 
 size_t T3(rcc2,RC_PRD,dec32)(unsigned char *in, size_t _outlen, unsigned char *_out RCPRM) {
@@ -314,45 +315,47 @@ size_t T3(rcc2,RC_PRD,dec32)(unsigned char *in, size_t _outlen, unsigned char *_
   uint32_t      *out = (uint32_t *)_out, *op, cx = 0, r;
   OUTDEC;
   rcdecdec(rcrange,rccode, ip);               		
-  MBU_DEC2(mb3,  1<<XN, 1<<8);  
-  MBU_DEC2(mb2,  1<< 8, 1<<8);  
-  MBU_DEC2(mb1,  1<<XN1, 1<<8);  
-  MBU_DEC2(mb0,  1<<XN1, 1<<8);  
+  MBU_DEC2( mb3, 1<<XN, 1<<8);  
+  MBU_DEC2( mb2, 1<< 8, 1<<8);  
+  MBU_NEWI2(mb1, 1<<XN1, 1<<8);  
+  MBU_NEWI2(mb0, 1<<XN1, 1<<8);
  
   for(op = out; op < out+outlen; op++) { 							
-	mbu *mb = mb3[cx = CX32(cx)]; mb8dec(rcrange,rccode, mb,RCPRM0,RCPRM1, ip, r);
-	     mb = mb2[r];             mb8dec(rcrange,rccode, mb,RCPRM0,RCPRM1, ip,cx); r = r << 8 | cx;
-         mb = mb1[BZHI32(r,XN1)]; mb8dec(rcrange,rccode, mb,RCPRM0,RCPRM1, ip,cx); r = r << 8 | cx; 
-		 mb = mb0[BZHI32(r,XN1)]; mb8dec(rcrange,rccode, mb,RCPRM0,RCPRM1, ip,cx); 
+	mbu *mb = mb3[cx = CX32(cx)];           mb8dec(rcrange,rccode, mb,RCPRM0,RCPRM1, ip, r);
+	     mb = mb2[r];                       mb8dec(rcrange,rccode, mb,RCPRM0,RCPRM1, ip,cx); r = r << 8 | cx;
+         mb = &mb1[BZHI32(r,XN1)*(1<<8)]; mb8dec(rcrange,rccode, mb,RCPRM0,RCPRM1, ip,cx); r = r << 8 | cx; 
+		 mb = &mb0[BZHI32(r,XN1)*(1<<8)]; mb8dec(rcrange,rccode, mb,RCPRM0,RCPRM1, ip,cx); 
     *op = cx = r << 8 | cx; 													
   }
+  free(mb1);free(mb0);
 }
 
 //-- Order 2 --------------------------------------------------------------------------
 size_t T3(rcc2,RC_PRD,enc)(unsigned char *in, size_t inlen, unsigned char *out RCPRM) {
   unsigned char *op = out, *ip; 
   unsigned      cx = 0;
-  rcencdec(rcrange,rclow); 
-  MBU_DEC2(mb,1<<16, 1<<8);             		  
+  rcencdec(rcrange,rclow);  
+  MBU_NEWI2(mb, 1<<16, 1<<8);         		  
   
   for(ip = in; ip < in+inlen; ip++) {
-    mb8enc(rcrange,rclow, mb[cx],RCPRM0,RCPRM1, op, ip[0]); 
+    mb8enc(rcrange,rclow, &mb[cx*(1<<8)],RCPRM0,RCPRM1, op, ip[0]); 
 	cx = (uint16_t)(cx<<8 | ip[0]);						    OVERFLOW(in,inlen,out, op, goto e);    
   } 
   rceflush(rcrange,rclow, op); 
-  e:return op - out;
+  e:free(mb); return op - out;
 }
 
 size_t T3(rcc2,RC_PRD,dec)(unsigned char *in, size_t outlen, unsigned char *out RCPRM) { 
   unsigned char *ip = in, *op; 
   unsigned      cx = 0;
   rcdecdec(rcrange,rccode, ip);                    
-  MBU_DEC2(mb,  1<<16, 1<<8);             		  
+  MBU_NEWI2(mb, 1<<16, 1<<8);             		  
 
   for(op = out; op < out+outlen; op++) { 
-    mb8dec(rcrange,rccode, mb[cx],RCPRM0,RCPRM1, ip, op[0]);
+    mb8dec(rcrange,rccode, &mb[cx*(1<<8)],RCPRM0,RCPRM1, ip, op[0]);
 	cx  = (uint16_t)(cx<<8 | op[0]);	
   }
+  free(mb);
 }
 
 //-- order N bits with sliding context ---------------------------------------------------------
@@ -384,10 +387,10 @@ size_t T3(rcx,RC_PRD,dec)(unsigned char *in, size_t outlen, unsigned char *out R
   }
 }
 
-#define MBC_C2 16
+#define MBC_C2 15
   #if RC_PRDID == 1
 int mbc_c = 15;
-mbcset(unsigned m) { mbc_c = m; } // set context bits length 1-16
+mbcset(unsigned m) { mbc_c = m; if(mbc_c > MBC_C2) mbc_c = MBC_C2; if(mbc_c < 4) mbc_c = 4; } // set context bits length 1-16
   #else
 extern int mbc_c;
   #endif
