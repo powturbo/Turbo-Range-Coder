@@ -23,7 +23,7 @@
 **/
 // TurboRC: Range Coder - dual speed predictor (two 16 bits counters) 
 #define RC_PRDID 2
-#define RC_PRD ss
+#define RC_PRD   ss
 
 #define RCPRM ,unsigned RCPRM0, unsigned RCPRM1
 #define RCPRMC ,RCPRM0, RCPRM1
@@ -32,7 +32,7 @@
 #include "conf.h" // _PACKED
 #define _MBC_SS_H
 #pragma pack(1) 
-typedef struct { unsigned short p,q; } _PACKED mbu; //p:fast,q:slow   o0:5,8 o1:4,6 o2:2,5 bwt:4,7
+typedef struct { unsigned short p,q; } _PACKED mbu; // o0:5,8 o1:4,6 o2:2,5 bwt:4,7
 #pragma pack()
   #endif
 
@@ -49,11 +49,18 @@ typedef struct { unsigned short p,q; } _PACKED mbu; //p:fast,q:slow   o0:5,8 o1:
 static inline int mbu_p(mbu *bm, int _prm0_) { return (bm->p+bm->q)>>(17-RC_BITS); }
 #endif
 
-// Predictor update for bit 0/1
-#define mbu_update0(_mb_, _mbp_, _prm0_, _prm1_)  (_mb_)->p += ((_mb_)->p^((1<<16)-1)) >> _prm0_,\
-                                                  (_mb_)->q += ((_mb_)->q^((1<<16)-1)) >> _prm1_
+#if 0
+#define mbu_update1(_mb_,_mbp_, _prm0_,_prm1_)       ((_mb_)->p += ((_mb_)->p^((1<<16)-1)) >> _prm0_,\
+                                                      (_mb_)->q += ((_mb_)->q^((1<<16)-1)) >> _prm1_)
+#define mbu_update0(_mb_,_mbp_, _prm0_,_prm1_)       ((_mb_)->p -= (_mb_)->p >> _prm0_,\
+                                                      (_mb_)->q -= (_mb_)->q >> _prm1_)
+#define mbu_update( _mb_,_mbp_, _prm0_,_prm1_,_bit_) (_bit_)?mbu_update1(_mb_,_mbp_, _prm0_,_prm1_):mbu_update0(_mb_,_mbp_, _prm0_,_prm1_)
+#else
+#define mbu_update( _mb_,_mbp_, _prm0_,_prm1_,_bit_) (_mb_)->p = (_mb_)->p - (((_mb_)->p&-!_bit_) >> _prm0_) + ( (((_mb_)->p^((1<<16)-1))&-_bit_) >> _prm0_),\
+                                                     (_mb_)->q = (_mb_)->q - (((_mb_)->q&-!_bit_) >> _prm1_) + ( (((_mb_)->q^((1<<16)-1))&-_bit_) >> _prm1_)
 
-#define mbu_update1(_mb_, _mbp_, _prm0_, _prm1_)  (_mb_)->p -= (_mb_)->p >> _prm0_,\
-                                                  (_mb_)->q -= (_mb_)->q >> _prm1_
+#define mbu_update0(_mb_,_mbp_, _prm0_, _prm1_)      mbu_update(_mb_, _mbp_, _prm0_,_prm1_, 0)
+#define mbu_update1(_mb_,_mbp_, _prm0_, _prm1_)      mbu_update(_mb_, _mbp_, _prm0_,_prm1_, 1)
+#endif
 
 #include "mbc.h"
