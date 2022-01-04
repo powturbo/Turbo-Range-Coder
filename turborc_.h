@@ -396,24 +396,24 @@ static void div32init(void) { if(!_div32ini) { DIVTINI32(_div32lut, DIV_BITS); _
 // _mbupd0_/_mbupd1_ : bit 0/1 update functions for predictor _mb_ 
 // _prm_             : predictor parameters
 
-//----- Fast flag read + check bit / update predictor (usage see: mb_vint.h ----------------
-#define if_rc0(rcrange, rccode, _mbp_,_ip_) unsigned _predp = _mbp_; _rcdnorm_(rcrange,rccode,_ip_); rcrange_t _rcx = (rcrange >> RC_BITS) * (_predp); if(rccode <  _rcx)
-#define if_rc1(rcrange, rccode, _mbp_,_ip_) unsigned _predp = _mbp_; _rcdnorm_(rcrange,rccode,_ip_); rcrange_t _rcx = (rcrange >> RC_BITS) * (_predp); if(rccode >= _rcx)
+//----- Fast flag read + check bit / update predictor (usage see: mb_vint.h) ----------------
+#define if_rc0(rcrange, rccode, _mbp_,_ip_) unsigned _predp = _mbp_; _rcdnorm_(rcrange,rccode,_ip_); rcrange_t _rcx = (rcrange >> RC_BITS) * (_predp); if(rccode >= _rcx)
+#define if_rc1(rcrange, rccode, _mbp_,_ip_) unsigned _predp = _mbp_; _rcdnorm_(rcrange,rccode,_ip_); rcrange_t _rcx = (rcrange >> RC_BITS) * (_predp); if(rccode <  _rcx)
     
-#define rcupdate0(rcrange, rccode, _mbupd0_, _mb_,_prm0_,_prm1_) { RC_BD(0); rcrange  = _rcx;                 _mbupd0_(_mb_, _predp,_prm0_,_prm1_); }
-#define rcupdate1(rcrange, rccode, _mbupd1_, _mb_,_prm0_,_prm1_) { RC_BD(1); rcrange -= _rcx; rccode -= _rcx; _mbupd1_(_mb_, _predp,_prm0_,_prm1_); }
+#define rcupdate0(rcrange, rccode, _mbupd0_, _mb_,_prm0_,_prm1_) { RC_BD(0); rcrange -= _rcx; rccode -= _rcx; _mbupd0_(_mb_, _predp,_prm0_,_prm1_); }
+#define rcupdate1(rcrange, rccode, _mbupd1_, _mb_,_prm0_,_prm1_) { RC_BD(1); rcrange  = _rcx;                 _mbupd1_(_mb_, _predp,_prm0_,_prm1_); }
 
 //--- encode bit -----
 #define rcbe(rcrange,rclow, _mbp_, _mbupd0_,_mbupd1_, _mb_,_prm0_,_prm1_,_op_, _bit_) do {\
   rcrange_t _rcx = (rcrange >> RC_BITS) * (_mbp_);\
-  if(unlikely(_bit_)) { RC_BE(1); rcrange -= _rcx; rcrange_t ilow = rclow; rclow += _rcx; _rccarry_(ilow, rclow, _op_); _mbupd1_(_mb_,_mbp_, _prm0_,_prm1_); }\
-  else {                RC_BE(0); rcrange  = _rcx;                                                                      _mbupd0_(_mb_,_mbp_, _prm0_,_prm1_); }\
+  if(unlikely(_bit_)) { RC_BE(1); rcrange  = _rcx;                                                                      _mbupd1_(_mb_,_mbp_, _prm0_,_prm1_); }\
+  else {                RC_BE(0); rcrange -= _rcx; rcrange_t ilow = rclow; rclow += _rcx; _rccarry_(ilow, rclow, _op_); _mbupd0_(_mb_,_mbp_, _prm0_,_prm1_); }\
 } while(0)
 
 #define rcbme(rcrange,rclow, _mbp_, _mbupd0_,_mbupd1_, _mb_,_prm0_,_prm1_,_op_, _bit_, _mb1_, _mb2_, _sse2_) do {\
   rcrange_t _rcx = (rcrange >> RC_BITS) * (_mbp_);\
-  if(unlikely(_bit_)) { RC_BE(1); rcrange -= _rcx; rcrange_t ilow = rclow; rclow += _rcx; _rccarry_(ilow, rclow, _op_); _mbupd1_(_mb_,_mbp_, _prm0_,_prm1_, _mb1_,_mb2_,_sse2_); }\
-  else {                RC_BE(0); rcrange  = _rcx;                                                                      _mbupd0_(_mb_,_mbp_, _prm0_,_prm1_, _mb1_,_mb2_,_sse2_); }\
+  if(unlikely(_bit_)) { RC_BE(1); rcrange  = _rcx;                                                                      _mbupd1_(_mb_,_mbp_,_prm0_,_prm1_, _mb1_,_mb2_,_sse2_); }\
+  else {                RC_BE(0); rcrange -= _rcx; rcrange_t ilow = rclow; rclow += _rcx; _rccarry_(ilow, rclow, _op_); _mbupd0_(_mb_,_mbp_,_prm0_,_prm1_, _mb1_,_mb2_,_sse2_); }\
 } while(0)
 
 //--- encode bit + renorm -----
@@ -427,27 +427,30 @@ static void div32init(void) { if(!_div32ini) { DIVTINI32(_div32lut, DIV_BITS); _
   rcbme(rcrange, rclow, _mbp_, _mbupd0_,_mbupd1_, _mb_,_prm0_,_prm1_,_op_, _bit_, _mb1_, _mb2_, _sse2_);\
 } while(0)
 
-
-//--- decode bit -----
-#define rcbd(rcrange, rccode, _mbp_, _mbupd0_,_mbupd1_, _mb_,_prm0_,_prm1_, _x_) do { \
-  rcrange_t _rcx = (rcrange >> RC_BITS) * (_mbp_);\
-  if(rccode < _rcx) { RC_BD(0); rcrange  = _rcx;                 _mbupd0_(_mb_,_mbp_, _prm0_,_prm1_); _x_ += _x_;   }\
-  else {              RC_BD(1); rcrange -= _rcx; rccode -= _rcx; _mbupd1_(_mb_,_mbp_, _prm0_,_prm1_); _x_ += _x_+1; }\
+//--- decode bit (branchless decoding) -----
+#define rcbd(rcrange, rccode, _mbp_, _mbupd_,_mb_,_prm0_,_prm1_, _x_) do {\
+  rcrange_t _rcx = (rcrange >> RC_BITS) * (_mbp_), _bit;\
+  rcrange -= _rcx; _bit = rccode < _rcx?rcrange=_rcx, 1:0; \
+  _x_ += _x_+_bit;\
+  _mbupd_(_mb_,_mbp_, _prm0_,_prm1_,_bit); \
+  rccode -= (-!_bit) & _rcx;\
 } while(0)
-
-#define rcbmd(rcrange, rccode, _mbp_, _mbupd0_,_mbupd1_, _mb_,_prm0_,_prm1_, _x_, _mb1_, _mb2_, _sse2_) do { \
-  rcrange_t _rcx = (rcrange >> RC_BITS) * (_mbp_);\
-  if(rccode < _rcx) { RC_BD(0); rcrange  = _rcx;                 _mbupd0_(_mb_,_mbp_, _prm0_,_prm1_, _mb1_,_mb2_,_sse2_); _x_ += _x_;   }\
-  else {              RC_BD(1); rcrange -= _rcx; rccode -= _rcx; _mbupd1_(_mb_,_mbp_, _prm0_,_prm1_, _mb1_,_mb2_,_sse2_); _x_ += _x_+1; }\
+	
+#define rcbmd(rcrange, rccode, _mbp_, _mbupd_,_mb_,_prm0_,_prm1_, _x_, _mb1_, _mb2_, _sse2_) do { /*Version with 8 parameters used in context mixing*/\
+  rcrange_t _rcx = (rcrange >> RC_BITS) * (_mbp_), _bit;\
+  rcrange -= _rcx; _bit = rccode < _rcx?rcrange=_rcx, 1:0; \
+  _x_ += _x_+_bit;\
+  _mbupd_(_mb_,_mbp_, _prm0_,_prm1_,_bit, _mb1_, _mb2_, _sse2_); \
+  rccode -= (-!_bit) & _rcx;\
 } while(0)
 
 //--- decode bit +  renorm -----
-#define rcbdec( rcrange,rccode, _mbp_, _mbupd0_,_mbupd1_, _mb_,_prm0_,_prm1_, _ip_, _x_) do {\
+#define rcbdec( rcrange,rccode, _mbp_, _mbupd_, _mb_,_prm0_,_prm1_, _ip_, _x_) do {\
   _rcdnorm_(rcrange,rccode,_ip_); \
-  rcbd(rcrange,rccode,  _mbp_, _mbupd0_,_mbupd1_,_mb_,_prm0_,_prm1_, _x_);\
+  rcbd(rcrange,rccode,  _mbp_, _mbupd_,_mb_,_prm0_,_prm1_, _x_);\
 } while(0)
 
-#define rcbmdec(rcrange,rccode, _mbp_, _mbupd0_,_mbupd1_, _mb_,_prm0_,_prm1_, _ip_,_x_, _mb1_,_mb2_,_sse2_) do {\
+#define rcbmdec(rcrange,rccode, _mbp_, _mbupd_, _mb_,_prm0_,_prm1_, _ip_,_x_, _mb1_,_mb2_,_sse2_) do {\
   _rcdnorm_(rcrange,rccode,_ip_); \
-  rcbmd(rcrange,rccode, _mbp_, _mbupd0_,_mbupd1_,_mb_,_prm0_,_prm1_, _x_, _mb1_,_mb2_,_sse2_);\
+  rcbmd(rcrange,rccode, _mbp_, _mbupd_,_mb_,_prm0_,_prm1_, _x_, _mb1_,_mb2_,_sse2_);\
 } while(0)
