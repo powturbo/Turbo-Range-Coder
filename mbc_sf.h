@@ -42,18 +42,19 @@
 typedef unsigned short mbu;
 
 #define mbu_p(_mb_,_fsm_) (_fsm_[*(_mb_)].p)										
-//static inline unsigned mbu_p(mbu *mb, fsm_t *_fsm_) { return fsm[*mb].p; }
-#define mbu_init(_m_, _p0_) { *(_m_) = _p0_; }
+#define mbu_init(_m_, _p0_) { *(_m_) = _p0_; }          //static inline unsigned mbu_p(mbu *mb, fsm_t *_fsm_) { return fsm[*mb].p; }
 
-#define mbu_update1(_mb_, _mbp_, _fsm_, _prm1_) (*(_mb_) = _fsm_[*(_mb_)].s[1])
 #define mbu_update0(_mb_, _mbp_, _fsm_, _prm1_) (*(_mb_) = _fsm_[*(_mb_)].s[0])
+#define mbu_update1(_mb_, _mbp_, _fsm_, _prm1_) (*(_mb_) = _fsm_[*(_mb_)].s[1])
+
+#define mbu_update( _mb_, _mbp_, _fsm_, _prm1_, _bit_) (*(_mb_) = _fsm_[*(_mb_)].s[_bit_])
 
   #ifndef min
 #define min(x,y) (((x)<(y)) ? (x) : (y))
 #define max(x,y) (((x)>(y)) ? (x) : (y))
   #endif
 
-static inline unsigned fsmget_(  unsigned char **_p) {
+static inline unsigned fsmget_(unsigned char **_p) {
   unsigned char *p = *_p,*e;
   int c, r = 0;
   while(*p && (*p<'0' || *p>'9')) p++;
@@ -66,8 +67,8 @@ static inline void fsminit_(unsigned char *p, fsm_t *fsm, unsigned nstates) {
   int i,m;
   memset(fsm, 0, sizeof(fsm[0])*nstates);
   for(i = 0; i < nstates; i++) {
-    m = fsmget_(&p); fsm[i].s[0] = max(0,min(nstates-1,      m));
     m = fsmget_(&p); fsm[i].s[1] = max(0,min(nstates-1,      m));
+    m = fsmget_(&p); fsm[i].s[0] = max(0,min(nstates-1,      m));
     m = fsmget_(&p); fsm[i].p    = max(1,min((1<<RC_BITS)-1, m));
 	if(!*p) break;												//if(fsm[i].s[0] || fsm[i].s[1]) printf("%d,%d,%d ", fsm[i].s[0], fsm[i].s[1], fsm[i].p);
   }
