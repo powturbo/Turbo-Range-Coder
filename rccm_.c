@@ -127,13 +127,13 @@ size_t T3(rcm2,RC_PRD,enc)(unsigned char *in, size_t inlen, unsigned char *out R
   unsigned char *op = out, *ip; 
   unsigned      cx = 0, run = 0;
   rcencdec(rcrange,rclow);                         
-  MBU_DEC1(mb0,  1<<8);
-  MBU_DEC2(mb1,  1<<8,  1<<8);             		  
-  MBU_DEC2(mb2,  1<<16, 1<<8);             		
+  MBU_DEC1( mb0,  1<<8);
+  MBU_DEC2( mb1,  1<<8,  1<<8);             		  
+  MBU_NEWI2(mb2,  1<<16, 1<<8);  //MBU_DEC2(mb2,  1<<16, 1<<8);             		
   unsigned short sse[1<<8][17]; sseinit(sse);
 
   for(ip = in; ip < in+inlen; ip++) { 
-	mbu *m1x = mb1[(uint8_t)cx], *m2x = mb2[(uint16_t)cx];
+	mbu *m1x = mb1[(uint8_t)cx], *m2x = &mb2[(uint16_t)cx*(1<<8)];
     unsigned x = 1<<8 | ip[0]; 
 	int i;
     for(i = 8-1; i >= 0; --i) {
@@ -144,7 +144,8 @@ size_t T3(rcm2,RC_PRD,enc)(unsigned char *in, size_t inlen, unsigned char *out R
 	cx  = cx << 8 | ip[0];														OVERFLOW(in,inlen,out, op, goto e);     
   } 
   rceflush(rcrange,rclow, op);
-  e:return op - out;
+  e: free(mb2);
+  return op - out;
 }
 
 size_t T3(rcm2,RC_PRD,dec)(unsigned char *in, size_t outlen, unsigned char *out RCPRM) { 
@@ -153,11 +154,11 @@ size_t T3(rcm2,RC_PRD,dec)(unsigned char *in, size_t outlen, unsigned char *out 
   rcdecdec(rcrange, rccode, ip);                      
   MBU_DEC1(mb0,  1<<8);
   MBU_DEC2(mb1,  1<<8, 1<<8);             		  
-  MBU_DEC2(mb2,  1<<16, 1<<8);             		
+  MBU_NEWI2(mb2, 1<<16, 1<<8);  //MBU_DEC2(mb2,  1<<16, 1<<8);             		
   unsigned short sse[1<<9][17]; sseinit(sse);
 
   for(op = out; op < out+outlen; op++) { 
-	mbu *m1x = mb1[(uint8_t)cx], *m2x = mb2[(uint16_t)cx];
+	mbu *m1x = mb1[(uint8_t)cx], *m2x = &mb2[(uint16_t)cx*(1<<8)];
     int i; 
     unsigned x = 1;
     for(i = 8-1; i >= 0; --i) {
@@ -166,4 +167,5 @@ size_t T3(rcm2,RC_PRD,dec)(unsigned char *in, size_t outlen, unsigned char *out 
     }
     op[0] = cx = cx << 8 | (unsigned char)x;
   }
+  free(mb2);
 }
