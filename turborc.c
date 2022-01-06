@@ -114,9 +114,9 @@ uint64_t strtots(char *p, char **pq, int type) {  // string to timestamp
 
 #define EPUSH(_op_, _out__, _osize_, _u_) {\
   switch(abs(_osize_)) {\
-	case 1:       *_op_++ = _u_;            if(u >       0xffu) ovf++;break;\
-	case 2: ctou16(_op_)  = _u_; _op_ += 2; if(u >     0xffffu) ovf++;break;\
-	case 4: ctou32(_op_)  = _u_; _op_ += 4; if(u > 0xffffffffu) ovf++;break;\
+	case 1:       *_op_++ = _u_;            if(_u_ >       0xffu) ovf++;break;\
+	case 2: ctou16(_op_)  = _u_; _op_ += 2; if(_u_ >     0xffffu) ovf++;break;\
+	case 4: ctou32(_op_)  = _u_; _op_ += 4; if(_u_ > 0xffffffffu) ovf++;break;\
     case 8: ctou64(_op_)  = _u_; _op_ += 8; break;\
   } if(_op_+_osize_ > _out__) goto end;\
 }
@@ -162,11 +162,6 @@ size_t befgen(FILE *fi, unsigned char *out, size_t outsize, int fmt, int isize, 
           uint64_t u = strtoll(p, &q, 10)*pre - mdelta;
           if(*q == '.')
             u = pre>1.0?round(strtod(p, &q)*pre):strtod(p, &q) - mdelta;
-          switch(osize) {
-            case 1: if(u >       0xffu) ovf++; break;
-            case 2: if(u >     0xffffu) ovf++; break;
-            case 4: if(u > 0xffffffffu) ovf++; break;
-          }
           EPUSH(op,out_,osize,u);                             c=*q;   *q=0; if(verbose>=5 && (op-out)/osize < 100 || verbose>=9) printf("\'%s\'->%lld ", p, u); *q = c;
         } else {
           while(*p && !isdigit(*p) && *p != '-' && *p != '.' && *p != '+') {  if(keysep && strchr(keysep,*p)) keyid++; p++; }
@@ -210,11 +205,6 @@ size_t befgen(FILE *fi, unsigned char *out, size_t outsize, int fmt, int isize, 
           double d = strtod(s, &p) - mdelta;
           uint64_t u;
           memcpy(&u,&d,sizeof(u));                                              if(verbose>=5 && (op-out)/osize < 100 || verbose>=9) { double d; memcpy(&d,&u,sizeof(u)); printf("\'%s\'->%e  ", s, d); }
-		  switch(osize) {
-            case 1: if(u >       0xffu) ovf++; break;
-            case 2: if(u >     0xffffu) ovf++; break;
-            case 4: if(u > 0xffffffffu) ovf++; break;
-          }
           EPUSH(op,out_,osize,u);
         }
         if(c == EOF) break;
@@ -258,7 +248,7 @@ size_t befgen(FILE *fi, unsigned char *out, size_t outsize, int fmt, int isize, 
 	  //die("unknown data format %d\n", fmt);
   }
   end:;if(verbose >= 5) printf(" n=%d \n", op-out);
-  if(ovf) { unsigned l = (op-out)/abs(osize); printf("Number of items truncated=%d of %u = %.2f%%\n", ovf, l, (double)ovf*100.0/(double)l ); }
+  if(ovf) { unsigned l = (op-out)/abs(osize); printf("Number of items truncated=%u of %u = %.2f%%\n", ovf, l, (double)ovf*100.0/(double)l ); }
   return op - out;
 }
 
@@ -478,8 +468,8 @@ unsigned bench(unsigned char *in, unsigned n, unsigned char *out, unsigned char 
       #elif defined(_LIBSAIS)
 	                 TMBENCH("",l=libsais_bwt(in,out,sa,n,0,0),n);pr(n,n); TMBENCH2("60:bwt libsais                          ",libsais_unbwt(out,cpy,sa,n,0,l), n); free(sa);} break;
 	  #endif
-    case 61:         TMBENCH("",l=lzpenc(  in,n,out,lenmin),n);   pr(l,n); TMBENCH2("61:lzp                                  ",l==n?memcpy(cpy,out,n):lzpdec(    out,n,cpy,lenmin), n); break;
-    case 62:         TMBENCH("",l=utf8enc(  in,n,out, flag),n);   pr(l,n); TMBENCH2("62:utf8 preprocessor                    ",l==n?memcpy(cpy,out,n):utf8dec(   out,n,cpy), n); break;
+    case 61:         TMBENCH("",l=utf8enc(  in,n,out, flag),n);   pr(l,n); TMBENCH2("61:utf8 preprocessor                    ",l==n?memcpy(cpy,out,n):utf8dec(   out,n,cpy), n); break;
+    case 62:         TMBENCH("",l=lzpenc(  in,n,out,lenmin),n);   pr(l,n); TMBENCH2("62:lzp                                  ",l==n?memcpy(cpy,out,n):lzpdec(    out,n,cpy,lenmin), n); break;
       #ifdef _EXT
     #include "xturborc.c"
       #endif
@@ -566,7 +556,7 @@ int main(int argc, char* argv[]) {
   char     *scmd = NULL, prids[8]="s", *keysep=NULL;													//fdbg = fopen("test.dat", "wb"); if(!fdbg) perror("fopen failed");
   
     #ifndef _WIN32 
-  { const  rlim_t kStackSize = 20 * 1024 * 1024; 
+  { const  rlim_t kStackSize = 32 * 1024 * 1024; 
     struct rlimit rl; 
     int rc = getrlimit(RLIMIT_STACK, &rl);
     if (!rc && rl.rlim_cur < kStackSize) { 
@@ -805,10 +795,10 @@ int main(int argc, char* argv[]) {
         case 17: l = rcqlfcenc(in, inlen, out, prdid); break;
         case 18: l = becenc8(  in, inlen, out);        break;
         case 19: l = becenc16( in, inlen, out);        break;
-		case 62: l = utf8enc( in, inlen, out, bwtflag(osize)); break; 
 	      #ifdef _BWT
         case 20: l = rcbwtenc( in, inlen, out, prdid, bwtflag(osize)); break;
 	      #endif		
+		case 21: l = utf8enc( in, inlen, out, bwtflag(osize)); break; 
         default: ERR(E_CODEC); 
       }
       l = l<<1 | (inlen < bsize?1:0);                               // last block?
@@ -859,7 +849,7 @@ int main(int argc, char* argv[]) {
 	      #ifdef _BWT
         case 20: rcbwtdec(  out, l, cpy, prdid); break;
           #endif
-        case 62: utf8dec(   in, bsize, out);        break;
+        case 21: utf8dec(   in, bsize, out);        break;
         default: ERR(E_CODEC); 
       }  
       if(fwrite(out, 1, bsize, fo) != bsize) ERR(E_FWR);     folen += bsize;                                  
@@ -873,3 +863,4 @@ int main(int argc, char* argv[]) {
   if(cpy) vfree(cpy);
   return rc;
 }
+
