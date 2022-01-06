@@ -141,17 +141,8 @@ endif
 
 all: turborc
 
-transpose.o: transpose.c
-	$(CC) -O3 $(CFLAGS) $(COPT) -c -DUSE_SSE -falign-loops transpose.c -o transpose.o
-
-transpose_sse.o: transpose.c
-	$(CC) -O3 $(CFLAGS) $(COPT) -DSSE2_ON $(_SSE) -falign-loops -c transpose.c -o transpose_sse.o
-
-transpose_avx2.o: transpose.c
-	$(CC) -O3 $(CFLAGS) $(COPT) -DAVX2_ON $(_AVX2) -falign-loops -c transpose.c -o transpose_avx2.o
-
 ifneq ($(NOCOMP), 1)
-LIB=rc_ss.o rc_s.o rccdf.o rcutil.o bec_b.o rccm_s.o rccm_ss.o rccm_sf.o transpose.o transpose_sse.o transpose_avx2.o
+LIB=rc_ss.o rc_s.o rccdf.o rcutil.o bec_b.o rccm_s.o rccm_ss.o rccm_sf.o
 endif
 ifeq ($(BWT), 1)
 LIB+=rcbwt_ss.o
