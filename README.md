@@ -127,4 +127,4 @@ See examples in "turborc.c"
 * **References:**
   * <a name="a"></a>[Entropy Coder Benchmark](https://sites.google.com/site/powturbo/entropy-coder) 
 
-Last update:  01 JAN 2022
+Last update:  06 JAN 2022
