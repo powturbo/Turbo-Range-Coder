@@ -226,7 +226,7 @@
 }
                                                                       
 // Static (without predictor)
-#define mbu_senc(_rcrange_,_rclow_, _m_,_prm0_,_prm1_,_op_, _b_) do { mbu *_m = _m_; unsigned _mbp = mbu_p(_m,_prm0_); rcbenc(_rcrange_,_rclow_ , _mbp, ;, ;, _m, 0,0,_op_, _b_); } while(0)
+#define mbu_senc(_rcrange_,_rclow_, _m_,_prm0_,_prm1_,_op_, _b_) do { mbu *_m = _m_; unsigned _mbp = mbu_p(_m,_prm0_); rcbenc(_rcrange_,_rclow_ , _mbp, ;, _m, 0,0,_op_, _b_); } while(0)
 #define mbu_sdec(_rcrange_,_rccode_,_m_,_prm0_,_prm1_,_ip_, _x_) do { mbu *_m = _m_; unsigned _mbp = mbu_p(_m,_prm0_); rcbdec(_rcrange_,_rccode_, _mbp, ;, _m, 0,0,_ip_, _x_); } while(0)
 
 #define mb4senc(_rcrange_,_rclow_, _m_,_prm0_,_prm1_, _op_, _x_) do {\
