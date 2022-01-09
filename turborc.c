@@ -64,9 +64,9 @@ int verbose;
 enum { E_FOP=1, E_FCR, E_FRD, E_FWR, E_MEM, E_CORR, E_MAG, E_CODEC, E_FSAME };
 
 static char *errs[] = {"", "open error", "create error", "read error", "write error", "malloc failed", "file corrupted", "no TurboRc file", "no codec", "input and output files are same" };
-
+ 
 // program parameters
-static int xnibble,xtpbyte=-1, lenmin = 64, level=9, thnum=0;
+static unsigned xnibble, lenmin = 64, lev=9, thnum=0, xtpbyte=-1;
 unsigned prm1=5, prm2=6; 
 
 //       0       1        2         3         4         5         6         7,       8        9        10      11      12      13      14       15
@@ -359,17 +359,17 @@ RCGEN2(rcvez,32)
 
 size_t rcbwtenc(unsigned char *in, size_t inlen, unsigned char *out, int prdid, unsigned flag) { 
   switch(prdid) {
-	case RC_PRD_S :    return rcbwtsenc( in, inlen, out, level, thnum, flag);
-	case RC_PRD_SS:    return rcbwtssenc(in, inlen, out, level, thnum, flag, prm1,prm2);
-	case RC_PRD_SF: SF(return rcbwtsfenc(in, inlen, out, level, thnum, flag, fsm));
+	case RC_PRD_S :    return rcbwtsenc( in, inlen, out, lev, thnum, flag);
+	case RC_PRD_SS:    return rcbwtssenc(in, inlen, out, lev, thnum, flag, prm1,prm2);
+	case RC_PRD_SF: SF(return rcbwtsfenc(in, inlen, out, lev, thnum, flag, fsm));
   }
 }
 
 size_t rcbwtdec(unsigned char *in, size_t outlen, unsigned char *out, int prdid) {
   switch(prdid) {
-	case RC_PRD_S :    return rcbwtsdec( in, outlen, out, level, thnum);
-	case RC_PRD_SS:    return rcbwtssdec(in, outlen, out, level, thnum, prm1,prm2);
-	case RC_PRD_SF: SF(return rcbwtsfdec(in, outlen, out, level, thnum, fsm));
+	case RC_PRD_S :    return rcbwtsdec( in, outlen, out, lev, thnum);
+	case RC_PRD_SS:    return rcbwtssdec(in, outlen, out, lev, thnum, prm1,prm2);
+	case RC_PRD_SF: SF(return rcbwtsfdec(in, outlen, out, lev, thnum, fsm));
   }
 }
 
@@ -550,10 +550,73 @@ static void usage(char *pgm) {
   exit(1);
 } 
 
+//----------------------------- File compression header serialization ----------------------------------------------------
+#pragma pack(1)
+typedef struct hd {											// main header
+  unsigned short magic, _bsize;
+  unsigned char  codec, lev, prm1, prm2, prdid;
+} _PACKED hd_t;
+typedef struct chdb {									    // block header
+  unsigned bsize, inlen, clen;
+} _PACKED hdb_t;
+#pragma pack() 
+
+int hdwr(hd_t *hd, FILE *fo) {
+  unsigned folen = 0 ;
+  unsigned u32 = (hd->_bsize-1) << 20 | hd->codec << 12 | hd->magic;            //12+8+12=32 bits
+  if(fwrite(&u32, 1, 4, fo) != 4) return -E_FWR;             folen  = 4;              // blocksize
+  unsigned short u16 = hd->lev<<10 | hd->prm2<<6 | hd->prm1<<2 | (hd->prdid-1); // 4+4+4+2=14 bits
+  if(fwrite(&u16, 1, 2, fo) != 2) return -E_FWR;             folen += 2;   
+  return folen;	
+}
+
+int hdrd(hd_t *hd, FILE *fi) {
+  unsigned filen, u32;
+  unsigned short u16;
+  if(fread(&u32, 1, 4, fi) != 4) return -E_FRD;                  filen  = 4;
+  if((u32&0xfffu) != MAGIC) return -E_MAG;
+  if((hd->codec  = (char)(u32>>12)) > CODEC_MAX) -E_CODEC;
+  if((hd->_bsize = (u32>>20)+1) > BLKMAX) return -E_CORR;
+  if(fread(&u16, 1, 2, fi) != 2) return -E_FRD;                  filen += 2;
+  hd->prdid =  (u16&3)+1;
+  hd->prm1  =  (u16>> 2)&0xf;
+  hd->prm2  =  (u16>> 6)&0xf;
+  hd->lev   =  (u16>>10)&0xf; 
+  return filen;
+}
+
+int hdbwr(hdb_t *hdb, FILE *fo) {
+  unsigned folen, h = hdb->clen >= (1<<30), u32 = hdb->clen << 2 | h << 1 | (hdb->inlen < hdb->bsize);                // last block?
+  if(fwrite(&u32, 1, 4, fo) != 4) return -E_FWR;     folen  = 4; printf("clen=%u ", hdb->clen);
+  if(h) {
+    unsigned short u16 = hdb->clen >> 30;
+    if(fwrite(&u16, 1, 2, fo) != 2) return -E_FWR;   folen += 2;
+  }
+  if(hdb->inlen < hdb->bsize) 									   // length of last block < block size
+    if(fwrite(&hdb->inlen, 1, 4, fo) != 4) return -E_FWR;   folen +=4;
+  return folen;
+}
+
+unsigned hdbrd(hdb_t *hdb, FILE *fi) {
+  unsigned filen, u32, h;
+  unsigned short u16;
+  if(fread(&u32, 1, 4, fi) != 4) return -E_FRD;          filen  = 4;
+  hdb->clen = u32>>2;                                                   printf("clen=%u ", hdb->clen);
+  if(u32&2) {
+	unsigned short u16;
+	if(fread(&u16, 1, 2, fi) != 2) return -E_FRD;        filen += 2;
+	hdb->clen |= u16 << 30;
+  }
+  if(u32&1) {                                                          // last block
+    if(fread(&hdb->inlen, 1, 4, fi) != 4) return -E_FRD; filen  += 4;
+  }	  
+  return filen; 	
+}
+//---------------------------------------------- main : benchmark + file compression ----------------------------------------------
 int main(int argc, char* argv[]) {
   unsigned _bsize = 1536, prdid = RC_PRD_S;
   int      xstdout=0, xstdin=0, decomp=0, codec=0, dobench=0, cmp=1, c, digit_optind=0, decs=0, divs=0, skiph=0, isize=4, dfmt=0, mdelta=0, kid=0, osize=1;
-  char     *scmd = NULL, prids[8]="s", *keysep=NULL;													//fdbg = fopen("test.dat", "wb"); if(!fdbg) perror("fopen failed");
+  char     *scmd = NULL, prids[8]="s", *keysep = NULL;													//fdbg = fopen("test.dat", "wb"); if(!fdbg) perror("fopen failed");
   
     #ifndef _WIN32 
   { const  rlim_t kStackSize = 32 * 1024 * 1024; 
@@ -641,7 +704,7 @@ int main(int argc, char* argv[]) {
       case 'e': scmd = optarg; dobench++; break;
       case 'I': if((tm_Rep  = atoi(optarg))<=0) tm_rep =tm_Rep =1; break;
       case 'J': if((tm_Rep2 = atoi(optarg))<=0) tm_rep =tm_Rep2=1; break;
-	  case 'l': level = atoi(optarg); if(level>9) level=9; break;
+	  case 'l': lev = atoi(optarg); if(lev>9) lev=9; break;
       case 'm': lenmin = atoi(optarg); if(lenmin && lenmin < 16) lenmin = 16; if(lenmin > 256) lenmin = 256; break;
 	    #ifndef NO_BENCH
 	  case 'x': { int m = atoi(optarg); if(m<4) m=4;else if(m>16) m=16; mbcset(m); /*set context bits*/} break;
@@ -750,10 +813,9 @@ int main(int argc, char* argv[]) {
 	exit(0);
   }
   if(argc <= optind) xstdin++;
-  unsigned l;
   unsigned long long filen=0,folen=0;
   char               *finame = xstdin ?"stdin":argv[optind], *foname, _foname[1027];  if(verbose>1) printf("'%s'\n", finame);
-
+  
   if(xstdout) foname = "stdout";
   else {
 	if(optind+1 >= argc) { fprintf(stderr, "destination file not specified or wrong number of parameters\n");exit(-1); }
@@ -772,90 +834,76 @@ int main(int argc, char* argv[]) {
   FILE *fi = xstdin ?stdin :fopen(finame, "rb"); if(!fi) { perror(finame); return 1; }
   FILE *fo = xstdout?stdout:fopen(foname, "wb"); if(!fo) { perror(finame); return 1; } 
     #ifndef NO_COMP 
-  if(!decomp) {  														 
-    l = _bsize << 20 | codec << 12 | MAGIC; 
-    if(fwrite(&l, 1, 4, fo) != 4) ERR(E_FWR);             folen = 4;      // blocksize
-	l = level<<9 | prm1<<5| prm2<<1 | (prdid-1);
-    if(fwrite(&l, 1, 4, fo) != 4) ERR(E_FWR);             folen = 8;      // blocksize	
+  if(!decomp) { 
+    hd_t hd; hd.magic = MAGIC; hd._bsize = _bsize; hd.codec = codec; hd.lev = lev; hd.prdid = prdid; hd.prm1 = prm1; hd.prm2 = prm2;
+    if((rc = hdwr(&hd, fo)) < 0) ERR(-rc); folen = rc;
     in  = vmalloc(bsize+1024);
     out = vmalloc(bsize+1024); if(!in || !out) ERR(E_MEM); 
-
+    unsigned clen;
     while((inlen = fread(in, 1, bsize, fi)) > 0) {        filen += inlen;
       switch(codec) {		  
-        case  0: l = inlen; memcpy(out, in, inlen);    break;
-        case  1: l = rcenc(    in, inlen, out, prdid); break;
-        case  2: l = rccenc(   in, inlen, out, prdid); break;
-        case  3: l = rcc2enc(  in, inlen, out, prdid); break;
-        case  4: l = rcxenc(   in, inlen, out, prdid); break;
-        case  5: mbcset(15); l = rcx2enc(  in, inlen, out, prdid); break;
-        case  9: l = rcmsenc(  in, inlen, out);        break;
-        case 10: l = rcm2senc( in, inlen, out);        break;
-        case 12: l = rcrleenc( in, inlen, out, prdid); break;
-        case 14: l = rcrle1enc(in, inlen, out, prdid); break;
-        case 17: l = rcqlfcenc(in, inlen, out, prdid); break;
-        case 18: l = becenc8(  in, inlen, out);        break;
-        case 19: l = becenc16( in, inlen, out);        break;
+        case  0: clen = inlen; memcpy(out, in, inlen);    break;
+        case  1: clen = rcenc(    in, inlen, out, prdid); break;
+        case  2: clen = rccenc(   in, inlen, out, prdid); break;
+        case  3: clen = rcc2enc(  in, inlen, out, prdid); break;
+        case  4: clen = rcxenc(   in, inlen, out, prdid); break;
+        case  5: mbcset(15); clen = rcx2enc(  in, inlen, out, prdid); break;
+        case  9: clen = rcmsenc(  in, inlen, out);        break;
+        case 10: clen = rcm2senc( in, inlen, out);        break;
+        case 12: clen = rcrleenc( in, inlen, out, prdid); break;
+        case 14: clen = rcrle1enc(in, inlen, out, prdid); break;
+        case 17: clen = rcqlfcenc(in, inlen, out, prdid); break;
+        case 18: clen = becenc8(  in, inlen, out);        break;
+        case 19: clen = becenc16( in, inlen, out);        break;
 	      #ifdef _BWT
-        case 20: l = rcbwtenc( in, inlen, out, prdid, bwtflag(osize)); break;
+        case 20: clen = rcbwtenc( in, inlen, out, prdid, bwtflag(osize)); break;
 	      #endif		
-		case 21: l = utf8enc( in, inlen, out, bwtflag(osize)); break; 
+		case 21: clen = utf8enc( in, inlen, out, bwtflag(osize)); break; 
         default: ERR(E_CODEC); 
       }
-      l = l<<1 | (inlen < bsize?1:0);                               // last block?
-      if(fwrite(&l, 1, 4, fo) != 4) ERR(E_FWR);  l>>=1;   folen += 4;
-      if(inlen < bsize) 
-       if(fwrite(&inlen, 1, 4, fo) != 4) ERR(E_FWR); else folen +=4;
-      if(fwrite(out, 1, l, fo) != l) ERR(E_FWR);          folen += l;
+      hdb_t hdb; hdb.inlen = inlen; hdb.bsize = bsize; hdb.clen = clen; if((rc = hdbwr(&hdb, fo)) < 0) ERR(-rc); folen += rc;
+      if(fwrite(out, 1, clen, fo) != clen) ERR(E_FWR);          folen += clen;
     }                                                             if(verbose) printf("compress: '%s'  %d->%d\n", finame, filen, folen);                                                                    
   } else 
 	#endif
   { // Decompress
-	
-    if(fread(&l, 1, 4, fi) != 4) ERR(E_FRD);                  filen = 4;
-    if((l&0xfffu) != MAGIC)                 ERR(E_MAG);
-    if((_bsize = l>>20) > BLKMAX)           ERR(E_CORR);
-    if((codec = (char)(l>>12)) > CODEC_MAX) ERR(E_CODEC);
+	hd_t hd; if((rc = hdrd(&hd, fi)) < 0) ERR(-rc); filen = rc; _bsize = hd._bsize; codec = hd.codec; lev = hd.lev; prdid = hd.prdid; prm1 = hd.prm1; prm2 = hd.prm2; 
     bsize = _bsize * Mb;
-
-    if(fread(&l, 1, 4, fi) != 4) ERR(E_FRD);                  filen = 8;
-	prdid = (l&1)+1; prm1 = (l >>5)&0xf; prm2 = (l >>1)&0xf; level = (l >>9)&0xf;    //printf("codec=%d,lev=%d,r=%d,%d, bsize=%d ", codec, level, prm1, prm2, bsize/Mb);
-	
     in  = vmalloc(bsize); 
     out = vmalloc(bsize); if(!in || !out) ERR(E_MEM); 
     for(;;) {
-      if(fread(&l, 1, 4, fi) != 4) break;                     filen += 4;   // compressed block length
-      if((l>>1) > bsize) ERR(E_CORR);
-      if((l&1))
-        if(fread(&bsize, 1, 4, fi) != 4) ERR(rc = E_FRD);else filen += 4; // read last block length
-      l >>= 1;                   
-      if(fread(in, 1, l, fi) != l) ERR(E_FRD);                filen += l; // read block
-      if(l == bsize) { memcpy(out,in, l); }
+	  hdb_t hdb; if((rc = hdbrd(&hdb, fi)) < 0) break;     filen += rc;
+	  unsigned outlen = hdb.inlen;
+      if(fread(in, 1, hdb.clen, fi) != hdb.clen) ERR(E_FRD);   filen += hdb.clen; // read block
+      if(hdb.clen == outlen) memcpy(out, in, outlen);
       else switch(codec) { 
 	      #ifndef NO_RC
-        case  0: memcpy(out, in, bsize);            break;
-        case  1: rcdec(     in, bsize, out, prdid); break;
-        case  2: rccdec(    in, bsize, out, prdid); break;
-        case  3: rcc2dec(   in, bsize, out, prdid); break;
-        case  4: rcxdec(    in, bsize, out, prdid); break;
-        case  5: mbcset(15); rcx2dec(in, bsize, out, prdid); break;
-        case  9: rcmsdec(   in, bsize, out);        break;
-        case 10: rcm2sdec(  in, bsize, out);        break;
-        case 12: rcrledec(  in, bsize, out, prdid); break;
-        case 14: rcrle1dec( in, bsize, out, prdid); break;
-        case 17: rcqlfcdec( in, bsize, out, prdid); break;
-        case 18: becdec8(   in, bsize, out);        break;
-        case 19: becdec16(  in, bsize, out);        break;
+        case  0: memcpy(out,in, outlen);             break;
+        case  1: rcdec(     in, outlen, out, prdid); break;
+        case  2: rccdec(    in, outlen, out, prdid); break;
+        case  3: rcc2dec(   in, outlen, out, prdid); break;
+        case  4: rcxdec(    in, outlen, out, prdid); break;
+        case  5: mbcset(15); rcx2dec(in, outlen, out, prdid); break;
+        case  9: rcmsdec(   in, outlen, out);        break;
+        case 10: rcm2sdec(  in, outlen, out);        break;
+        case 12: rcrledec(  in, outlen, out, prdid); break;
+        case 14: rcrle1dec( in, outlen, out, prdid); break;
+        case 17: rcqlfcdec( in, outlen, out, prdid); break;
+        case 18: becdec8(   in, outlen, out);        break;
+        case 19: becdec16(  in, outlen, out);        break;
 		  #endif
 	      #ifdef _BWT
-        case 20: rcbwtdec(  out, l, cpy, prdid); break;
+        case 20: rcbwtdec(  in, outlen, out, prdid); break;
           #endif
-        case 21: utf8dec(   in, bsize, out);        break;
+        case 21: utf8dec(   in, outlen, out);        break;
         default: ERR(E_CODEC); 
       }  
-      if(fwrite(out, 1, bsize, fo) != bsize) ERR(E_FWR);     folen += bsize;                                  
+      if(fwrite(out, 1, outlen, fo) != outlen) ERR(E_FWR); folen += outlen;  
+      if(hdb.inlen < inlen) break;	  
     }                                                        if(verbose) printf("decompress:'%s' %d->%d\n", foname, filen, folen);
   }                                                              
-  end: if(fi) fclose(fi);
+  end: rc = 0;
+  if(fi) fclose(fi);
   if(fo) fclose(fo);
   err: if(rc) { fprintf(stderr,"%s\n", errs[rc]); fflush(stderr); }
   if(in) vfree(in);
@@ -863,4 +911,3 @@ int main(int argc, char* argv[]) {
   if(cpy) vfree(cpy);
   return rc;
 }
-
