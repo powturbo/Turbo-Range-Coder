@@ -129,7 +129,7 @@ size_t T3(rcbwt,RC_PRD,enc)(unsigned char *in, size_t inlen, unsigned char *out,
   unsigned char *bwt   = vmalloc(inlen+1024), *ip = in; if(!bwt) { op = out+inlen; goto e; }  // inlen + space for bwt indexes idxns
   size_t        iplen  = inlen;
   unsigned      lenmin = _lenmin, xbwt16 = (_lenmin & BWT_BWT16)?0x80:0, verbose = _lenmin & BWT_VERBOSE; lenmin &= lenmin & 0x3ff; 
-																				
+																				if(verbose) { printf("level=%u ", lev);fflush(stdout); } 
   if(lenmin) {  																if(verbose) { printf("lenmin=%u ", lenmin);fflush(stdout); } 
     ip    = bwt;
     iplen = utf8enc(in, inlen, ip, _lenmin);									// try utf8 preprocessing
