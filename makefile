@@ -46,7 +46,7 @@ ifneq (,$(filter Windows%,$(OS)))
 #  CC=gcc
 #  CXX=g++
   ARCH=x86_64
-  LDFLAGS+=-Wl,--stack,20971520
+  LDFLAGS+=-Wl,--stack,33554432
 else
   OS := $(shell uname -s)
   ARCH := $(shell uname -m)
@@ -129,7 +129,7 @@ endif
 endif
 
 ifeq ($(LIBSAIS), 1)
-CFLAGS+=-D_LIBSAIS -DLIBBSC_SORT_TRANSFORM_SUPPORT 
+CFLAGS+=-D_LIBSAIS 
 LIBBWT+=$(B)libsais/src/libsais.o
 ifeq ($(LIBSAIS16), 1)
 CFLAGS+=-D_LIBSAIS16
@@ -149,30 +149,6 @@ LIB+=rcbwt_ss.o
 #ifneq ($(NOCOMP), 1)
 LIB+=rcbwt_s.o 
 #endif
-endif
-
-ifeq ($(NZ), 1)
-CFLAGS+=-D_NZ
-LIB+=rc_nz.o
-ifeq ($(BWT), 1)
-LIB+=rcbwt_nz.o
-endif
-endif
-
-ifeq ($(SH), 1)
-CFLAGS+=-D_SH
-LIB+=rc_sh.o
-ifeq ($(BWT), 1)
-LIB+=rcbwt_sh.o 
-endif
-endif
-
-ifeq ($(SB), 1)
-CFLAGS+=-D_SB
-LIB+=rc_sb.o
-ifeq ($(BWT), 1)
-LIB+=rcbwt_sb.o 
-endif
 endif
 
 ifeq ($(SF), 1)
