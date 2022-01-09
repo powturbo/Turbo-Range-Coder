@@ -403,48 +403,66 @@ static void div32init(void) { if(!_div32ini) { DIVTINI32(_div32lut, DIV_BITS); _
 #define rcupdate0(rcrange, rccode, _mbupd0_, _mb_,_prm0_,_prm1_) { RC_BD(0); rcrange -= _rcx; rccode -= _rcx; _mbupd0_(_mb_, _predp,_prm0_,_prm1_); }
 #define rcupdate1(rcrange, rccode, _mbupd1_, _mb_,_prm0_,_prm1_) { RC_BD(1); rcrange  = _rcx;                 _mbupd1_(_mb_, _predp,_prm0_,_prm1_); }
 
-//--- encode bit -----
-#define rcbe(rcrange,rclow, _mbp_, _mbupd0_,_mbupd1_, _mb_,_prm0_,_prm1_,_op_, _bit_) do {\
-  rcrange_t _rcx = (rcrange >> RC_BITS) * (_mbp_);\
-  if(unlikely(_bit_)) { RC_BE(1); rcrange  = _rcx;                                                                      _mbupd1_(_mb_,_mbp_, _prm0_,_prm1_); }\
-  else {                RC_BE(0); rcrange -= _rcx; rcrange_t ilow = rclow; rclow += _rcx; _rccarry_(ilow, rclow, _op_); _mbupd0_(_mb_,_mbp_, _prm0_,_prm1_); }\
+//------------ encode bit (branchless) -----
+#define rcbe_(rcrange,rclow, _mbp_, _op_, _bit) {\
+  rcrange_t _rcx  = (rcrange >> RC_BITS) * (_mbp_), _ilow = rclow, _b = -!_bit;  			RC_BE(_bit_); \
+         rcrange  = _rcx + (_b & (rcrange - _rcx - _rcx)); \
+           rclow += _b & _rcx;\
+  _rccarry_(_ilow, rclow, _op_);\
+}
+
+#define rcbe(rcrange,rclow, _mbp_, _mbupd_,_mb_,_prm0_,_prm1_,_op_, _bit_) do { \
+  rcrange_t _bit = (_bit_) != 0;\
+  rcbe_(rcrange,rclow, _mbp_, _op_, _bit);\
+  _mbupd_(_mb_,_mbp_, _prm0_,_prm1_,_bit);\
 } while(0)
 
-#define rcbme(rcrange,rclow, _mbp_, _mbupd0_,_mbupd1_, _mb_,_prm0_,_prm1_,_op_, _bit_, _mb1_, _mb2_, _sse2_) do {\
-  rcrange_t _rcx = (rcrange >> RC_BITS) * (_mbp_);\
-  if(unlikely(_bit_)) { RC_BE(1); rcrange  = _rcx;                                                                      _mbupd1_(_mb_,_mbp_,_prm0_,_prm1_, _mb1_,_mb2_,_sse2_); }\
-  else {                RC_BE(0); rcrange -= _rcx; rcrange_t ilow = rclow; rclow += _rcx; _rccarry_(ilow, rclow, _op_); _mbupd0_(_mb_,_mbp_,_prm0_,_prm1_, _mb1_,_mb2_,_sse2_); }\
+#define rcbme(rcrange,rclow, _mbp_, _mbupd_,_mb_,_prm0_,_prm1_,_op_, _bit_, _mb1_, _mb2_, _sse2_) do {\
+  rcrange_t _bit = (_bit_) !=0;\
+  rcbe_(rcrange,rclow, _mbp_, _op_, _bit);\
+  _mbupd_(_mb_,_mbp_,_prm0_,_prm1_, _bit, _mb1_,_mb2_,_sse2_);\
 } while(0)
-
-//--- encode bit + renorm -----
-#define rcbenc( rcrange,rclow, _mbp_,_mbupd0_,_mbupd1_, _mb_,_prm0_,_prm1_,_op_, _bit_) do {\
+//--- encode bit + renorm 
+#define rcbenc( rcrange,rclow, _mbp_,_mbupd_, _mb_,_prm0_,_prm1_,_op_, _bit_) do {\
   _rcenorm_(rcrange,rclow,_op_);\
-  rcbe(rcrange, rclow, _mbp_, _mbupd0_,_mbupd1_, _mb_,_prm0_,_prm1_,_op_, _bit_);\
+  rcbe(rcrange, rclow, _mbp_, _mbupd_, _mb_,_prm0_,_prm1_,_op_, _bit_);\
 } while(0)
 
-#define rcbmenc(rcrange,rclow, _mbp_,_mbupd0_,_mbupd1_, _mb_,_prm0_,_prm1_,_op_, _bit_, _mb1_, _mb2_, _sse2_) do {\
+#define rcbmenc(rcrange,rclow, _mbp_,_mbupd_, _mb_,_prm0_,_prm1_,_op_, _bit_, _mb1_, _mb2_, _sse2_) do {\
   _rcenorm_(rcrange,rclow,_op_);\
-  rcbme(rcrange, rclow, _mbp_, _mbupd0_,_mbupd1_, _mb_,_prm0_,_prm1_,_op_, _bit_, _mb1_, _mb2_, _sse2_);\
+  rcbme(rcrange, rclow, _mbp_, _mbupd_, _mb_,_prm0_,_prm1_,_op_, _bit_, _mb1_, _mb2_, _sse2_);\
 } while(0)
 
-//--- decode bit (branchless decoding) -----
-#define rcbd(rcrange, rccode, _mbp_, _mbupd_,_mb_,_prm0_,_prm1_, _x_) do {\
+//----------- decode bit (branchless) -----
+/*#define rcbd(rcrange, rccode, _mbp_, _mbupd_,_mb_,_prm0_,_prm1_, _x_) do {\
   rcrange_t _rcx = (rcrange >> RC_BITS) * (_mbp_), _bit;\
-  rcrange -= _rcx; _bit = rccode < _rcx?rcrange=_rcx, 1:0; \
+  rcrange -= _rcx; _bit = rccode < _rcx?rcrange=_rcx, 1:0;\
   _x_ += _x_+_bit;\
   _mbupd_(_mb_,_mbp_, _prm0_,_prm1_,_bit); \
   rccode -= (-!_bit) & _rcx;\
+} while(0)*/
+	
+#define rcbd_(rcrange, rccode, _mbp_, _bit_) {\
+  rcrange_t _rcx = (rcrange >> RC_BITS) * (_mbp_);\
+  rcrange -= _rcx; _bit_ = rccode < _rcx?rcrange=_rcx, 1:0;\
+  rccode -= (-!_bit_) & _rcx;\
+}
+
+#define rcbd(rcrange, rccode, _mbp_, _mbupd_,_mb_,_prm0_,_prm1_, _x_) do {\
+  rcrange_t _bit;\
+  rcbd_(rcrange, rccode, _mbp_, _bit);\
+  _x_ += _x_+_bit;\
+  _mbupd_(_mb_,_mbp_, _prm0_,_prm1_,_bit); \
 } while(0)
 	
 #define rcbmd(rcrange, rccode, _mbp_, _mbupd_,_mb_,_prm0_,_prm1_, _x_, _mb1_, _mb2_, _sse2_) do { /*Version with 8 parameters used in context mixing*/\
-  rcrange_t _rcx = (rcrange >> RC_BITS) * (_mbp_), _bit;\
-  rcrange -= _rcx; _bit = rccode < _rcx?rcrange=_rcx, 1:0; \
+  rcrange_t _bit;\
+  rcbd_(rcrange, rccode, _mbp_, _bit);\
   _x_ += _x_+_bit;\
   _mbupd_(_mb_,_mbp_, _prm0_,_prm1_,_bit, _mb1_, _mb2_, _sse2_); \
-  rccode -= (-!_bit) & _rcx;\
 } while(0)
 
-//--- decode bit +  renorm -----
+//--- decode bit +  renorm
 #define rcbdec( rcrange,rccode, _mbp_, _mbupd_, _mb_,_prm0_,_prm1_, _ip_, _x_) do {\
   _rcdnorm_(rcrange,rccode,_ip_); \
   rcbd(rcrange,rccode,  _mbp_, _mbupd_,_mb_,_prm0_,_prm1_, _x_);\
