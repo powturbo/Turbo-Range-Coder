@@ -24,7 +24,7 @@
 // TurboRC: Range Coder encode/decode functions using fsm predictor 
 
 #include <stdio.h>             
-#include "conf.h"   
+#include "include_/conf.h"   
 #include "turborc.h"   
 
 #define RC_MACROS
