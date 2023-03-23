@@ -29,7 +29,7 @@
 #define RCPRMC ,RCPRM0, RCPRM1
 
   #ifndef _MBC_SS_H
-#include "conf.h" // _PACKED
+#include "include_/conf.h" // _PACKED
 #define _MBC_SS_H
 #pragma pack(1) 
 typedef struct { unsigned short p,q; } _PACKED mbu; // o0:5,8 o1:4,6 o2:2,5 bwt:4,7
