@@ -22,23 +22,25 @@
     - email    : powturbo [_AT_] gmail [_DOT_] com
 **/
 // TurboRC: Range Coder - CDF functions
-#include "conf.h"
+#include "include_/conf.h"
 
   #ifdef __AVX2__      
-#define RC_SIZE 32     // avx2 symbol search only with RC_SIZE=32 
+#define RC_SIZE 32    // avx2 symbol search only with RC_SIZE=32 
 #define RC_BITS 14
-#define RC_IO   16     // set RC_IO to 8 for more precision
+#define RC_IO   16    // set RC_IO to 8 for more precision. 
+// enwik8 RC_BITS/RC_IO: 15/8=61452777  14/8=61540572 14/16=61970000
   #else
 #define RC_SIZE 64
 #define RC_BITS 15
   #endif
 #define RC_MULTISYMBOL
 #define RC_MACROS 
+#include "include_/turborc.h"
 #include "rcutil_.h"
 #include "turborc_.h"
-#include "turborc.h"
 #include "rccdf_.h" 
- 
+#include "include_/vlcbit.h" 
+
 #define OVERFLOWI(_in_,_inlen_, _op_, _op0_, _op1_) if(_op_ >= out+(_inlen_*255)/256-8 || _op0_ >= _op1_) { memcpy(out,_in_,_inlen_); return _inlen_; }
 
 // calculate static frequencies and build the cdf (use only for testing)
@@ -224,10 +226,15 @@ size_t rccdfienc(unsigned char *in, size_t inlen, unsigned char *out) {
   rcencdef(rcrange0,rclow0); rceinit(rcrange0,rclow0);
   rcencdef(rcrange1,rclow1); rceinit(rcrange1,rclow1);
   CDF16DEF; 
-  for(ip = in; ip < in+inlen;ip++) {
+  for(ip = in; ip < in+(inlen&~(4-1));ip+=4) {						PREFETCH(ip+384,0); 
 	cdf8e2(rcrange0,rclow0,rcrange1,rclow1,cdf,cdf1,ip[0],op0,op1);
-    OVERFLOWI(in, inlen, op1, op0, _op1);
+	cdf8e2(rcrange0,rclow0,rcrange1,rclow1,cdf,cdf1,ip[1],op0,op1);
+	cdf8e2(rcrange0,rclow0,rcrange1,rclow1,cdf,cdf1,ip[2],op0,op1);
+	cdf8e2(rcrange0,rclow0,rcrange1,rclow1,cdf,cdf1,ip[3],op0,op1); 
+    OVERFLOWI(in, inlen, op1, op0, _op1);										
   }
+  for(; ip < in+inlen;ip++) 
+	cdf8e2(rcrange0,rclow0,rcrange1,rclow1,cdf,cdf1,ip[0],op0,op1);
   rceflush(rcrange0,rclow0, op0);
   rceflush(rcrange1,rclow1, op1);
   ctou32(out) = op0-_op0; memcpy(op0,_op1,op1-_op1); op0+=op1-_op1;  			OVERFLOW(in,inlen,out, op0, goto e);  
@@ -343,9 +350,9 @@ size_t rccdfidec8(unsigned char *in, size_t outlen, unsigned char *out) {
   rcdecdef(rcrange0, rccode0);     rcdinit(rcrange0, rccode0, ip0);				
   rcdecdef(rcrange1, rccode1);     rcdinit(rcrange1, rccode1, ip1);				
   CDF16DEF; 
-  for(; op < out+(outlen&~(4-1));op+=4) { 										PREFETCH(ip0+384,0); PREFETCH(ip1+384,0);
+  for(; op < out+(outlen&~(4-1));op+=4) { 										PREFETCH(ip0+384,0); 
     cdfd8(rcrange0,rccode0,rcrange1,rccode1,cdf0,cdf1,cdf2,op[0],ip0,ip1);
-    cdfd8(rcrange0,rccode0,rcrange1,rccode1,cdf0,cdf1,cdf2,op[1],ip0,ip1);
+    cdfd8(rcrange0,rccode0,rcrange1,rccode1,cdf0,cdf1,cdf2,op[1],ip0,ip1);PREFETCH(ip1+384,0);
     cdfd8(rcrange0,rccode0,rcrange1,rccode1,cdf0,cdf1,cdf2,op[2],ip0,ip1);
     cdfd8(rcrange0,rccode0,rcrange1,rccode1,cdf0,cdf1,cdf2,op[3],ip0,ip1);
   }
