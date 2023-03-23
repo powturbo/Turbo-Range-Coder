@@ -22,7 +22,7 @@
     - email    : powturbo [_AT_] gmail [_DOT_] com
 **/
 // TurboRC: Range Coder - CM predictor (16 bits counters)
-#include "conf.h"   
+#include "include_/conf.h"   
 
 #define RC_MACROS
 #define RC_BITS 16     	    // RC_SIZE + RC_IO: set in turborc_.h
