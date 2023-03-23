@@ -1,5 +1,5 @@
 /**
-    Copyright (C) powturbo 2013-2022
+    Copyright (C) powturbo 2013-2023
     GPL v3 License
 
     This program is free software; you can redistribute it and/or modify
@@ -26,13 +26,15 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-size_t lzpenc(unsigned char *__restrict in, size_t inlen,  unsigned char *__restrict out, unsigned lenmin);
-size_t lzpdec(unsigned char *__restrict in, size_t outlen, unsigned char *__restrict out, unsigned lenmin);
+size_t lzpenc(unsigned char *__restrict in, size_t inlen,  unsigned char *__restrict out, unsigned lenmin, unsigned h_bits);
+size_t lzpdec(unsigned char *__restrict in, size_t outlen, unsigned char *__restrict out, unsigned lenmin, unsigned h_bits);
 
 unsigned char *rcqlfc(unsigned char *__restrict in, size_t n, unsigned char *__restrict out, unsigned char *__restrict r2c);
 
-unsigned utf8enc(unsigned char *__restrict in, size_t inlen, unsigned char *__restrict out, unsigned flag);
-unsigned utf8dec(unsigned char *__restrict in, size_t outlen, unsigned char *__restrict out);
+size_t utf8enc(unsigned char *__restrict in, size_t inlen,  unsigned char *__restrict out, unsigned flag);
+size_t utf8dec(unsigned char *__restrict in, size_t outlen, unsigned char *__restrict out);
+void memrev(unsigned char a[], unsigned n);
+
 #ifdef __cplusplus
 }
 #endif
