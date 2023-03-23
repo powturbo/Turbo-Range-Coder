@@ -23,7 +23,7 @@
 **/
 // TurboRC: Range Coder - simple predictor (16 bits counter)
 #define RC_PRDID 1
-#define RC_PRD s
+#define RC_PRD   s
 
   #ifdef RC_MACROS
 #define mbu unsigned short
@@ -50,9 +50,9 @@ static inline int mbu_p(mbu *mb, int _prm0_) { return (*mb); } // get probabilit
 #define mbu_update0(_mb_, _mbp_, _prm0_, _prm1_) (*(_mb_) = (_mbp_) - ((_mbp_) >> 5))                   // Predictor update for bit 1
 #define mbu_update( _mb_, _mbp_, _prm0_, _prm1_, _bit_) (_bit_)?mbu_update1(_mb_, _mbp_, _prm0_, _prm1_):mbu_update0(_mb_, _mbp_, _prm0_, _prm1_)
     #else
+#define mbu_update0(_mb_, _mbp_, _prm0_, _prm1_)        *(_mb_) = (_mbp_) - ((_mbp_) >> 5)
+#define mbu_update1(_mb_, _mbp_, _prm0_, _prm1_)        *(_mb_) = (_mbp_) - ( (((_mbp_) - (1<<RC_BITS)) >> 5) + 1)
 #define mbu_update( _mb_, _mbp_, _prm0_, _prm1_, _bit_) *(_mb_) = (_mbp_) - ((((_mbp_) - (-_bit_ & (1<<RC_BITS))) >> 5) + _bit_)
-#define mbu_update0(_mb_, _mbp_, _prm0_, _prm1_) *(_mb_) = (_mbp_) - ((_mbp_) >> 5)
-#define mbu_update1(_mb_, _mbp_, _prm0_, _prm1_) *(_mb_) = (_mbp_) - ( (((_mbp_) - (1<<RC_BITS)) >> 5) + 1)
     #endif
   #endif
 
