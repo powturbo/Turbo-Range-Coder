@@ -38,16 +38,16 @@
 #define mbcenc(rcrange,rclow, _cx_, _cxbits_, _m_,_prm0_,_prm1_,_op_, _x_) {\
   unsigned _y = _x_;                                                /*encode high nibble*/\
   mbu *_mh = _m_[              MBC_(_cx_, _cxbits_)]; unsigned _cxh = LITSX8(_cx_, _cxbits_) ((_y) >> 4);  _cx_ = _cx_ << 4 | (_y)>>4;\
-  { mbu *_m = &_mh[(_cxh >> 2) & 0x3c | 3]; mbu_enc(rcrange,rclow, _m,_prm0_,_prm1_,_op_, _cxh & (1<<3)); }\
-  { mbu *_m = &_mh[(_cxh >> 1) & 0x3c | 2]; mbu_enc(rcrange,rclow, _m,_prm0_,_prm1_,_op_, _cxh & (1<<2)); }\
-  { mbu *_m = &_mh[(_cxh     ) & 0x3c | 1]; mbu_enc(rcrange,rclow, _m,_prm0_,_prm1_,_op_, _cxh & (1<<1)); }\
-  { mbu *_m = &_mh[(_cxh << 1) & 0x3c    ]; mbu_enc(rcrange,rclow, _m,_prm0_,_prm1_,_op_, _cxh & (1<<0)); }\
+  { mbu *_m = &_mh[(_cxh >> 2) & 0x3c | 3]; mbu_enc(rcrange,rclow, _m,_prm0_,_prm1_,_op_, RCB(_cxh,3)); }\
+  { mbu *_m = &_mh[(_cxh >> 1) & 0x3c | 2]; mbu_enc(rcrange,rclow, _m,_prm0_,_prm1_,_op_, RCB(_cxh,2)); }\
+  { mbu *_m = &_mh[(_cxh     ) & 0x3c | 1]; mbu_enc(rcrange,rclow, _m,_prm0_,_prm1_,_op_, RCB(_cxh,1)); }\
+  { mbu *_m = &_mh[(_cxh << 1) & 0x3c    ]; mbu_enc(rcrange,rclow, _m,_prm0_,_prm1_,_op_, RCB(_cxh,0)); }\
                                                                     /*slide context then encode low nibble*/\
   mbu *_ml = _m_[(1<<_cxbits_)+MBC_(_cx_, _cxbits_)]; unsigned _cxl = LITSX8(_cx_, _cxbits_) ((_y) & 0xf); _cx_ = _cx_ << 4 | (_y) & 0xf;\
-  { mbu *_m = &_ml[(_cxl >> 2) & 0x3c | 3]; mbu_enc(rcrange,rclow, _m,_prm0_,_prm1_,_op_, _cxl & (1<<3)); }\
-  { mbu *_m = &_ml[(_cxl >> 1) & 0x3c | 2]; mbu_enc(rcrange,rclow, _m,_prm0_,_prm1_,_op_, _cxl & (1<<2)); }\
-  { mbu *_m = &_ml[(_cxl     ) & 0x3c | 1]; mbu_enc(rcrange,rclow, _m,_prm0_,_prm1_,_op_, _cxl & (1<<1)); }\
-  { mbu *_m = &_ml[(_cxl << 1) & 0x3c    ]; mbu_enc(rcrange,rclow, _m,_prm0_,_prm1_,_op_, _cxl & (1<<0)); }\
+  { mbu *_m = &_ml[(_cxl >> 2) & 0x3c | 3]; mbu_enc(rcrange,rclow, _m,_prm0_,_prm1_,_op_, RCB(_cxl,3)); }\
+  { mbu *_m = &_ml[(_cxl >> 1) & 0x3c | 2]; mbu_enc(rcrange,rclow, _m,_prm0_,_prm1_,_op_, RCB(_cxl,2)); }\
+  { mbu *_m = &_ml[(_cxl     ) & 0x3c | 1]; mbu_enc(rcrange,rclow, _m,_prm0_,_prm1_,_op_, RCB(_cxl,1)); }\
+  { mbu *_m = &_ml[(_cxl << 1) & 0x3c    ]; mbu_enc(rcrange,rclow, _m,_prm0_,_prm1_,_op_, RCB(_cxl,0)); }\
 }
 
 // Decode char with context 'cx' of size 'cxbits' bits. Decoded char = (unsigned char)cx  
