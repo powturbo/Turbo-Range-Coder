@@ -46,21 +46,15 @@
 #include <emmintrin.h>
   #elif defined(__ARM_NEON)
 #include <arm_neon.h>
-//#include "sse_neon.h"
+#include "include_/sse_neon.h"
   #endif
+#include "include_/conf.h"
 
   #ifdef __ARM_NEON                                                 // memory prefetch
 #define PREFETCH(_ip_,_rw_)
   #else
 #define PREFETCH(_ip_,_rw_) __builtin_prefetch(_ip_,_rw_)
   #endif
-
-//----------- BWT -------------------
-#define BWT_RDONLY  (1<<30)  // input is read only, no overwrite
-#define BWT_BWT16   (1<<29) // 16 bits bwt
-#define BWT_PREP8   (1<<28)   // preprocessor output 8-16 bits 
-#define BWT_LZP     (1<<27)  // Force lzp
-#define BWT_VERBOSE (1<<26)  // verbose
 
 //-------------------------- mtf: move to front (8 bits) -----------------------------------------------------------
   #ifdef __AVX2__ // Get position of existing c
@@ -148,18 +142,12 @@ static ALWAYS_INLINE size_t memrun16(uint16_t const *in, uint16_t const *in_) { 
 }
 	
 //-------------- misc --------------------------------------------------------------------------------------------------
-#define EMA1( _x_)          (_x_)  							// Exponential moving average
-#define EMA2( _x_,_y_)      (((_x_) + (_x1_))>>1)
-#define EMA4( _x_,_a_,_y_)  (((_x_)*_a_ + (4 -_a_)*(_y_)) >>2)
-#define EMA8( _x_,_a_,_y_)  (((_x_)*_a_ + (8 -_a_)*(_y_)) >>3)
-#define EMA16(_x_,_a_,_y_)  (((_x_)*_a_ + (16-_a_)*(_y_)) >>4)
-#define EMA32(_x_,_a_,_y_)  (((_x_)*_a_ + (32-_a_)*(_y_)) >>5)
-#define EMA64(_x_,_a_,_y_)  (((_x_)*_a_ + (64-_a_)*(_y_)) >>6)
+//#define EMA(  _n_,_x_,_a_,_y_) (((_x_)*_a_ + ((1<<(_n_)) -_a_)*(_y_) ) >>(_n_)) // Exponential moving average EMA2=1->2 EMA4=2->4 EMA8=3->8,...
+#define EMA( _n_,_x_,_a_,_y_) (((_x_)*_a_ + ((1<<(_n_)) -_a_)*(_y_) + (1<<((_n_)-2)) ) >>(_n_)) // Exponential moving average + rounding EMA2=1->2 EMA4=2->4 EMA8=3->8,...
+#define RICEK(_x_)             __bsr32((_x_)+1)                                // Rice parameter
 
-#define RICEK(_x_) __bsr32((_x_)+1)                         // Rice parameter
-
-#define OVERFLOW( _in_,_inlen_,_out_, _op_, _goto_) if(_op_ >= _out_+(_inlen_*255)/256-8) { memcpy(_out_,_in_,_inlen_); _op_ = _out_+_inlen_; _goto_; }
-#define OVERFLOWR(_in_,_inlen_,_out_, _op_, _goto_) if((_out_+_inlen_-_op_) >= (_inlen_*255)/256-8) { memcpy(_out_,_in_,_inlen_); _op_ = _out_+_inlen_; goto e; }
+#define OVERFLOW( _in_,_inlen_,_out_, _op_, _goto_) if( _op_                >= _out_+(_inlen_*255)/256-8) { memcpy(_out_,_in_,_inlen_); _op_ = _out_+_inlen_; _goto_; }
+#define OVERFLOWR(_in_,_inlen_,_out_, _op_, _goto_) if((_out_+_inlen_-_op_) >=       (_inlen_*255)/256-8) { memcpy(_out_,_in_,_inlen_); _op_ = _out_+_inlen_; _goto_; }
 // store the last bytes without encoding, when inlen is not multiple of array element size
 #define INDEC  size_t inlen  = _inlen /sizeof( in[0]); { unsigned char *p_=_in+_inlen,  *_p = _in +(_inlen & ~(sizeof(in[0] )-1)); while(_p < p_) { *op++  = *_p++; } }
 #define OUTDEC size_t outlen = _outlen/sizeof(out[0]); { unsigned char *p_=_out+_outlen,*_p = _out+(_outlen& ~(sizeof(out[0])-1)); while(_p < p_) *_p++  = *ip++; }
@@ -176,6 +164,9 @@ static inline          short zigzagdec16(unsigned short x) { return x >> 1 ^ -(x
 
 static inline unsigned       zigzagenc32(int      x)       { return x << 1 ^   x >> 31;  }
 static inline int            zigzagdec32(unsigned x)       { return x >> 1 ^ -(x &   1); }
+
+static inline uint64_t       zigzagenc64(int64_t  x)       { return x << 1 ^ x >> 63;  }
+static inline  int64_t       zigzagdec64(uint64_t x)       { return x >> 1 ^ -(x & 1); }
 
 #define BITREV
 //---- Encode - Big Endian -----------------------
@@ -208,56 +199,34 @@ static inline int            zigzagdec32(unsigned x)       { return x >> 1 ^ -(x
 #define bitdinir( _bw_,_br_,_ip_)        bitdini(_bw_,_br_),_ip_ -= sizeof(_bw_)
 #define bitdnormr(_bw_,_br_,_ip_)        _bw_  = *(bitget_t *)(_ip_ -= _br_>>3), _br_ &= 7 //, _bw_  <<= _br_
 
-//-------------- Turbo VLC : Variable Length Coding for large integers with exponent + mantissa ----------------------------------------------------------
-//exponent base for the bit size vlcbits: 1=63 2=123, 3=239 4=463 5=895 6=1727 7=3327
-#define VLC_VB6    0  
-#define VLC_VB7    4 
-#define VLC_VB8   16
-#define VLC_VB9   48
-#define VLC_VB10 128
-#define VLC_VB11 296
-#define VLC_VB12 768
+//------------- hash table : open adressing with linear probing --------------------------------------------------
+#define HASH32(_x_) (((_x_) * 123456791))
+#define chash(_c_, _hbits_)  (HASH32(_c_) >> (32 - (_hbits_)))
 
-#define vlcbits(_vn_)               (5+_vn_)
-#define vlcfirst(_vn_)              (1u<<(_vn_+1)) //1,0,4  2,4,8  3,16,16
-#define vlcmbits(_expo_, _vn_)      (((_expo_) >> _vn_)-1)
-#define _vlcexpo_(_x_, _vn_,_expo_) { unsigned _f = __bsr32(_x_)-_vn_+1; _expo_ = (_f<<_vn_) + bzhi32((_x_)>>(_f-1),_vn_); }
-#define vlcexpo_(_x_, _vn_,_expo_)  { unsigned _x = _x_; _vlcexpo_(_x, _vn_,_expo_); }
-#ifndef BITIOB_H_
-#define BITIOB_H_
-static inline int vlcexpo(unsigned x, unsigned vn) { unsigned expo; _vlcexpo_(x, vn, expo); return expo; }
-#endif
-
-// return exponent, mantissa + bits length for x the value 
-#define vlcenc( _x_, _vn_,_expo_, _mb_, _ma_) { \
-  unsigned _x = _x_;\
-  _vlcexpo_(_x, _vn_, _expo_);\
-  _mb_ = vlcmbits(_expo_, _vn_);\
-  _ma_ = bzhi32(_x,_mb_);\
+static ALWAYS_INLINE uint32_t tmhash32(uint32_t x) { // https://stackoverflow.com/questions/664014/what-integer-hash-function-are-good-that-accepts-an-integer-hash-key/12996028
+    x = ((x >> 16) ^ x) * 0x45d9f3b;
+    x = ((x >> 16) ^ x) * 0x45d9f3b;
+    x = ((x >> 16) ^ x);
+    return x;
 }
+#define chash(_c_, _hbits_) bzhi32(tmhash32(_c_),_hbits_)
 
-// build value from exponent, mantissa + length
-#define vlcdec(_expo_, _mb_, _ma_, _vn_) ((((1u << _vn_) + BZHI32(_expo_,_vn_))<<(_mb_)) + (_ma_)) 
+#define HNEW(_htab_, _hbits_, _hmask_, _c_, _h_)             { _h_ = chash(_c_,_hbits_); while(_htab_[_h_]) _h_ = (_h+1)&_hmask_; }// search unused slot
+																	// add item with key c and value v to the array a with the hash slot h
+#define CADD(    _a_, _htab_, _n_, _c_, _h_, _v_)            { _a_[_n_].c = _c_; /*_a_[_n_].v = _v_;*/ _a_[_n_++].cnt = 1; _htab_[_h_] = _n_; }
+																	// get index i in a for a previously added key c
+#define CGET(    _a_, _htab_,_hbits_,_hmask_, _c_, _i_)      { unsigned _h = chash(_c_,_hbits_); while(_a_[_i_ = _htab_[_h]-1].c != _c_) _h = (_h+1)&_hmask_; }
+																	// return index i of key c if found, otherwise the first available empty hash slot h
+#define CFIND(   _a_, _htab_,_hbits_,_hmask_, _c_, _i_, _h_) { _h_ = chash(_c_,_hbits_); while((_i_=_htab_[_h_]) && _a_[_i_-1].c != _c_) _h_ = (_h_+1)&(_hmask_); --_i_; }
+                                                                    // rehash all items in a
+#define CREHASH( _a_, _htab_,_hbits_,_hmask_, _n_)           { unsigned _i; memset(_htab_, 0, (1<<_hbits_)*sizeof(_htab_[0])); for(_i = 0; _i < _n_; _i++) { unsigned _h; HNEW(_htab_,_hbits_,_hmask_,_a_[_i].c, _h); _htab_[_h] = _i+1;}  }
+																	// rehash all items in, except when count is zero (deleted items)
+#define CREHASHN(_a_, _htab_,_hbits_,_hmask_, _n_)           { unsigned _i; memset(_htab_, 0, (1<<_hbits_)*sizeof(_htab_[0])); for(_i = 0; _i < _n_; _i++) if(_a_[_i].cnt) { unsigned _h; HNEW(_htab_,_hbits_,_hmask_,_a_[_i].c, _h); _htab_[_h] = _i+1; } }
 
-// encode the mantissa in bitio (R->L) and store the exponen in u 
-#define bitvrput(_bw_,_br_,_ep_, _vn_,_vb_, _u_) do { \
-  if((_u_) >= vlcfirst(_vn_)+_vb_) {\
-    unsigned _expo, _mb, _ma;\
-    vlcenc((_u_)-_vb_, _vn_, _expo, _mb, _ma); \
-    bitput(_bw_,_br_, _mb, _ma); bitenormr(_bw_,_br_,_ep_);\
-	_u_ = _expo+_vb_;\
-  }\
-} while(0)
-
-// get mantissa and bitio ((R->L)) decode value from sym 
-#define bitvrget( _bw_,_br_,_ip_, _vn_,_vb_,_sym_) \
-  if(_sym_ >= vlcfirst(_vn_)+_vb_) { \
-    _sym_ -= _vb_; \
-	int _mb = vlcmbits(_sym_, _vn_), _ma; \
-    bitdnormr(_bw_,_br_,_ip_);\
-	bitget(_bw_,_br_, _mb,_ma);\
-	_sym_ = vlcdec(_sym_, _mb, _ma, _vn_)+_vb_;\
-  }
+#pragma pack(1)
+typedef struct { uint32_t cnt; uint16_t c; } _PACKED sym16_t;  // c=key,  cnt=count
+typedef struct { uint32_t cnt; uint32_t c; } _PACKED sym32_t;  
+#pragma pack() 
 
 #ifdef __cplusplus
 extern "C" {
@@ -265,10 +234,10 @@ extern "C" {
 void *vmalloc(size_t size);
 void vfree(void *address);
 
-void histcalc8( unsigned char *__restrict in, unsigned inlen, unsigned *__restrict cnt);
+void histcalc8( unsigned char *__restrict in, unsigned inlen, unsigned *__restrict cnt);  // Histogram construction
 void histrcalc8(unsigned char *__restrict in, unsigned inlen, unsigned *__restrict cnt);
+void memrev(unsigned char a[], unsigned n);  // reverse bytes in memory buffer
 
 #ifdef __cplusplus
 }
 #endif
-
