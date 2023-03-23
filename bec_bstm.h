@@ -22,7 +22,7 @@
     - email    : powturbo [_AT_] gmail [_DOT_] com
 **/
 // bit entropy coder with bitio
-#include "conf.h"
+#include "include_/conf.h"
 //---- BitIO encode - Little Endian ------------------------------------------------------
 #define bitput_t  					     T3(uint, __WORDSIZE, _t)
 #define bitebr_t                         unsigned
@@ -58,7 +58,7 @@ static size_t stmetell(stm_t *s) { return s->p - s->_p; }
 static size_t stmseek(stm_t *s, unsigned o, unsigned x) { s->p+=x; }
 
 //------ Stream encode ---
-#define MSBREV(_cl_,_l_) { unsigned _msb = (_l_ | (1u << _cl_)) <= _n; _l_ = _l_ << _msb | _l_ >> _cl_; _cl_ += _msb; _l_ = bzhi31(_l_,_cl_); } //#define MSBREV(_cl,_l) cl++
+#define MSBREV(_cl_,_l_) { unsigned _msb = (_l_ | (1u << _cl_)) <= _n; _l_ = _l_ << _msb | _l_ >> _cl_; _cl_ += _msb; _l_ = bzhi32(_l_,_cl_); } //#define MSBREV(_cl,_l) cl++
 
 #define BSR(_n_)  (_n_)==1?1:__bsr32(_n_) 
 
