@@ -23,6 +23,9 @@
 **/
 // TurboRC: Range Coder - Predictor Encode + Decode single bit + Context mixing 
 
+//#define RCB(_x_,_b_) (_x_ & (1<<_b_))
+#define RCB(_x_,_b_) ((_x_ >> (_b_))&1)
+
 // Encode with predictor
 #define mbu_e(  rcrange,rclow,  _mbp_, _mb_,_prm0_,_prm1_,_op_, _bit_)                                   rcbe(  rcrange,rclow,  _mbp_, mbu_update,_mb_,_prm0_,_prm1_,_op_, _bit_)
 // Encode with predictor + renorm																									  
@@ -52,29 +55,31 @@ static void mbu_init1(mbu *mb, unsigned n) {
   #endif
 
 // Init order 1 predictor (2D array mb[a0][a1])
-#define mbu_init2(_mb_, _a0_, _a1_) {                  \
+#define mbu_init2(_mb_, _a1_, _a0_) {                  \
   int _ix,_is,_iy;                                     \
-  for(_ix = 0; _ix < (_a0_); _ix++)                    \
-    for(_is = 0; _is < (_a1_); _is++)                  \
+  for(_ix = 0; _ix < (_a1_); _ix++)                    \
+    for(_is = 0; _is < (_a0_); _is++)                  \
       mbu_init(&(_mb_)[_ix][_is], mbu_probinit());     \
 }  
 
 // Init order 2 predictor (3D array mb[a0][a1][a2])
-#define mbu_init3(_mb_, _a0_, _a1_, _a2_) {                \
+#define mbu_init3(_mb_, _a2_, _a1_, _a0_) {                \
   int _iw,_ix,_is,_iy;                                     \
-  for(_iw = 0; _iw < (_a0_); _iw++)                        \
+  for(_iw = 0; _iw < (_a2_); _iw++)                        \
     for(_ix = 0; _ix < (_a1_); _ix++)                      \
-      for(_is = 0; _is < (_a2_); _is++)                    \
+      for(_is = 0; _is < (_a0_); _is++)                    \
         mbu_init(&(_mb_)[_iw][_ix][_is], mbu_probinit());  \
 }
 
 #define MBU_DEF0(_mb_)           mbu _mb_
 #define MBU_DEF1(_mb_,_b0_)      mbu _mb_[_b0_] 
 #define MBU_DEF2(_mb_,_b1_,_b0_) mbu _mb_[_b1_][_b0_]
+#define MBU_DEF3(_mb_,_b2_, _b1_,_b0_) mbu _mb_[_b2_][_b1_][_b0_]
 
-#define MBU_DEC0(_mb_)           MBU_DEF0(_mb_);           mbu_init0(_mb_)
-#define MBU_DEC1(_mb_,_b0_)      MBU_DEF1(_mb_,_b0_);      mbu_init1(_mb_, _b0_)
-#define MBU_DEC2(_mb_,_b1_,_b0_) MBU_DEF2(_mb_,_b1_,_b0_); mbu_init2(_mb_, _b1_, _b0_)
+#define MBU_DEC0(_mb_)                MBU_DEF0(_mb_);           mbu_init0(_mb_)
+#define MBU_DEC1(_mb_,_b0_)           MBU_DEF1(_mb_,_b0_);      mbu_init1(_mb_, _b0_)
+#define MBU_DEC2(_mb_,_b1_,_b0_)      MBU_DEF2(_mb_,_b1_,_b0_); mbu_init2(_mb_, _b1_, _b0_)
+#define MBU_DEC3(_mb_,_b2_,_b1_,_b0_) MBU_DEF3(_mb_,_b2_,_b1_,_b0_); mbu_init3(_mb_,_b2_,_b1_, _b0_)
 
 #define mbu_initp2(_mb_, _a0_, _a1_) {                  \
   unsigned _ix,_iy;                                     \
@@ -84,15 +89,32 @@ static void mbu_init1(mbu *mb, unsigned n) {
 	}\
 }  
 
-#define MBU_NEW2( _mb_,_b0_,_b1_) mbu *_mb_ = malloc((_b0_)*(_b1_)*sizeof(_mb_[0])); if(!_mb_) die("malloc failed\n")
-#define MBU_NEWI2(_mb_,_b0_,_b1_) MBU_NEW2(_mb_,_b0_,_b1_); mbu_initp2(_mb_, _b0_, _b1_)
+#define mbu_initp3(_mb_, _a2_, _a1_, _a0_) {                  \
+  unsigned _iw,_ix,_iy;                                     \
+  for(  _iw = 0; _iw < (_a2_); _iw++)                   \
+  for(  _ix = 0; _ix < (_a1_); _ix++)                   \
+    for(_iy = 0; _iy < (_a0_); _iy++) {                 \
+      mbu *_mp = &(_mb_)[(_a2_)*_iw*_ix + (_a1_)*_ix + _iy]; mbu_init(_mp, mbu_probinit());\
+	}\
+}  
+
+#define MBU_NEW2( _mb_,_b1_,_b0_) mbu *_mb_ = malloc((_b0_)*(_b1_)*sizeof(_mb_[0])); if(!_mb_) die("malloc failed\n")
+#define MBU_NEWI2(_mb_,_b1_,_b0_) MBU_NEW2(_mb_,_b0_,_b1_); mbu_initp2(_mb_, _b0_, _b1_)
+#define MBU_NEW3( _mb_,_b2_,_b1_,_b0_) mbu *_mb_ = malloc((_b2_)*(_b1_)*(_b0_)*sizeof(_mb_[0])); if(!_mb_) die("malloc failed\n")
+#define MBU_NEWI3(_mb_,_b2_,_b1_,_b0_) MBU_NEW3(_mb_,_b2_,_b1_,_b0_); mbu_initp3(_mb_,_b2_,_b1_,_b0_)
 
 //------------------------------ context mixing with SSE ------------------------------------------------------
 //SSE2: https://encode.su/threads/3303-Is-this-how-to-practically-implement-Arithmetic-Coding?p=63506&viewfull=1#post63506
-#define mbu_updates( _mb_, _mbp_, _prm0_, _prm1_, _bit_) *(_mb_) = (_mbp_) - ((((_mbp_) - (-_bit_ & (1<<RC_BITS))) >> _prm0_) + _bit_)
+  #if 0
+#define mbu_updates1(_mb_, _mbp_, _prm0_, _prm1_) (*(_mb_) = (_mbp_) + (((1u<<RC_BITS)- (_mbp_)) >> 5))  // Predictor update for bit 0
+#define mbu_updates0(_mb_, _mbp_, _prm0_, _prm1_) (*(_mb_) = (_mbp_) - ((_mbp_) >> 5))                   // Predictor update for bit 1
+#define mbu_updates( _mb_, _mbp_, _prm0_, _prm1_, _bit_) (_bit_)?mbu_update1(_mb_, _mbp_, _prm0_, _prm1_):mbu_update0(_mb_, _mbp_, _prm0_, _prm1_)
+  #else
 #define mbu_updates0(_mb_, _mbp_, _prm0_, _prm1_) *(_mb_) = (_mbp_) - ((_mbp_) >> _prm0_)
 #define mbu_updates1(_mb_, _mbp_, _prm0_, _prm1_) *(_mb_) = (_mbp_) - ( (((_mbp_) - (1<<RC_BITS)) >> _prm0_) + 1)
-
+#define mbu_updates( _mb_, _mbp_, _prm0_, _prm1_, _bit_)  *(_mb_) = (_mbp_) - ((((_mbp_) - (-_bit_ & (1<<RC_BITS))) >> _prm0_) + _bit_)
+  #endif
+  
 #define RESCALE 4
 
 //---- o0+o1+o2 (1,2) ----------------------------------------
@@ -253,7 +275,7 @@ static void mbu_init1(mbu *mb, unsigned n) {
   rcbmdec(rcrange,rccode, _mbxp,  mbum2_update,_mb_,_prm0_,_prm1_, _ip_,  _x_, _mb1_,_mb2_,_sse2_);\
 } while(0)
 
-//---------------- o0+o1 run aware for sekewed data for ex. BWT-data --------------------------------------------------------------
+//---------------- o0+o1 run aware for skewed data (ex. BWT-data) --------------------------------------------------------------
   #if   RC_PRDID == 1 //RC_PRD_S
 #define PRR100  2
 #define PRR101  4
@@ -298,7 +320,7 @@ static void mbu_init1(mbu *mb, unsigned n) {
 
 #define mbur_enc(rcrange,rclow,  _mb_,_prm0_,_prm1_,_op_, _bit_, _mb1_, _mb2_, _sse2_) do {\
   unsigned _mbxp,\
-           _mbp  = mbu_p(_mb_,_prm0_),\
+           _mbp  = mbu_p(_mb_, _prm0_),\
 		   _mbp1 = mbu_p(_mb1_,_prm0_),\
 		   _mbp2 = mbu_p(_mb2_,_prm0_);\
   mbur_p(_mbp,_mbp1,_mbp2,_sse2_, _mbxp);\
@@ -317,7 +339,7 @@ static void mbu_init1(mbu *mb, unsigned n) {
 #ifdef __cplusplus
 extern "C" {
 #endif
-void ssebinit(unsigned short sse2[1<<9][17]);
+void ssebinit(unsigned short sse2[1<<(1+8)][17]);
 void sseinit( unsigned short sse[1<<8][17]);
 #ifdef __cplusplus
 }
