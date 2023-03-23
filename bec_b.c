@@ -22,11 +22,11 @@
     - email    : powturbo [_AT_] gmail [_DOT_] com
 **/
 // Bit entropy coder with bitio
-#include "conf.h"
+#include "include_/conf.h"
 #include "rcutil_.h"
 #define IN_BECTAB
+#include "include_/bec.h"
 #include "bec_.h"
-#include "bec.h"
 #include "bec_bstm.h"     
 
 ectab_t bectab[ECN][ECN][ECN][ECN]
