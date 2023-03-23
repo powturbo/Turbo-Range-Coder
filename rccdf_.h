@@ -48,42 +48,7 @@
 #define _mm_storeu_si128(_ip_,_a_)              vst1q_u32((__m128i *)(_ip_),_a_)
   #endif
 
-#define MXV(_i_, _j_) _j_ + ((_j_ <= _i_)?0:(1<<RC_BITS)-16)
-#define MIXIN16(_i_) { MXV(_i_,0), MXV(_i_,1), MXV(_i_, 2), MXV(_i_, 3), MXV(_i_, 4), MXV(_i_, 5), MXV(_i_, 6), MXV(_i_, 7),\
-                       MXV(_i_,8), MXV(_i_,9), MXV(_i_,10), MXV(_i_,11), MXV(_i_,12), MXV(_i_,13), MXV(_i_,14), MXV(_i_,15) }
-
-static cdf_t mixin16[16][16] = {
- MIXIN16( 0), MIXIN16( 1), MIXIN16( 2), MIXIN16( 3), MIXIN16( 4), MIXIN16( 5), MIXIN16( 6), MIXIN16( 7),
- MIXIN16( 8), MIXIN16( 9), MIXIN16(10), MIXIN16(11), MIXIN16(12), MIXIN16(13), MIXIN16(14), MIXIN16(15)
-};
-
-#define CDF16DEC0(_m_)     cdf_t _m_[17];      { int j;                          for(j = 0; j <= 16; j++)    _m_[j] = j << (RC_BITS-4); }
-#define CDF16DEC1(_m_,_n_) cdf_t _m_[_n_][17]; { int i,j; for(i=0; i < _n_; i++) for(j = 0; j <= 16; j++) _m_[i][j] = j << (RC_BITS-4); }
-#define CDF16DEF 
-#define RATE16 7
-
-  #ifdef __AVX2__
-#define cdf16upd(_m_, _x_) {\
-  __m256i _vx0 = _mm256_loadu_si256((const __m256i *)mixin16[_x_]);\
-  __m256i _vm0 = _mm256_loadu_si256((const __m256i *)(_m_));\
-	      _vm0 = _mm256_add_epi16(_vm0, _mm256_srai_epi16(_mm256_sub_epi16(_vx0, _vm0), RATE16));\
-  _mm256_storeu_si256((const __m256i *)(_m_), _vm0);\
-}
-  #elif defined(__SSE2__) || defined(__ARM_NEON) || defined(__powerpc64__)
-#define cdf16upd(_m_, _y_) {\
-  __m128i _vx0 = _mm_loadu_si128((const __m128i *) mixin16[_y_]);\
-  __m128i _vm0 = _mm_loadu_si128((const __m128i *)(_m_));\
-  __m128i _vx1 = _mm_loadu_si128((const __m128i *)&mixin16[_y_][8]); \
-  __m128i _vm1 = _mm_loadu_si128((const __m128i *)&(_m_)[8]);\
-	_vm0 = _mm_add_epi16(_vm0, _mm_srai_epi16(_mm_sub_epi16(_vx0, _vm0), RATE16));\
-	_vm1 = _mm_add_epi16(_vm1, _mm_srai_epi16(_mm_sub_epi16(_vx1, _vm1), RATE16));\
-	_mm_storeu_si128((const __m128i *)( _m_),  _vm0);\
-	_mm_storeu_si128((const __m128i *)&_m_[8], _vm1);\
-}
-  #else
-#define cdf16upd(_m_, _x_) { int _i; for(_i = 0; _i < 16; _i++) _m_[_i] += (mixin16[_x_][_i] - _m_[_i]) >> RATE16; }
-  #endif
-//#include "turborccdfx_.h"
+#include "cdf_.h"
 
 #define cdf4e(_rcrange_,_rclow_,_cdf_,_x_,_op_) { cdfenc(_rcrange_,_rclow_, _cdf_, _x_, _op_); cdf16upd(_cdf_,_x_); }
 
@@ -92,13 +57,19 @@ static cdf_t mixin16[16][16] = {
   cdf4e(_rcrange_,_rclow_, _cdfh_, _xh, _op_);\
   cdf4e(_rcrange_,_rclow_, _cdfl_[_xh], _xl, _op_);\
 }
-
+#if 1
 #define cdf8e2(_rcrange0_,_rclow0_,_rcrange1_,_rclow1_,_cdfh_, _cdfl_, _x_, _op0_, _op1_) {\
   unsigned _x = _x_, _xh = _x>>4, _xl=_x & 0xf;\
-  cdf4e(_rcrange0_,_rclow0_, _cdfh_, _xh, _op0_);\
+  cdf4e(_rcrange0_,_rclow0_, _cdfh_,      _xh, _op0_);\
   cdf4e(_rcrange1_,_rclow1_, _cdfl_[_xh], _xl, _op1_);\
 }
-
+#else
+#define cdf8e2(_rcrange0_,_rclow0_,_rcrange1_,_rclow1_,_cdfh_, _cdfl_, _x_, _op0_, _op1_) {\
+  unsigned _x = _x_, _xh = _x>>4, _xl=_x & 0xf;\
+  cdfenc(_rcrange0_,_rclow0_, _cdfh_,      _xh, _op0_); cdf16upd(_cdfh_,_xh);\
+  cdfenc(_rcrange1_,_rclow1_, _cdfl_[_xh], _xl, _op1_); cdf16upd( _cdfl_[_xh],_xl);\
+}
+#endif
 #define cdf4d(_rcrange_,_rccode_, _cdf_,_x_,_ip_) { cdflget16(_rcrange_,_rccode_, _cdf_, _x_, _ip_); cdf16upd(_cdf_,_x_); }
 
 #define cdf8d(_rcrange_,rccode, _cdfh_, _cdfl_, _x_, _ip_) {\
@@ -120,10 +91,10 @@ static cdf_t mixin16[16][16] = {
   _rccdfrange(rcrange1);\
   _cdflget16(rcrange0,rccode0, _cdfh_, _xh);\
   cdf_t *_cdfl = _cdfl_[_xh]; \
-  _cdflget16(rcrange1,rccode1, _cdfl, _xl); _x_ = _xh << 4| _xl;\
-  _rccdfupdate(rcrange0,rccode0, _cdfh_[_xh], _cdfh_[_xh+1],_ip0_);\
-  _rccdfupdate(rcrange1,rccode1, _cdfl[ _xl], _cdfl[ _xl+1],_ip1_);\
-  cdf16upd(_cdfh_,_xh); cdf16upd(_cdfl,_xl);  \
+  _cdflget16(rcrange1,rccode1, _cdfl, _xl); \
+  _rccdfupdate(rcrange0,rccode0, _cdfh_[_xh], _cdfh_[_xh+1],_ip0_); cdf16upd(_cdfh_,_xh);\
+  _rccdfupdate(rcrange1,rccode1, _cdfl[ _xl], _cdfl[ _xl+1],_ip1_); cdf16upd(_cdfl,_xl); /*cdf16upd2(_cdfh_,_xh, _cdfl,_xl);*/\
+  _x_ = _xh << 4| _xl; \
 }
   #endif
 
