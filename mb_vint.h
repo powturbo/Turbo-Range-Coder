@@ -72,7 +72,7 @@
   int _gi; mbu *_mga = _mg_;\
   for(_gi = (_gb_)-1; _gi >= 0; --_gi) {\
     mbu *_mg = _mga + _gi;\
-    mbu_enc(_rcrange_,_rclow_, _mg,_prm0_,_prm1_,_op_, ((_x_)>> _gi) & 1);\
+    mbu_enc(_rcrange_,_rclow_, _mg,_prm0_,_prm1_,_op_, RCB((_x_),_gi));\
   }\
 } while(0)
 
@@ -183,6 +183,32 @@
   _mbgbd(_rcrange_,_rccode_, &(_mgb_)[__bsr32(_q+1)+1], _prm0_,_prm1_,_ip_, _x, _log2m_);/* decode mantissa _log2m_ bits */\
   _x_ = _x; \
 }
+
+//------------------------------- 
+#define VB_B2  4  	//max. integer:  VB_B2=6: 4276351=41407f  VB_B2=5: 2171071=2120bf  VB_B2=4:1118431=1110df  VB_B2=3:592111=908ef
+#define VB_BA2 (255 - (1<<VB_B2))  
+
+#define VB_OFS1 (VB_BA2 - (1<<VB_B2))
+#define VB_OFS2 (VB_OFS1 + (1 << (8+VB_B2)))
+
+#define mbvenc24(_rcrange_,_rclow_,_mb0_,_mb1_,_mb2_, _prm0_,_prm1_, _op_,_x_) { unsigned _x = _x_;\
+  if(likely((_x_) < VB_OFS1)){   mb8enc(_rcrange_,_rclow_, _mb0_,_prm0_,_prm1_, _op_, _x); }\
+  else if  ((_x_) < VB_OFS2) { uint16_t _y = (VB_OFS1<<8) + (_x-VB_OFS1);\
+    _x = _y>>8;                  mb8enc(_rcrange_,_rclow_, _mb0_,_prm0_,_prm1_, _op_, _x);\
+    _x = (unsigned char)_x;      mb8enc(_rcrange_,_rclow_, _mb1_,_prm0_,_prm1_, _op_, _x);\
+  } else { unsigned _y = VB_BA2 + ((_x -= VB_OFS2) >> 16);\
+                                 mb8enc(_rcrange_,_rclow_, _mb0_,_prm0_,_prm1_, _op_, _y);\
+    _y = (unsigned char)_x;      mb8enc(_rcrange_,_rclow_, _mb1_,_prm0_,_prm1_, _op_, _y);\
+    _y = (unsigned char)(_x>>8); mb8enc(_rcrange_,_rclow_, _mb2_,_prm0_,_prm1_, _op_, _y);\
+  }\
+}
+
+#define mbvenc24(_rcrange_,_rclow_,_mb0_,_mb1_,_mb2_, _prm0_,_prm1_, _ip_,_x_) do { \
+  _x_ = *_ip_++;\
+       if(likely(_x_ < VB_OFS1));\
+  else if(likely(_x_ < VB_BA2))  { _x_ = ((_x_<<8) + (*_ip_)) + (VB_OFS1 - (VB_OFS1 <<  8)); _ip_++;} \
+  else                           { _x_ = ctou16(_ip_) + ((_x_ - VB_BA2 ) << 16) + VB_OFS2; _ip_ += 2;}\
+} while(0)
 
 //------------------------------- Turbo VLC with exponent coded in gamma range coder and mantissa in bitio --------------------------------------------------------
 #define mbvenc(_rcrange_,_rclow_, _mg0_,_mgu_,_mgb_,_prm0_,_prm1_,_op_, _x_, _bw_, _br_,_vn_, _vb_) do { unsigned _vx = _x_;\
