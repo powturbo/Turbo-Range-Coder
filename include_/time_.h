@@ -29,7 +29,7 @@
     #ifndef sleep
 #define sleep(n) Sleep((n) * 1000)
     #endif
-typedef unsigned __int64 uint64_t;
+#define uint64_t unsigned __int64
 
   #else
 #include <stdint.h>
@@ -46,7 +46,7 @@ typedef unsigned __int64 uint64_t;
 
   #ifdef __corei7__
 #define RDTSC_INI(_c_) do { unsigned _cl, _ch;              \
-  __asm volatile ("couid\n\t"                               \
+  __asm volatile ("cpuid\n\t"                               \
                 "rdtsc\n\t"                                 \
                 "mov %%edx, %0\n"                           \
                 "mov %%eax, %1\n": "=r" (_ch), "=r" (_cl):: \
@@ -63,8 +63,8 @@ typedef unsigned __int64 uint64_t;
   _c_ = (uint64_t)_ch << 32 | _cl;\
 } while(0)
   #else
-#define RDTSC(_c_) do { unsigned _cl, _ch;\
-/*  __asm volatile ("cpuid \n"\
+/*#define RDTSC(_c_) do { unsigned _cl, _ch;\
+  __asm volatile ("cpuid \n"\
                 "rdtsc"\
                 : "=a"(_cl), "=d"(_ch)\
                 : "a"(0)\
@@ -143,11 +143,11 @@ static int    tmiszero(tm_t t)              { return !(t.tv_sec|t.tv_nsec); }
 #endif 
 
 //---------------------------------------- bench ----------------------------------------------------------------------
-// for each a function call is repeated until exceding tm_tx seconds.
+// for each a function call is repeated until exceeding tm_tx seconds.
 // A run duration is always tm_tx seconds
 // The number of runs can be set with the program options  -I and -J (specify -I15 -J15 for more precision)
 
-// sleep after each 8 runs to avoid cpu trottling.
+// sleep after each 8 runs to avoid cpu throttling.
 #define TMSLEEP do { tm_T = tmtime(); if(tmiszero(tm_0)) tm_0 = tm_T; else if(tmdiff(tm_0, tm_T) > tm_TX) { if(tm_verbose) { printf("S \b\b");fflush(stdout); } sleep(tm_slp); tm_0=tmtime();} } while(0)
 
 // benchmark loop
@@ -161,12 +161,12 @@ static int    tmiszero(tm_t t)              { return !(t.tv_sec|t.tv_nsec); }
     /*1st run: break the loop after tm_tx=1 sec, calculate a new repeats 'tm_rm' to avoid calling time() after each function call*/\
     /*other runs: break the loop only after 'tm_rm' repeats */ \
     _tm_t = tmdiff(_tm_t0, tmtime());\
-    /*set min time, recalculte repeats tm_rm based on tm_tx, recalculte number of runs based on tm_TX*/\
+    /*set min time, recalculate repeats tm_rm based on tm_tx, recalculate number of runs based on tm_TX*/\
     if(_tm_t < tm_tm) { if(tm_tm == DBL_MAX) { tm_rm = _tm_r; _tm_Rn = tm_TX/_tm_t; _tm_Rn = _tm_Rn<_tm_Rx?_tm_Rn:_tm_Rx; /*printf("repeats=%u,%u,%.4f ", _tm_Rn, _tm_Rx, _tm_t);*/ } \
 	  tm_tm = _tm_t; _tm_c++;\
     } else if(_tm_t > tm_tm*1.15) TMSLEEP;/*force sleep at 15% divergence*/\
     if(tm_verbose) { printf("%8.*f %2d_%.2d\b\b\b\b\b\b\b\b\b\b\b\b\b\b",TM_PRE, TMBS(_len_, tm_tm/tm_rm),_tm_R+1,_tm_c),fflush(stdout); }\
-    if((_tm_R & 7)==7) sleep(tm_slp); /*pause 20 secs after each 8 runs to avoid cpu trottling*/\
+    if((_tm_R & 7)==7) sleep(tm_slp); /*pause 20 secs after each 8 runs to avoid cpu throttling*/\
   }\
 }
 
