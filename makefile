@@ -1,13 +1,16 @@
-# powturbo (c) Copyright 2013-2022
+# powturbo (c) Copyright 2013-2023
 # Download or clone TurboRC:
 # git clone git://github.com/powturbo/Turbo-Range-Coder.git
 
-# uncomment to include
+# fsm predictor
+#SF=1
+# include BWT 
 BWT=1
 #BWTDIV=1
-LIBSAIS=1
 LIBSAIS16=1
-SF=1
+#V8
+BWTSATAN=1
+
 #EXT=1
 #NOCOMP=1
 #AVX2=1
@@ -69,7 +72,7 @@ ifneq (,$(findstring clang, $(CC)))
 else
   MARCH+=-march=armv8-a 
 endif
-  SSE=-march=armv8-a
+  _SSE=-march=armv8-a
 else ifeq ($(ARCH),$(filter $(ARCH),x86_64))
   LDFLAG+=-lm
 # set minimum arch sandy bridge SSE4.1 + AVX
@@ -86,7 +89,7 @@ else
 MARCH=$(_SSE) 
 endif
 
-CFLAGS+= $(DEBUG) $(OPT) -w -Wall
+CFLAGS+= $(DEBUG) $(OPT) -w -Wall 
 ifeq ($(PGO), 1)
 CFLAGS+=-fprofile-generate 
 LDFLAGS+=-lgcov
@@ -109,9 +112,13 @@ LDFLAGS+=-static
 endif
 
 #-------- bwt --------------------------
+ifeq ($(BWTSATAN), 1)
+CFLAGS+=-D_BWTSATAN
+BWT=1
+endif
+
 ifeq ($(BWT), 1)
 CFLAGS+=-D_BWT
-
 ifeq ($(BWTDIV), 1)
 CFLAGS+=-DPROJECT_VERSION_FULL="20137" -DINLINE=inline -Ilibdivsufsort/include -Ilibdivsufsort/build/include 
 CFLAGS+=-D_BWTDIV
@@ -125,38 +132,45 @@ else
 ifeq ($(BWTX), 1)
 LIBBWT =../bwt/sssort.o ../bwt/bwtxinv.o ../bwt/divsufsort.o ../bwt/trsort.o
 CFLAGS+=-D_BWTX
-endif
-endif
-
-ifeq ($(LIBSAIS), 1)
+else
 CFLAGS+=-D_LIBSAIS 
 LIBBWT+=$(B)libsais/src/libsais.o
 ifeq ($(LIBSAIS16), 1)
 CFLAGS+=-D_LIBSAIS16
 LIBBWT+=$(B)libsais/src/libsais16.o
 endif
-CFLAGS+=-D_BWT
+endif
 endif
 endif
 
 all: turborc
 
+L=./
+$(L)ansn0.o: $(L)ansn.c $(L)ansn_.h
+	$(CC) -c -O3 $(CFLAGS) -falign-loops=32 $(L)ansn.c -o $(L)ansn0.o  
+
+$(L)ansns.o: $(L)ansn.c $(L)ansn_.h
+	$(CC) -c -O3 $(CFLAGS) -D__SSE4_1 -march=corei7-avx -mtune=corei7-avx -mno-aes -falign-loops=32 $(L)ansn.c -o $(L)ansns.o  
+
+$(L)ansnx.o: $(L)ansn.c $(L)ansn_.h
+	$(CC) -c -O3 $(CFLAGS) -D__AVX2__ -march=haswell -falign-loops=32 $(L)ansn.c -o $(L)ansnx.o 
+
 ifneq ($(NOCOMP), 1)
-LIB=rc_ss.o rc_s.o rccdf.o rcutil.o bec_b.o rccm_s.o rccm_ss.o rccm_sf.o
+LIB=rc_ss.o rc_s.o rccdf.o rcutil.o bec_b.o rccm_s.o rccm_ss.o rcqlfc_s.o rcqlfc_ss.o rcqlfc_sf.o 
+
+ifeq ($(V8), 1)
+CFLAGS+=-D_V8
+LIB+=v8.o
+endif
+#trlec.o trled.o $(L)ansnx.o $(L)ansns.o $(L)ansn0.o 
 endif
 ifeq ($(BWT), 1)
-LIB+=rcbwt_ss.o
-#ifneq ($(NOCOMP), 1)
-LIB+=rcbwt_s.o 
-#endif
+LIB+=rcbwt.o
 endif
 
 ifeq ($(SF), 1)
 CFLAGS+=-D_SF
-LIB+=rc_sf.o
-ifeq ($(BWT), 1)
-LIB+=rcbwt_sf.o
-endif
+LIB+=rc_sf.o rcqlfc_sf.o
 endif
 
 ifeq ($(EXT), 1)
@@ -173,12 +187,14 @@ endif
 
 #librc.a: $(LIB)
 #	ar cr $@ $+
-
 turborc.o: turborc.c
 	$(CC) -O3 $(CFLAGS) $(MARCH) -c turborc.c -o turborc.o
 
 turborc: $(LIB) $(LIBBWT) turborc.o
 	$(CC) $^ $(LDFLAGS) -o turborc
+
+reorder: $(LIBDIV) reorder.o
+	$(CC) $^ $(LDFLAGS) -o reorder
 
 .c.o:
 	$(CC) -O3 $(CFLAGS)  $(MARCH) $< -c -o $@
