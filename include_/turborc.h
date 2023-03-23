@@ -24,6 +24,16 @@
 // TurboRC Range Coder : include header 
 #ifndef TURBORC_H_
 #define TURBORC_H_
+
+//----------- BWT -------------------
+#define BWT_RDONLY  (1<<30) // input is read only, no overwrite
+#define BWT_BWT16   (1<<29) // 16 bits bwt
+#define BWT_PREP8   (1<<28) // preprocessor output 8-16 bits 
+#define BWT_LZP     (1<<27) // Force lzp
+#define BWT_VERBOSE (1<<26) // verbose
+#define BWT_COPY    (1<<25) // memcpy in to out in case of no compression
+#define BWT_RATIO   (1<<24) // No ratio check
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -41,6 +51,7 @@ extern "C" {
 // outlen: original (decompressed) input length in bytes
 // out   : outlen bytes are decoded to the output buffer
 //         The caller must first check outlen == original/decoded input length.         
+//-------------- s: simple predictor -----------------------------------------------------------------------------------
 //-------------- s: simple predictor -----------------------------------------------------------------------------------
 size_t rcsenc(      unsigned char *in, size_t inlen,  unsigned char *out ); // order 0
 size_t rcsdec(      unsigned char *in, size_t outlen, unsigned char *out );
@@ -80,6 +91,8 @@ size_t rcm2sdec(    unsigned char *in, size_t outlen, unsigned char *out );
 
 size_t rcmrsenc(    unsigned char *in, size_t inlen,  unsigned char *out ); // context mixing / run aware
 size_t rcmrsdec(    unsigned char *in, size_t outlen, unsigned char *out );
+size_t rcmrrsenc(    unsigned char *in, size_t inlen,  unsigned char *out ); // context mixing / run > 2 aware 
+size_t rcmrrsdec(    unsigned char *in, size_t outlen, unsigned char *out );
 
 size_t rcrlesenc(   unsigned char *in, size_t inlen,  unsigned char *out ); // order 0 RLE (Run Length Encoding)
 size_t rcrlesdec(   unsigned char *in, size_t outlen, unsigned char *out );
@@ -98,9 +111,6 @@ size_t rcu3sdec(    unsigned char *in, size_t outlen, unsigned char *out );
 
 size_t rcqlfcsenc(  unsigned char *in, size_t inlen,  unsigned char *out ); // //--- QLFC :  Quantized Local Frequency Coding
 size_t rcqlfcsdec(  unsigned char *in, size_t outlen, unsigned char *out );
-
-size_t rcbwtsenc(   unsigned char *in, size_t inlen,  unsigned char *out, unsigned lev, unsigned thnum, unsigned lenmin); //---- bwt - compressor 
-size_t rcbwtsdec(   unsigned char *in, size_t outlen, unsigned char *out, unsigned lev, unsigned thnum );
 
 size_t rc4senc(     unsigned char *in, size_t inlen,  unsigned char *out );// nibble adaptive
 size_t rc4sdec(     unsigned char *in, size_t outlen, unsigned char *out );
@@ -144,8 +154,21 @@ size_t rcvsdec16(   unsigned char *in, size_t outlen, unsigned char *out );
 size_t rcvsenc32(   unsigned char *in, size_t inlen,  unsigned char *out ); // 32 bits
 size_t rcvsdec32(   unsigned char *in, size_t outlen, unsigned char *out );
 
+size_t rcosenc16(   unsigned char *in, size_t inlen,  unsigned char *out ); // 16 bits, 8 bits exponent 
+size_t rcosdec16(   unsigned char *in, size_t outlen, unsigned char *out );
+size_t rcosenc32(   unsigned char *in, size_t inlen,  unsigned char *out ); // 32 bits
+size_t rcosdec32(   unsigned char *in, size_t outlen, unsigned char *out );
+
+size_t rcvdsenc16(   unsigned char *in, size_t inlen,  unsigned char *out ); // 16 bits, 8 bits exponent + map
+size_t rcvdsdec16(   unsigned char *in, size_t outlen, unsigned char *out );
+size_t rcvedsenc32(  unsigned char *in, size_t inlen,  unsigned char *out ); // 32 bits
+size_t rcwveddec32(  unsigned char *in, size_t outlen, unsigned char *out );
+
 size_t rcvesenc32(  unsigned char *in, size_t inlen,  unsigned char *out ); // 32 bits, 12 bits exponent
 size_t rcvesdec32(  unsigned char *in, size_t outlen, unsigned char *out );
+
+size_t rcv10senc32(  unsigned char *in, size_t inlen,  unsigned char *out ); // 32 bits, 10 bits exponent
+size_t rcv10sdec32(  unsigned char *in, size_t outlen, unsigned char *out );
 
 size_t rcvzsenc16(  unsigned char *in, size_t inlen,  unsigned char *out ); // 16 bits, 8 bits exponent + zigzag delta 
 size_t rcvzsdec16(  unsigned char *in, size_t outlen, unsigned char *out );
@@ -164,6 +187,19 @@ size_t rcvgzsenc16( unsigned char *in, size_t inlen,  unsigned char *out ); // 1
 size_t rcvgzsdec16( unsigned char *in, size_t outlen, unsigned char *out );
 size_t rcvgzsenc32( unsigned char *in, size_t inlen,  unsigned char *out ); // 32 bits, 8 bits exponent w/ gamma coding + zigzag delta 
 size_t rcvgzsdec32( unsigned char *in, size_t outlen, unsigned char *out );
+
+size_t rcv8senc16(   unsigned char *in, size_t inlen,  unsigned char *out ); // 16 bits
+size_t rcv8sdec16(   unsigned char *in, size_t outlen, unsigned char *out );
+size_t rcv8senc32(   unsigned char *in, size_t inlen,  unsigned char *out ); // 32 bits
+size_t rcv8sdec32(   unsigned char *in, size_t outlen, unsigned char *out );
+
+size_t rcv8zsenc16(  unsigned char *in, size_t inlen,  unsigned char *out ); // 16 bits
+size_t rcv8zsdec16(  unsigned char *in, size_t outlen, unsigned char *out );
+size_t rcv8zsenc32(  unsigned char *in, size_t inlen,  unsigned char *out ); // 32 bits
+size_t rcv8zsdec32(  unsigned char *in, size_t outlen, unsigned char *out );
+
+size_t rcv16senc32(   unsigned char *in, size_t inlen,  unsigned char *out ); // 32 bits
+size_t rcv16sdec32(   unsigned char *in, size_t outlen, unsigned char *out );
 
 //----------------ss: dual predictor ----------------------------------------------------------------------------
 size_t rcssenc(      unsigned char *in, size_t inlen,  unsigned char *out, unsigned prm0, unsigned prm1 ); // order 0
@@ -204,6 +240,8 @@ size_t rcm2ssdec(    unsigned char *in, size_t outlen, unsigned char *out, unsig
 
 size_t rcmrssenc(    unsigned char *in, size_t inlen,  unsigned char *out, unsigned prm0, unsigned prm1  ); // context mixing / run aware
 size_t rcmrssdec(    unsigned char *in, size_t outlen, unsigned char *out, unsigned prm0, unsigned prm1  );
+size_t rcmrrssenc(   unsigned char *in, size_t inlen,  unsigned char *out, unsigned prm0, unsigned prm1  ); // context mixing / run > 2 aware
+size_t rcmrrssdec(   unsigned char *in, size_t outlen, unsigned char *out, unsigned prm0, unsigned prm1  );
 
 size_t rcrlessenc(   unsigned char *in, size_t inlen,  unsigned char *out, unsigned prm0, unsigned prm1 );  // order 0 RLE (Run Length Encoding)
 size_t rcrlessdec(   unsigned char *in, size_t outlen, unsigned char *out, unsigned prm0, unsigned prm1 ); 
@@ -222,9 +260,6 @@ size_t rcu3ssdec(    unsigned char *in, size_t outlen, unsigned char *out, unsig
 
 size_t rcqlfcssenc(  unsigned char *in, size_t inlen,  unsigned char *out, unsigned prm0, unsigned prm1 );  // //--- QLFC :  Quantized Local Frequency Coding
 size_t rcqlfcssdec(  unsigned char *in, size_t outlen, unsigned char *out, unsigned prm0, unsigned prm1 ); 
-
-size_t rcbwtssenc(   unsigned char *in, size_t inlen,  unsigned char *out, unsigned lev, unsigned thnum, unsigned lenmin, unsigned prm0, unsigned prm1 ); //---- bwt - compressor 
-size_t rcbwtssdec(   unsigned char *in, size_t outlen, unsigned char *out, unsigned lev, unsigned thnum, unsigned prm0, unsigned prm1 );
 
 size_t rc4ssenc(     unsigned char *in, size_t inlen,  unsigned char *out, unsigned prm0, unsigned prm1 ); // nibble adaptive
 size_t rc4ssdec(     unsigned char *in, size_t outlen, unsigned char *out, unsigned prm0, unsigned prm1 ); 
@@ -268,6 +303,11 @@ size_t rcvssdec16(   unsigned char *in, size_t outlen, unsigned char *out, unsig
 size_t rcvssenc32(   unsigned char *in, size_t inlen,  unsigned char *out, unsigned prm0, unsigned prm1 );  // 32 bits
 size_t rcvssdec32(   unsigned char *in, size_t outlen, unsigned char *out, unsigned prm0, unsigned prm1 ); 
 
+size_t rcossenc16(   unsigned char *in, size_t inlen,  unsigned char *out, unsigned prm0, unsigned prm1 );  // 16 bits, 8 bits exponent 
+size_t rcossdec16(   unsigned char *in, size_t outlen, unsigned char *out, unsigned prm0, unsigned prm1 ); 
+size_t rcossenc32(   unsigned char *in, size_t inlen,  unsigned char *out, unsigned prm0, unsigned prm1 );  // 32 bits
+size_t rcossdec32(   unsigned char *in, size_t outlen, unsigned char *out, unsigned prm0, unsigned prm1 ); 
+
 size_t rcvessenc32(  unsigned char *in, size_t inlen,  unsigned char *out, unsigned prm0, unsigned prm1 );  // 32 bits, 12 bits exponent
 size_t rcvessdec32(  unsigned char *in, size_t outlen, unsigned char *out, unsigned prm0, unsigned prm1 ); 
 
@@ -288,6 +328,19 @@ size_t rcvgzssenc16( unsigned char *in, size_t inlen,  unsigned char *out, unsig
 size_t rcvgzssdec16( unsigned char *in, size_t outlen, unsigned char *out, unsigned prm0, unsigned prm1 ); 
 size_t rcvgzssenc32( unsigned char *in, size_t inlen,  unsigned char *out, unsigned prm0, unsigned prm1 );  // 32 bits, 8 bits exponent w/ gamma coding + zigzag delta 
 size_t rcvgzssdec32( unsigned char *in, size_t outlen, unsigned char *out, unsigned prm0, unsigned prm1 ); 
+
+size_t rcv8ssenc16(   unsigned char *in, size_t inlen,  unsigned char *out, unsigned prm0, unsigned prm1 ); // 16 bits
+size_t rcv8ssdec16(   unsigned char *in, size_t outlen, unsigned char *out, unsigned prm0, unsigned prm1 );
+size_t rcv8ssenc32(   unsigned char *in, size_t inlen,  unsigned char *out, unsigned prm0, unsigned prm1  ); // 32 bits
+size_t rcv8ssdec32(   unsigned char *in, size_t outlen, unsigned char *out, unsigned prm0, unsigned prm1  );
+
+size_t rcv8zssenc16(  unsigned char *in, size_t inlen,  unsigned char *out, unsigned prm0, unsigned prm1 ); // 16 bits
+size_t rcv8zssdec16(  unsigned char *in, size_t outlen, unsigned char *out, unsigned prm0, unsigned prm1 );
+size_t rcv8zssenc32(  unsigned char *in, size_t inlen,  unsigned char *out, unsigned prm0, unsigned prm1  ); // 32 bits
+size_t rcv8zssdec32(  unsigned char *in, size_t outlen, unsigned char *out, unsigned prm0, unsigned prm1  );
+
+//size_t rcv16ssenc32(   unsigned char *in, size_t inlen,  unsigned char *out, unsigned prm0, unsigned prm1  ); // 32 bits
+//size_t rcv16ssdec32(   unsigned char *in, size_t outlen, unsigned char *out, unsigned prm0, unsigned prm1  );
 
 //----------------sf: fsm predictor ----------------------------------------------------------------------------
 #pragma pack(1)
@@ -332,6 +385,8 @@ size_t rcm2sfdec(    unsigned char *in, size_t outlen, unsigned char *out, fsm_t
 
 size_t rcmrsfenc(    unsigned char *in, size_t inlen,  unsigned char *out, fsm_t *fsm);  // context mixing / run aware
 size_t rcmrsfdec(    unsigned char *in, size_t outlen, unsigned char *out, fsm_t *fsm); 
+size_t rcmrrsfenc(   unsigned char *in, size_t inlen,  unsigned char *out, fsm_t *fsm);  // context mixing / run > 2 aware
+size_t rcmrrsfdec(   unsigned char *in, size_t outlen, unsigned char *out, fsm_t *fsm); 
 
 size_t rcrlesfenc(   unsigned char *in, size_t inlen,  unsigned char *out, fsm_t *fsm);  // order 0 RLE (Run Length Encoding)
 size_t rcrlesfdec(   unsigned char *in, size_t outlen, unsigned char *out, fsm_t *fsm); 
@@ -350,9 +405,6 @@ size_t rcu3sfdec(    unsigned char *in, size_t outlen, unsigned char *out, fsm_t
 
 size_t rcqlfcsfenc(  unsigned char *in, size_t inlen,  unsigned char *out, fsm_t *fsm);  // //--- QLFC :  Quantized Local Frequency Coding
 size_t rcqlfcsfdec(  unsigned char *in, size_t outlen, unsigned char *out, fsm_t *fsm); 
-
-size_t rcbwtsfenc(   unsigned char *in, size_t inlen,  unsigned char *out, unsigned lev, unsigned thnum, unsigned lenmin, fsm_t *fsm); //---- bwt - compressor 
-size_t rcbwtsfdec(   unsigned char *in, size_t outlen, unsigned char *out, unsigned lev, unsigned thnum, fsm_t *fsm );
 
 size_t rc4sfenc(     unsigned char *in, size_t inlen,  unsigned char *out, fsm_t *fsm); // nibble adaptive
 size_t rc4sfdec(     unsigned char *in, size_t outlen, unsigned char *out, fsm_t *fsm); 
@@ -396,6 +448,11 @@ size_t rcvsfdec16(   unsigned char *in, size_t outlen, unsigned char *out, fsm_t
 size_t rcvsfenc32(   unsigned char *in, size_t inlen,  unsigned char *out, fsm_t *fsm);  // 32 bits
 size_t rcvsfdec32(   unsigned char *in, size_t outlen, unsigned char *out, fsm_t *fsm); 
 
+size_t rcosfenc16(   unsigned char *in, size_t inlen,  unsigned char *out, fsm_t *fsm);  // 16 bits, 8 bits exponent 
+size_t rcosfdec16(   unsigned char *in, size_t outlen, unsigned char *out, fsm_t *fsm); 
+size_t rcosfenc32(   unsigned char *in, size_t inlen,  unsigned char *out, fsm_t *fsm);  // 32 bits
+size_t rcosfdec32(   unsigned char *in, size_t outlen, unsigned char *out, fsm_t *fsm); 
+
 size_t rcvesfenc32(  unsigned char *in, size_t inlen,  unsigned char *out, fsm_t *fsm);  // 32 bits, 12 bits exponent
 size_t rcvesfdec32(  unsigned char *in, size_t outlen, unsigned char *out, fsm_t *fsm); 
 
@@ -417,6 +474,18 @@ size_t rcvgzsfdec16( unsigned char *in, size_t outlen, unsigned char *out, fsm_t
 size_t rcvgzsfenc32( unsigned char *in, size_t inlen,  unsigned char *out, fsm_t *fsm);  // 32 bits, 8 bits exponent w/ gamma coding + zigzag delta 
 size_t rcvgzsfdec32( unsigned char *in, size_t outlen, unsigned char *out, fsm_t *fsm); 
 
+size_t rcv8sfenc16(  unsigned char *in, size_t inlen,  unsigned char *out, fsm_t *fsm ); // 16 bits, 8 bits exponent 
+size_t rcv8sfdec16(  unsigned char *in, size_t outlen, unsigned char *out, fsm_t *fsm );
+size_t rcv8sfenc32(  unsigned char *in, size_t inlen,  unsigned char *out, fsm_t *fsm ); // 32 bits
+size_t rcv8sfdec32(  unsigned char *in, size_t outlen, unsigned char *out, fsm_t *fsm );
+
+size_t rcv8zsfenc16( unsigned char *in, size_t inlen,  unsigned char *out, fsm_t *fsm ); // 16 bits, 8 bits exponent 
+size_t rcv8zsfdec16( unsigned char *in, size_t outlen, unsigned char *out, fsm_t *fsm );
+size_t rcv8zsfenc32( unsigned char *in, size_t inlen,  unsigned char *out, fsm_t *fsm ); // 32 bits
+size_t rcv8zsfdec32( unsigned char *in, size_t outlen, unsigned char *out, fsm_t *fsm );
+
+size_t rcv16sfenc32(   unsigned char *in, size_t inlen,  unsigned char *out, fsm_t *fsm);  // 32 bits
+size_t rcv16sfdec32(   unsigned char *in, size_t outlen, unsigned char *out, fsm_t *fsm); 
 
 //----------------- CDF: cumulative distribution functions --------------------------------------------------------
 typedef unsigned short cdf_t;
@@ -457,6 +526,9 @@ void trcini(void);
 #define RC_PRD_SS   2  // dual speed
 #define RC_PRD_SF   3  // fsm
 #define RC_PRD_LAST RC_PRD_SF
+//----- bwt --------------------------
+size_t rcbwtenc(   unsigned char *in, size_t inlen,  unsigned char *out, unsigned lev, unsigned thnum, unsigned lenmin); //---- bwt - compressor 
+size_t rcbwtdec(   unsigned char *in, size_t outlen, unsigned char *out, unsigned lev, unsigned thnum );
 
 #ifdef __cplusplus
 }
