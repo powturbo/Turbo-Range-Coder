@@ -485,14 +485,6 @@ unsigned bench(unsigned char *in, unsigned n, unsigned char *out, unsigned char 
     case 61:         TMBENCH("",l=utf8enc( in,n,out, flag|BWT_COPY|BWT_RATIO),n); 
 	                                                              pr(l,n); TMBENCH2("61:utf8 preprocessor                    ",l==n?memcpy(cpy,out,n):utf8dec(   out,n,cpy), n); break;
     case 62:         TMBENCH("",l=lzpenc(  in,n,out,lenmin,0),n);   pr(l,n); TMBENCH2("62:lzp                                  ",l==n?memcpy(cpy,out,n):lzpdec(    out,n,cpy,lenmin,0), n); break;
-	  #if 0
-    case 66:if(m<16){TMBENCH("",l=ansn4c0( in,n,out,on),n);       pr(l,n); TMBENCH2("66:ans scalar nibble                    ",/*l==n?memcpy(cpy,out,n):*/ansn4d0( out,n,cpy), n);}
-            else    {TMBENCH("",l=ansnc0(  in,n,out,on),n);       pr(l,n); TMBENCH2("66:ans scalar                           ",/*l==n?memcpy(cpy,out,n):*/ansnd0(  out,n,cpy), n);} break;
-    case 67:if(m<16){TMBENCH("",l=ansn4cs( in,n,out,on),n);       pr(l,n); TMBENCH2("67:ans sse nibble                       ",/*l==n?memcpy(cpy,out,n):*/ansn4ds( out,n,cpy), n);}
-            else    {TMBENCH("",l=ansncs(  in,n,out,on),n);       pr(l,n); TMBENCH2("67:ans sse                              ",/*l==n?memcpy(cpy,out,n):*/ansnds(  out,n,cpy), n);} break;
-    case 68:if(m<16){TMBENCH("",l=ansn4cx( in,n,out,on),n);       pr(l,n); TMBENCH2("68:ans avx2 nibble                      ",/*l==n?memcpy(cpy,out,n):*/ansn4dx( out,n,cpy), n);}
-            else    {TMBENCH("",l=ansncx(  in,n,out,on),n);       pr(l,n); TMBENCH2("68:ans avx2                             ",/*l==n?memcpy(cpy,out,n):*/ansndx(  out,n,cpy), n);} break;
-	  #endif
       #ifdef _EXT
     #include "xturborc.c"
       #endif
