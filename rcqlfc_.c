@@ -22,7 +22,7 @@
     - email    : powturbo [_AT_] gmail [_DOT_] com
 **/
 // Turbo Range Coder bwt: templates include
-#include "include_/turborc.h"
+#include "include/turborc.h"
 #include "include_/rcutil.h"
 
 #include "rcutil_.h"
