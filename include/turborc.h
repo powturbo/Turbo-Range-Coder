@@ -24,7 +24,11 @@
 // TurboRC Range Coder : include header 
 #ifndef TURBORC_H_
 #define TURBORC_H_
-
+  #if defined(__GNUC__)
+#define _PACKED         __attribute__ ((packed))
+  #else
+#define _PACKED
+  #endif
 //----------- BWT -------------------
 #define BWT_RDONLY  (1<<30) // input is read only, no overwrite
 #define BWT_BWT16   (1<<29) // 16 bits bwt
