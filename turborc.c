@@ -35,9 +35,9 @@
   #else
 #include <getopt.h> 
   #endif
+#include "include/turborc.h"
  
 #include "include_/time_.h"
-#include "include_/turborc.h"
 #include "include_/rcutil.h"
 #include "include_/bec.h"
 #include "rcutil_.h"
