@@ -25,8 +25,8 @@
 // Reference: http://cbloomrants.blogspot.com/2017/01/order-0-estimators-for-data-compression.html
 
 #include <stdio.h>             
+#include "include/turborc.h"   
 #include "include_/conf.h"   
-#include "include_/turborc.h"   
 
 #define RC_MACROS
 #define RC_BITS 15      	// RC_SIZE=64 + RC_IO=32 : set in turborc_.h
