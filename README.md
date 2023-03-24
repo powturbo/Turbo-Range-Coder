@@ -94,7 +94,7 @@ TurboRC: Turbo Range Coder
 
 ## Compile:
         Download or clone TurboRC
-		git clone --recursive git://github.com/powturbo/Turbo-Range-Coder.git
+		git clone --recursive https://github.com/powturbo/Turbo-Range-Coder.git
 		cd Turbo-Range-Coder
         
 ###### Linux, MacOS, Windows (MingW), Clang,... (see also makefile)
@@ -113,7 +113,7 @@ See examples in "turborc.c"
 
 ## Environment:
 ###### OS/Compiler (32 + 64 bits):
-- Windows: Visual C++ (2017)
+- Windows: Visual C++ (2022)
 - Windows: MinGW-w64 makefile
 - Linux amd/intel: GNU GCC (>=4.6)
 - Linux amd/intel: Clang (>=3.2)
@@ -127,4 +127,4 @@ See examples in "turborc.c"
 * **References:**
   * <a name="a"></a>[Entropy Coder Benchmark](https://sites.google.com/site/powturbo/entropy-coder) 
 
-Last update:  23 MAR 2023
+Last update:  24 MAR 2023
