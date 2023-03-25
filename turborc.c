@@ -577,66 +577,69 @@ static void usage(char *pgm) {
 } 
 
 //----------------------------- File compression header serialization ----------------------------------------------------
-#pragma pack(1)
 typedef struct hd {											// main header
   unsigned short magic, _bsize;
   unsigned char  codec, lev, prm1, prm2, prdid;
-} _PACKED hd_t;
+} hd_t;
 typedef struct chdb {									    // block header
   unsigned bsize, inlen, clen;
-} _PACKED hdb_t;
-#pragma pack() 
+} hdb_t;
 
-int hdwr(hd_t *hd, FILE *fo) {
-  unsigned folen = 0 ;
-  unsigned u32 = (hd->_bsize-1) << 20 | hd->codec << 12 | hd->magic;            //12+8+12=32 bits
-  if(fwrite(&u32, 1, 4, fo) != 4) return -E_FWR;             folen  = 4;              // blocksize
-  unsigned short u16 = hd->lev<<10 | hd->prm2<<6 | hd->prm1<<2 | (hd->prdid-1); // 4+4+4+2=14 bits
-  if(fwrite(&u16, 1, 2, fo) != 2) return -E_FWR;             folen += 2;   
-  return folen;	
+int hdwr(hd_t *hd, FILE *fo) {													// file header
+  unsigned hdlen = 0, u32 = (hd->_bsize-1) << 20 | hd->codec << 12 | hd->magic; //12+8+12=32 bits
+  if(fwrite(&u32, 1, 4, fo) != 4) return -E_FWR;             hdlen  = 4;        // blocksize
+  unsigned short u16 = hd->lev<<10 | hd->prm2<<6 | hd->prm1<<2 | (hd->prdid-1); // 2+4+4+4+2=16 bits
+  if(fwrite(&u16, 1, 2, fo) != 2) return -E_FWR;             hdlen += 2;   
+  return hdlen;	
 }
 
-int hdrd(hd_t *hd, FILE *fi) {
-  unsigned filen, u32;
+int hdrd(hd_t *hd, FILE *fi) {													// file header
+  unsigned hdlen, u32;
   unsigned short u16;
-  if(fread(&u32, 1, 4, fi) != 4) return -E_FRD;                  filen  = 4;
+  if(fread(&u32, 1, 4, fi) != 4) return -E_FRD;                  hdlen  = 4;
   if((u32&0xfffu) != MAGIC) return -E_MAG;
-  if((hd->codec  = (char)(u32>>12)) > CODEC_MAX) -E_CODEC;
-  if((hd->_bsize = (u32>>20)+1) > BLKMAX) return -E_CORR;
-  if(fread(&u16, 1, 2, fi) != 2) return -E_FRD;                  filen += 2;
-  hd->prdid =  (u16&3)+1;
+  if((hd->codec  = (char)(u32>>12)) > CODEC_MAX) return -E_CODEC;
+  if((hd->_bsize = (u32>>20)+1) > BLKMAX)        return -E_CORR;
+  if(fread(&u16, 1, 2, fi) != 2)                 return -E_FRD;                  
+  hd->prdid =  (u16&3)+1;                                        hdlen += 2;
   hd->prm1  =  (u16>> 2)&0xf;
   hd->prm2  =  (u16>> 6)&0xf;
-  hd->lev   =  (u16>>10)&0xf; 
-  return filen;
+  hd->lev   =  (u16>>10);      
+  if(hd->lev > 9) return -E_CORR;
+  return hdlen;
 }
 
-int hdbwr(hdb_t *hdb, FILE *fo) {
-  unsigned folen, h = hdb->clen >= (1<<30), u32 = hdb->clen << 2 | h << 1 | (hdb->inlen < hdb->bsize);                // last block?
-  if(fwrite(&u32, 1, 4, fo) != 4) return -E_FWR;     folen  = 4; //printf("clen=%u ", hdb->clen);
+int hdbwr(hdb_t *hdb, FILE *fo) {												// block header
+  unsigned hdlen, h = hdb->clen >= (1<<30),                                     // block length > 1GB?
+           u32 =  hdb->clen << 2 |                                              // compressed length lsb = 30bits
+		          h << 1 |                                                      // large block size?
+		         (hdb->inlen < hdb->bsize);                                     // last block?
+  if(fwrite(&u32, 1, 4, fo) != 4) return -E_FWR;         hdlen  = 4;            //printf("clen=%u ", hdb->clen);
   if(h) {
-    unsigned short u16 = hdb->clen >> 30;
-    if(fwrite(&u16, 1, 2, fo) != 2) return -E_FWR;   folen += 2;
+    unsigned short u16 = hdb->clen >> 30;                                       // compressed length msb
+    if(fwrite(&u16, 1, 2, fo) != 2) return -E_FWR;       hdlen += 2;
   }
   if(hdb->inlen < hdb->bsize) 									   // length of last block < block size
-    if(fwrite(&hdb->inlen, 1, 4, fo) != 4) return -E_FWR;   folen +=4;
-  return folen;
+    if(fwrite(&hdb->inlen, 1, 4, fo) != 4) return -E_FWR;   
+	                                                     hdlen +=4;
+  return hdlen;
 }
 
 unsigned hdbrd(hdb_t *hdb, FILE *fi) {
-  unsigned filen, u32, h;
+  unsigned hdlen, u32, h;
   unsigned short u16;
-  if(fread(&u32, 1, 4, fi) != 4) return -E_FRD;          filen  = 4;
+  hdb->inlen = hdb->bsize;
+  if(fread(&u32, 1, 4, fi) != 4) return -E_FRD;          hdlen  = 4;
   hdb->clen = u32>>2;                                                           //printf("clen=%u ", hdb->clen);
   if(u32&2) {
 	unsigned short u16;
-	if(fread(&u16, 1, 2, fi) != 2) return -E_FRD;        filen += 2;
-	hdb->clen |= u16 << 30;
+	if(fread(&u16, 1, 2, fi) != 2) return -E_FRD;        hdlen += 2;
+	hdb->clen |= (uint32_t)u16 << 30;
   }
   if(u32&1) {                                                                   // last block
-    if(fread(&hdb->inlen, 1, 4, fi) != 4) return -E_FRD; filen  += 4;
+    if(fread(&hdb->inlen, 1, 4, fi) != 4) return -E_FRD; hdlen  += 4;
   }	  
-  return filen; 	
+  return hdlen; 	
 }
 
 typedef struct len_t { unsigned id, len; } len_t;
@@ -928,7 +931,8 @@ int main(int argc, char* argv[]) {
     in  = vmalloc(bsize); 
     out = vmalloc(bsize); if(!in || !out) ERR(E_MEM); 
     for(;;) {
-	  hdb_t hdb; if((rc = hdbrd(&hdb, fi)) < 0) break;     
+	  hdb_t hdb; hdb.bsize = bsize;
+	  if((rc = hdbrd(&hdb, fi)) < 0) break;     
 	  filen += rc;
 	  unsigned outlen = hdb.inlen;
       if(fread(in, 1, hdb.clen, fi) != hdb.clen) ERR(E_FRD);   
