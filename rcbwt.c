@@ -29,7 +29,7 @@ size_t rcbwtenc(unsigned char *in, size_t inlen, unsigned char *out, unsigned le
   unsigned      lenmin = _lenmin & 0x3ff, xbwt16 = (_lenmin & BWT_BWT16)?0x80:0, verbose = _lenmin & BWT_VERBOSE; 
   unsigned char *op    = out, *bwt   = vmalloc(inlen+1024), *ip = in; if(!bwt) { op = out+inlen; goto e; }  // inlen + space for bwt indexes idxns
   if(lenmin==1) lenmin = lenmins[bsr32(inlen)];									
-																				if(verbose) { printf("level=%u bits=%u ", lev, bsr32(inlen));fflush(stdout); } 
+																				if(verbose) { printf("\nlev=%u bits=%u ", lev, bsr32(inlen));fflush(stdout); } 
   if(lenmin) {  																if(verbose) { printf("lenmin=%u ", lenmin);fflush(stdout); } 
     ip = bwt;
 	switch(lenmin) {
