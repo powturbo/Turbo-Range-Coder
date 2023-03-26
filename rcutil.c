@@ -222,29 +222,32 @@ uint8_t *rcqlfc(uint8_t *__restrict in, size_t n, uint8_t *__restrict out, uint8
 //------------------------------------------- utf8 preprocessing -----------------------------------------------
   #ifndef NCOMP
 #include "include_/vlcbyte.h" // vsput/vsget
+
 //-- utf-8 to code point ----------
+#define UTF8_INV 0x10fe00  // with 3 bytes private area
 #define UTF8LENMASK(_c_, _m_, _l_) \
        if ((_c_ & 0xe0) == 0xc0) { _l_ = 2; _m_ = 0x1f; }\
   else if ((_c_ & 0xf0) == 0xe0) { _l_ = 3; _m_ = 0x0f; }\
   else if ((_c_ & 0xf8) == 0xf0) { _l_ = 4; _m_ = 0x07; }\
   else if ((_c_ & 0xfc) == 0xf8) { _l_ = 5; _m_ = 0x03; }\
   else if ((_c_ & 0xfe) == 0xfc) { _l_ = 6; _m_ = 0x01; }\
-  else _l_ = 0; /*invalid*/
+  else { _l_ = 0; _m_ = 0xff; } /*invalid*/
 
-#define UTF8GET(_ip_, _m_, _l_, _c_) do {\
+#define UTF8GET(_ip_, _m_, _l_, _c_) do { int _ui;\
   _c_ &= (_m_);\
-  for(int _ui = 1; _ui < (_l_); _ui++) {\
-    if(((_ip_)[_ui] & 0xc0) != 0x80) { (_l_) = 0; break;}\
+  for(_ui = 1; _ui < (_l_); _ui++) {\
+    if(((_ip_)[_ui] & 0xc0) != 0x80) { _l_ = 0; break; }\
     _c_ = (_c_) << 6 | ((_ip_)[_ui] & 0x3f);\
   }\
 } while(0)
 
 #define UCGET(_ip_, _c_, _l_) {\
-  if((_c_ = *_ip_) < 128) { _ip_++;/*_l_ = 1;*/ }\
-  else { \
-    unsigned _mask;\
+  if((_c_ = *_ip_) < 128) { _ip_++; _l_ = 1; }\
+  else {\
+    unsigned _mask, _c = _c_;\
     UTF8LENMASK(_c_, _mask, _l_);\
 	UTF8GET(_ip_, _mask, _l_, _c_); _ip_ += _l_;\
+	if(!_l_) { _c_ = UTF8_INV + _c; _ip_++; } /*invalid -> private area*/\
   }\
 }
 
@@ -318,7 +321,7 @@ static unsigned char *symsput(sym_t *stab, unsigned stabn, unsigned char *out, u
 
 size_t utf8enc(unsigned char *__restrict in, size_t inlen, unsigned char *__restrict out, unsigned flag) { 
   #define SYMBITS     16
-  unsigned char *ip, *op = out;
+  unsigned char *ip, *op = out, cinv = 0;
   sym_t          stab[1<<SYMBITS] = {0};
   
     #ifdef NOHASH
@@ -332,11 +335,19 @@ size_t utf8enc(unsigned char *__restrict in, size_t inlen, unsigned char *__rest
   unsigned       stabn = 0, xprep8 = flag & BWT_PREP8, verbose = flag & BWT_VERBOSE, itmax = (flag>>10) & 0xf, xsort = (flag>>14) & 0x3, cnt;
                                                                                 if(verbose) { printf("utf8enc: xsort=%u prep8=%d ", xsort, xprep8); fflush(stdout); } //unsigned st_crd=0;
   for(ip = in; ip < in+inlen;) {												// build the symbol dictionary
-    unsigned c, ci, l=1, h;											   	
+    unsigned c, ci, l = 1, h;											   	
     UCGET(ip, c, l); 			   
-	if(!l) { op = out+inlen; 													if(verbose) { printf("'invalid utf-8 symbol'\n");fflush(stdout); } 
+	  #ifdef UTF8INV
+	if(!l) { op = out+inlen; 													if(verbose) { printf("invalid utf8 ");fflush(stdout); } 
 	  goto e; 
 	} 																			// convert to code point + utf-8 validity check //if(c > cmax) cmax = c;
+	  #else
+	if(!l) {                                                                    if(verbose) { printf("#"); fflush(stdout); }
+	  if(++cinv > 16) { op = out+inlen;                                         if(verbose) { printf("invalid utf8 symbols"); fflush(stdout); } 
+        goto e;
+	  }
+	} else if(c >= UTF8_INV && c <= UTF8_INV+0xff) { op = out+inlen;            if(verbose) { printf("?"); fflush(stdout); } goto e; } // symbol not allowed
+	  #endif
     CFIND(stab, stabh,HBITS,HMASK, c, ci, h); 
 	if(ci != -1) stab[ci].cnt++; 
 	else { 	
@@ -351,7 +362,7 @@ size_t utf8enc(unsigned char *__restrict in, size_t inlen, unsigned char *__rest
 	  CADD(stab, stabh, stabn, c, h, cid(c)); 
 	}
   }
-																				if(verbose) { printf("num symbols='%u'. sort='%s' ", stabn, xsort?"freq":"groupfreq");fflush(stdout); } 
+																				if(verbose) { printf("symnum='%u'. sort='%s' ", stabn, xsort?"freq":"catfreq");fflush(stdout); } 
   switch(xsort) {
     case 0: qsort(stab, stabn, sizeof(sym_t), cmpscand); break;					// sort by code group + count (bwt mode)
     case 1: qsort(stab, stabn, sizeof(sym_t), cmpsnd); break;  					// sort by count   
@@ -403,9 +414,10 @@ size_t utf8enc(unsigned char *__restrict in, size_t inlen, unsigned char *__rest
 //--------------------------- decode ---------------------
 #define ctoutf8(_u_, _c_, _l_) {\
   unsigned _c = _c_;\
-  if(likely(_c <=   0x7f)) { _u_ = _c;                                                                                    _l_ = 1;} \
+  if(likely(_c <=   0x7f)) { _u_ = _c;                                                                                    _l_ = 1;}\
   else if(  _c <=   0x7ff) { _u_ =      0x80c0 | (_c & 0x3f) << 8 | _c >>  6;                                             _l_ = 2;}\
   else if(  _c <=  0xffff) { _u_ =    0x8080e0 | (_c & 0x3f) <<16 | ((_c & 0xfc0) >>  6) << 8 | _c >> 12;                 _l_ = 3;}\
+  else if(  _c >= UTF8_INV && _c <=  UTF8_INV+0xff) { _u_ = _c - UTF8_INV;                                                _l_ = 3;}\
   else                     { _u_ = 0x808080f0u | (_c & 0x3f) <<24 |  (_c & 0xfc0) << 10 | (_c & 0x3f000) >> 4 | _c >> 18; _l_ = 4;}\
 }
 
