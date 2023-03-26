@@ -749,11 +749,15 @@ int main(int argc, char* argv[]) {
 	  case 'x': { int m = atoi(optarg); if(m<4) m=4;else if(m>16) m=16; mbcset(m); /*set context bits*/} break;
 	    #endif
       case '0':case '1':case '2':case '3': case '4':case '5':case '6':case '7':case '8':case '9': {
-        unsigned l = atoi(optarg); decomp = 0;
-        if(l >= 0 && l <= 9) {
+        char *q;
+		unsigned l = atoi(optarg); 
+        if(l >= 0 && l <= 9)
           codec = (c-'0')*10 + l;                                  
-          if(codec>=0 && codec<=99) break; 
-        }
+		if(q = strchr(optarg,'e')) lev    = atoi(q+(q[1]=='='?2:1));  if(lev>9) lev=9;   
+	    if(q = strchr(optarg,'m')) lenmin = atoi(q+(q[1]=='='?2:1));  		    //printf("codec=%d lev=%d lmin=%d", codec, lev, lenmin);
+	    //if(q = strchr(prm,'u')) nutf8  = 1;
+		decomp = 0;
+        if(codec>=0 && codec<=99) break; 
       }
       case 'h':
       default: 
