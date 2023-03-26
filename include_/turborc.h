@@ -37,6 +37,7 @@
 #define BWT_VERBOSE (1<<26) // verbose
 #define BWT_COPY    (1<<25) // memcpy in to out in case of no compression
 #define BWT_RATIO   (1<<24) // No ratio check
+#define BWT_NUTF8   (1<<23) // No utf8-preprocessing
 
 #ifdef __cplusplus
 extern "C" {
