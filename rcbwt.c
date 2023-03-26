@@ -22,7 +22,7 @@ static unsigned calcmod(size_t len) { return 1<<__bsr32(len); }
 #define SR 16
 
   #ifndef NCOMP
-static unsigned lenmins[33] = { 0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  40,40,40,40, 40,40,40,40, 40,40,40,40, 96,128,144,144,144 }; //144,128,144
+static unsigned lenmins[33] = { 0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  40,40,40,40, 40,40,40,40, 40,40,40,40, 96,128,144,144, 144 }; //144,128,144
 
 size_t rcbwtenc(unsigned char *in, size_t inlen, unsigned char *out, unsigned lev, unsigned thnum, unsigned _lenmin) { 
   size_t        iplen  = inlen;
@@ -116,9 +116,9 @@ size_t rcbwtdec(unsigned char *in, size_t outlen, unsigned char *out, unsigned l
     case  0: memcpy(bwt,    ip, oplen+bwtx);      break;
 	case  2: xbwt16?becdec16(ip, oplen+bwtx, bwt):becdec8(ip, oplen+bwtx, bwt); break;
 	case  3: xbwt16?rcrlesdec16(  ip, oplen+bwtx, bwt):      rcrlesdec(  ip, oplen+bwtx, bwt); break;
-	case  4: xbwt16?rcrlessdec16( ip, oplen+bwtx, bwt, 2, 6):rcrlessdec( ip, oplen+bwtx, bwt, 2, 6); break;
+	case  4: xbwt16?rcrlessdec16( ip, oplen+bwtx, bwt, 4, 7):rcrlessdec( ip, oplen+bwtx, bwt, 4, 7); break;
 	case  5: xbwt16?rcrle1sdec16( ip, oplen+bwtx, bwt):      rcrle1sdec( ip, oplen+bwtx, bwt); break;
-	case  6: xbwt16?rcrle1ssdec16(ip, oplen+bwtx, bwt, 2, 6):rcrle1ssdec(ip, oplen+bwtx, bwt, 2, 6); break;
+	case  6: xbwt16?rcrle1ssdec16(ip, oplen+bwtx, bwt, 3, 7):rcrle1ssdec(ip, oplen+bwtx, bwt, 3, 7); break;
 	case  7:        rcqlfcsdec(   ip, oplen+bwtx, bwt); break;
 	case  9:        rcmrrssdec(   ip, oplen+bwtx, bwt, 0, 0); break; 
 	case  8:        
