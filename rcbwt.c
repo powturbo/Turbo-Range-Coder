@@ -26,15 +26,15 @@ static unsigned lenmins[33] = { 0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 
 
 size_t rcbwtenc(unsigned char *in, size_t inlen, unsigned char *out, unsigned lev, unsigned thnum, unsigned _lenmin) { 
   size_t        iplen  = inlen;
-  unsigned      lenmin = _lenmin & 0x3ff, xbwt16 = (_lenmin & BWT_BWT16)?0x80:0, verbose = _lenmin & BWT_VERBOSE; 
+  unsigned      lenmin = _lenmin & 0x3ff, xbwt16 = (_lenmin & BWT_BWT16)?0x80:0, verbose = _lenmin & BWT_VERBOSE, nutf8 = _lenmin & BWT_NUTF8; 
   unsigned char *op    = out, *bwt   = vmalloc(inlen+1024), *ip = in; if(!bwt) { op = out+inlen; goto e; }  // inlen + space for bwt indexes idxns
   if(lenmin==1) lenmin = lenmins[bsr32(inlen)];									
-																				if(verbose) { printf("\nlev=%u bits=%u ", lev, bsr32(inlen));fflush(stdout); } 
+																				if(verbose) { printf("\nlev=%u bits=%u nutf8=%d ", lev, bsr32(inlen), nutf8);fflush(stdout); } 
   if(lenmin) {  																if(verbose) { printf("lenmin=%u ", lenmin);fflush(stdout); } 
     ip = bwt;
 	switch(lenmin) {
 	  //case 2  : iplen = fastaenc(in, inlen, ip);         						if(verbose) { printf("GenTR %u->%u ", inlen, iplen); fflush(stdout); } break;
-      default : iplen = utf8enc(in, inlen, ip, _lenmin); 						if(verbose) { if(iplen == inlen) printf("NoUTF8 "); else printf("UTF8:%u->%u ", inlen, iplen); fflush(stdout); } break;					// try utf8 preprocessing
+      default : if(!nutf8) { iplen = utf8enc(in, inlen, ip, _lenmin); 			if(verbose) { if(iplen == inlen) printf("NoUTF8 "); else printf("UTF8:%u->%u ", inlen, iplen); fflush(stdout); }} break;					// try utf8 preprocessing
 	}
 	if(lenmin < 15 || iplen != inlen && iplen != -1) 
 	  lenmin = lenmin<15?32-lenmin:31;   				                        // lenmin = 31 for utf8enc success
