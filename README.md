@@ -17,8 +17,9 @@ TurboRC: Turbo Range Coder
             - Turbo VLC: novel Variable Length Coding for large integers, <br/>
             - MTF (Move-To-Front) / QLFC (Quantized Local Frequency Coding)<br/>
   * Fast full 8/16 bits BWT: Burrows-Wheeler compression/decompression w/
-    - preprocessing : lzp and :new:utf-8
-    - postprocessing: QLFC (Quantized Local Frequency Coding), RLE and Bit entropy coder
+    - preprocessing : lzp and utf-8
+    - postprocessing: QLFC (Quantized Local Frequency Coding),<br/>
+    RLE and Bit entropy coder
   * BWT :libsais + optimized libdivsufsort + optimized inverse bwt included
   * static + adaptive cdf - cumulative distribution functions
   * stdin/stdout file compressor included
