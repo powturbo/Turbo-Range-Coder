@@ -790,9 +790,9 @@ int main(int argc, char* argv[]) {
       char     *finame = argv[fno];                                     
       FILE     *fi = fopen(finame, "rb");                           		    if(!fi ) { perror(finame); continue; }   if(verbose>2) printf("'%s'\n", finame);
 
-      fseek(fi, 0, SEEK_END); 
-      filen = ftell(fi); 													    if(!filen) { printf("file empty: '%s'\n"); continue; }
-      fseek(fi, 0, SEEK_SET);
+      fseeko(fi, 0, SEEK_END); 
+      filen = ftello(fi); 													    if(!filen) { printf("file empty: '%s'\n"); continue; }
+      fseeko(fi, 0, SEEK_SET);
     
       size_t b = (filen < bsize && !dfmt)?filen:bsize, tpbyte=0;			    if(verbose>2) printf("bsize=%zu b=%zu ", bsize, b);
       
