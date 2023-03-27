@@ -333,7 +333,7 @@ size_t utf8enc(unsigned char *__restrict in, size_t inlen, unsigned char *__rest
   unsigned short stabh[1<<  HBITS] = {0};        
     #endif
   unsigned       stabn = 0, xprep8 = flag & BWT_PREP8, verbose = flag & BWT_VERBOSE, itmax = (flag>>10) & 0xf, xsort = (flag>>14) & 0x3, cnt;
-                                                                                if(verbose) { printf("utf8enc: xsort=%u prep8=%d ", xsort, xprep8); fflush(stdout); } //unsigned st_crd=0;
+                                                                                if(verbose) { printf("utf8:sort=%u prep8=%d ", xsort, xprep8); fflush(stdout); } //unsigned st_crd=0;
   for(ip = in; ip < in+inlen;) {												// build the symbol dictionary
     unsigned c, ci, l = 1, h;											   	
     UCGET(ip, c, l); 			   
@@ -362,7 +362,7 @@ size_t utf8enc(unsigned char *__restrict in, size_t inlen, unsigned char *__rest
 	  CADD(stab, stabh, stabn, c, h, cid(c)); 
 	}
   }
-																				if(verbose) { printf("symnum='%u'. sort='%s' ", stabn, xsort?"freq":"catfreq");fflush(stdout); } 
+																				if(verbose) { printf("sym=%u sort='%s' ", stabn, xsort?"freq":"cat");fflush(stdout); } 
   switch(xsort) {
     case 0: qsort(stab, stabn, sizeof(sym_t), cmpscand); break;					// sort by code group + count (bwt mode)
     case 1: qsort(stab, stabn, sizeof(sym_t), cmpsnd); break;  					// sort by count   
@@ -373,7 +373,7 @@ size_t utf8enc(unsigned char *__restrict in, size_t inlen, unsigned char *__rest
     if(stab[i].c <= 0xff) cnt8 += stab[i].cnt; 
 	cnt += stab[i].cnt; 
   } 
-  cnt8 = (uint64_t)cnt8*128 / cnt; 						                        if(verbose) { printf("ratio='%u' ", cnt8);fflush(stdout); } 		
+  cnt8 = (uint64_t)cnt8*128 / cnt; 						                        if(verbose) { printf("ratio=%u ", cnt8);fflush(stdout); } 		
   if(cnt8 > 64 && !(flag & BWT_RATIO)) { op = out+inlen; goto e; }                    								    // enough saving for converting to 16-bits?
 
   CREHASH(stab, stabh,HBITS,HMASK, stabn);		                                // rehash after sort
