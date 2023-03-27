@@ -516,9 +516,9 @@ static void usage(char *pgm) {
   fprintf(stderr, "   Rice+delta+rc     : 29=8/16/32 bits\n");
   fprintf(stderr, "   Turbo VLC+rc+bitio: 30/31/34: 16/32 bits\n");
   fprintf(stderr, "   Turbo VLC zigzag  : 32/33/35: 16/32 bits\n");
-    #endif
     #ifdef _BWT
-  fprintf(stderr, "   BWT+rc         : 20 options: l#  #:0:store, 2:bit ec, 3/4:RLE, 5/6:RLE o1, 7/8:QLFC, 9:Max\n");
+  fprintf(stderr, "   BWT+rc         : 20 options: -l#  #:0:store, 2:bit ec, 3/4:RLE, 5/6:RLE o1, 7/8:QLFC, 9:Max\n");
+    #endif
     #endif
 	#ifndef NO_BENCH
   fprintf(stderr, " -b#     #: block size in MB (default %d)\n", 1<<10);
@@ -559,7 +559,9 @@ static void usage(char *pgm) {
     #endif
   //fprintf(stderr, " -f      force overwrite of output file\n");
     #ifdef _BWTSATAN
-  fprintf(stderr, "compress:   bwtsatan -20 [l#] input output\n");
+  fprintf(stderr, "compress:   bwtsatan -20[e#][m#] input output\n");
+  fprintf(stderr, "   e# : # = 0:store, 2:bit ec, 3/4:RLE, 5/6:RLE o1, 7/8:QLFC, 9:Max\n");
+  fprintf(stderr, "   m# : # = lzp min. match length\n");
   fprintf(stderr, "decompress: bwtsatan -d input output\n");
     #else
   fprintf(stderr, "Ex.:   turborc -e0 file\n");
