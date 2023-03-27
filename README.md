@@ -81,8 +81,7 @@ TurboRC: Turbo Range Coder
 
 #### [enwik8](http://mattmahoney.net/dc/text.html) - 100.000.000 bytes EN Wikipedia
  (bold = pareto)  MB=1.000.000
- 
-|C Size|ratio%|C MB/s|D MB/s|Name|File|
+|C Size|ratio%|C MB/s|D MB/s|Name|
 |--------:|-----:|--------:|--------:|----------------|
 |20698282| 20.7|**9.02**|**16.04**|**TurboRC 20e9**|
 |20749619| 20.7|**10.70**|9.19|**bzip3**|
@@ -95,8 +94,7 @@ TurboRC: Turbo Range Coder
 |29008758| 29.0|**20.72**|**43.39**|**bzip2**|
 
 #### [Silesia - Compression Corpus](https://sun.aei.polsl.pl//~sdeor/index.php?page=silesia) (mixed binary + text)
-
-|C Size|ratio%|C MB/s|D MB/s|Name|File|
+|C Size|ratio%|C MB/s|D MB/s|Name|
 |--------:|-----:|--------:|--------:|----------------|
 |48400486| 22.8|**9.63**|**16.08**|**TurboRC 20e9**|
 |48621296| 22.9|**14.51**|**18.05**|**bsc 0e2**|
@@ -107,8 +105,7 @@ TurboRC: Turbo Range Coder
 |54592210| 25.8|18.22|**52.14**|**bzip2**|
 
 #### [English.100mb text files from Gutenberg Project](http://pizzachili.dcc.uchile.cl/texts.html)
-
-|C Size|ratio%|C MB/s|D MB/s|Name|File|
+|C Size|ratio%|C MB/s|D MB/s|Name|
 |--------:|-----:|--------:|--------:|----------------|
 |18720206| 17.9|**10.89**|**19.07**|**TurboRC 20e9**|
 |18720206| 17.9|10.46|18.72|TurboRC 20e9x|
@@ -123,8 +120,7 @@ TurboRC: Turbo Range Coder
 |29433182| 28.1|19.65|41.49|bzip2|
 
 #### [html8 : 100MB random html pages from 1m Alexa Top sites]
-
-|C Size|ratio%|C MB/s|D MB/s|Name|File|
+|C Size|ratio%|C MB/s|D MB/s|Name|
 |--------:|-----:|--------:|--------:|----------------|
 |13203250| 13.2|**15.85**|**26.16**|**TurboRC 20e9**|
 |13301850| 13.3|**17.61**|16.32|**bzip3**|h
@@ -135,8 +131,7 @@ TurboRC: Turbo Range Coder
 |18162609| 18.2|21.16|**67.90**|**bzip2**|
 
 #### [enwik9](http://mattmahoney.net/dc/text.html) - 1GB EN Wikipedia
-
-|C Size|ratio%|C MB/s|D MB/s|Name|File|
+|C Size|ratio%|C MB/s|D MB/s|Name|
 |--------:|-----:|--------:|--------:|----------------|
 |163656130| 16.4|**8.03**|**15.75**|**TurboRC 20e9**|
 |163656170| 16.4|6.99|12.04|TurboRC 20e9m120|
@@ -150,8 +145,7 @@ TurboRC: Turbo Range Coder
 |253977891| 25.4|**19.90**|**46.46**|**bzip2**|
 
 #### test1.txt - 1GB ZH (chineese) Wikipedia from GDCC2021
-
-|C Size|ratio%|C MB/s|D MB/s|Name|File|
+|C Size|ratio%|C MB/s|D MB/s|Name|
 |--------:|-----:|--------:|--------:|----------------|
 |234873322| 23.5|**11.82**|**18.08**|**bsc 0e2**|
 |235628874| 23.6|**14.88**|**35.27**|**TurboRC 20e8**|
@@ -164,8 +158,7 @@ TurboRC: Turbo Range Coder
 |359610522| 36.0|**21.51**|**42.38**|**bzip2**|
 
 #### Text log file:[NASA access log](https://ita.ee.lbl.gov/html/contrib/NASA-HTTP.html) 200MB  
-
-|C Size|ratio%|C MB/s|D MB/s|Name|File|
+|C Size|ratio%|C MB/s|D MB/s|Name|
 |--------:|-----:|--------:|--------:|
 |9082122|  4.4|**38.69**|**106.37**|**TurboRC 20e8m32**|
 |9138588|  4.5|14.52|13.66|bzip3|
