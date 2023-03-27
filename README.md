@@ -93,7 +93,7 @@ TurboRC: Turbo Range Coder
 |22011302| 22.0|**19.39**|**40.86**|**TurboRC 20e5**|
 |29008758| 29.0|**20.72**|**43.39**|**bzip2**|
 
-#### [Silesia - Compression Corpus](https://sun.aei.polsl.pl//~sdeor/index.php?page=silesia) (mixed binary + text)
+#### [Silesia - Compression Corpus](https://sun.aei.polsl.pl//~sdeor/index.php?page=silesia) (211 MB mixed binary + text)
 |C Size|ratio%|C MB/s|D MB/s|Name|
 |--------:|-----:|--------:|--------:|----------------|
 |48400486| 22.8|**9.63**|**16.08**|**TurboRC 20e9**|
@@ -139,7 +139,7 @@ TurboRC: Turbo Range Coder
 |169984250| 17.0|11.27|9.89|bzip3|
 |253977891| 25.4|**19.90**|**46.46**|**bzip2**|
 
-#### test1.txt - 1GB ZH (chineese) Wikipedia from GDCC2021
+#### test1.txt - 1GB ZH (chineese) Wikipedia from [GDCC2021](https://www.facebook.com/gdccompetition) 
 |C Size|ratio%|C MB/s|D MB/s|Name|
 |--------:|-----:|--------:|--------:|----------------|
 |234873322| 23.5|**11.82**|**18.08**|**bsc 0e2**|
