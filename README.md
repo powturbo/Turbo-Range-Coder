@@ -75,7 +75,7 @@ TurboRC: Turbo Range Coder
 | 3,388,684 | 3.36% |   73|  73|13-rcss  o0 (strong)|
 | 4,145,920 | 4.10% |   92|  95|11-rcs   o0 	    |
 
-## BWT Benchmark: TurboRC vs the best BWT compressors
+## BWT Benchmark: TurboRC vs the best BWT compressors (2023.04)
 - [bsc](https://github.com/IlyaGrebnov/libbsc)
 - [bzip3](https://github.com/kspalaiologos/bzip3)
 - [bzip2](https://github.com/asimonov-im/bzip2)
