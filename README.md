@@ -154,7 +154,7 @@ TurboRC: Turbo Range Coder
 
 #### Text log file:[NASA access log](https://ita.ee.lbl.gov/html/contrib/NASA-HTTP.html) 200MB  
 |C Size|ratio%|C MB/s|D MB/s|Name|
-|--------:|-----:|--------:|--------:|
+|--------:|-----:|--------:|--------:|----------------|
 |9082122|  4.4|**38.69**|**106.37**|**TurboRC 20e8m32**|
 |9138588|  4.5|14.52|13.66|bzip3|
 |9438810|  4.6|19.41|43.66|bsc 0e2|
