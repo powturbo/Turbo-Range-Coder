@@ -48,32 +48,38 @@ TurboRC: Turbo Range Coder
    see also [Entropy Coder Benchmark](https://sites.google.com/site/powturbo/entropy-coder) 
 
 
-###### File: enwik9bwt generated BWT (wikipedia XML 1GB )
-		
-|C Size|ratio%|C MB/s|D MB/s|Name / 2020-01|
-|--------:|-----:|--------:|--------:|---------------------------------------|
-|167,395,956|17.13|**82**|**120**|25-rcqlfcs  Move-To-Front/QLFC              |
-|171,300,484|17.13|**92**|**91**|24-rcssxrle  RLE                              |
-|172,462,692|17.25|**112**|**108**|22-rcsxrle RLE                              |
-|173,418,060|17.34|   48|  44|14-rcssx o8bits (strong)|
-|175,618,792|17.56|   64|  50|12-rcsx  o8bits sliding context          |
-|176,983,264|17.70|   61|  58|13-rcss  o0 (strong)                     |
-|183,243,104|18.32|  110| 102|23-rcssrle RLE	                           |
-|182,958,556|18.30|**139**|**113**|21-rcsrle RLE 	                           |
-|183,542,772|18.35|  81 | 73|11-rcs   o0 	                           |
-
-###### File: QC (DNA 100MB)
-
-|C Size|ratio%|C MB/s|D MB/s|Name / 2020-01|
-|--------:|-----:|--------:|--------:|---------------------------------------|
-|  838,416 | 0.83% | **909**|**1645**|24-rcssxrle RLE|
-|  839,384 | 0.83% | **1283**|**1936**|22-rcsxrle RLE|
-| 1,000,716 | 0.99% |   54|  55|14-rcssx o8bits sliding context (strong) 	|
-| 1,041,592 | 1.03% |   76|  65|12-rcsx  o8bits sliding context 	        |
-| 1,081,104 | 1.07% | 1263|1785|23-rcssrle RLE|
-| 1,087,896 | 1.08% |**1456**|**2021**|21-rcsrle RLE|
-| 3,388,684 | 3.36% |   73|  73|13-rcss  o0 (strong)|
-| 4,145,920 | 4.10% |   92|  95|11-rcs   o0 	    |
+###### File: enwik8bwt generated BWT (wikipedia XML 100MB )
+        > turborc -e0 enwik8bwt
+        
+|C MB/s   |C Size   |ratio% |D MB/s    |Name      |Description                  |
+|--------:|--------:|------:|---------:|---------:|-----------------------------|
+|   83.55 | 23334248| 23.33%|     87.71| 1:rc     |  o0                         |       
+|   77.78 | 22394444| 22.39%|     86.21| 2:rcc    |  o1                         |       
+|   68.41 | 23116048| 23.12%|     79.92| 3:rcc2   |  o2                         |       
+|   62.66 | 22500640| 22.50%|     68.42| 4:rcx    |  o8b =o1 context slide      |       
+|   56.28 | 23213968| 23.21%|     61.76| 5:rcx2   |  o16b=o2 context slide      |       
+|   25.79 | 21605020| 21.61%|     26.81| 9:rcms   |  o1 mixer/sse               |       
+|   21.88 | 21550184| 21.55%|     23.00|10:rcm2   |  o2 mixer/sse               |       
+|   22.37 | 20814372| 20.81%|     24.85|11:rcmr   |  o2 8b mixer/sse run        |       
+|   22.14 | 20789560| 20.79%|     24.84|12:rcmrr  |  o2 8b mixer/sse run > 2    |       
+|  148.32 | 23170048| 23.17%|    129.12|13:rcrle  |  RLE o0                     |       
+|  125.28 | 22004856| 22.00%|    117.49|14:rcrle1 |  RLE o1                     |       
+|   72.42 | 23412436| 23.41%|     71.52|17:rcu3   |  varint8 3/5/8 bits         |       
+|   81.92 | 21088368| 21.09%|     94.32|18:rcqlfc |  QLFC                       |       
+|   92.11 | 22275484| 22.28%|     94.33|18:bec    |  Bit EC                     |       
+|   54.85 | 32703468| 32.70%|     58.72|26:rcg-8  |  gamma                      |       
+|  122.34 | 32271396| 32.27%|    111.82|27:rcgz-8 |  gamma zigzag               |       
+|   68.86 | 34195068| 34.20%|     67.76|28:rcr-8  |  rice                       |       
+|   75.49 | 36864024| 36.86%|     69.78|29:rcrz-8 |  rice zigzag                |       
+|  536.18 | 63541712| 63.54%|     87.91|42:cdfsb  |  static/decode search       |       
+|  535.10 | 63541712| 63.54%|    114.02|43:cdfsv  |  static/decode division     |       
+|  464.12 | 63976686| 63.98%|    105.55|44:cdfsm  |  static/decode division lut |       
+|  595.56 | 63541720| 63.54%|     93.02|45:cdfsb  |  static interlv/dec. search |       
+|  199.91 | 24977324| 24.98%|    107.88|46:cdf    |  byte   adaptive            |       
+|  209.19 | 24977328| 24.98%|    101.66|47:cdfi   |  byte   adaptive interleaved|       
+|  168.84 | 31121404| 31.12%|     73.52|48:cdf-8  |  vnibble                    |       
+|  175.66 | 31121412| 31.12%|     81.25|49:cdfi-8 |  vnibble interleaved        |       
+|16482.00 |100000012|100.00%|  16094.51|59:memcpy |                             |       
 
 ## BWT Benchmark: TurboRC vs the best BWT compressors (2023.04)
 - [bsc](https://github.com/IlyaGrebnov/libbsc)
