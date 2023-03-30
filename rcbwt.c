@@ -37,7 +37,7 @@ size_t rcbwtenc(unsigned char *in, size_t inlen, unsigned char *out, unsigned le
     ip = bwt;
 	switch(lenmin) {
 	  //case 2  : iplen = fastaenc(in, inlen, ip);         						if(verbose) { printf("GenTR %u->%u ", inlen, iplen); fflush(stdout); } break;
-      //default : if(!nutf8) { iplen = utf8enc(in, inlen, ip, _lenmin); 			if(verbose) { if(iplen == inlen) printf("NoUTF8 "); else printf("UTF8:%u->%u ", inlen, iplen); fflush(stdout); }} break;					// try utf8 preprocessing
+        default : if(!nutf8) { iplen = utf8enc(in, inlen, ip, _lenmin); 			if(verbose) { if(iplen == inlen) printf("NoUTF8 "); else printf("UTF8:%u->%u ", inlen, iplen); fflush(stdout); }} break;					// try utf8 preprocessing
 	}
 	if(lenmin < 15 || iplen != inlen && iplen != -1) 
 	  lenmin = lenmin<15?128-lenmin:127;   				                        // lenmin = 127-15 for other prep 
