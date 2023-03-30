@@ -62,9 +62,9 @@
 #define NO_RC
 #endif
 
-unsigned bwtx, forcelzp, xprep8, xsort;
+unsigned bwtx, forcelzp, xprep8, xsort, nutf8;
 int BGFREQMIN = 50, BGMAX = 250, itmax;
-#define bwtflag(z) (z==2?BWT_BWT16:0) | (xprep8?BWT_PREP8:0) | forcelzp | (verbose?BWT_VERBOSE:0) | xsort <<14 | itmax <<10 | lenmin
+#define bwtflag(z) (z==2?BWT_BWT16:0) | (xprep8?BWT_PREP8:0) | forcelzp | (nutf8?BWT_NUTF8:0) | (verbose?BWT_VERBOSE:0) | xsort <<14 | itmax <<10 | lenmin
 
 #define MAGIC     0x153 // 12 bits
 #define BLKMAX    3584
@@ -676,13 +676,15 @@ int main(int argc, char* argv[]) {
       { "help",     0, 0, 'h'},
       { 0,          0, 0, 0}
     }; 
-    if((c = getopt_long(argc, argv, "0:1:2:3:4:5:6:7:8:9:b:cde:fhk:l:m:nop:r:t:v:x:XzF:H:I:J:K:B:O:P:Q:S:T:", long_options, &optind)) == -1) break;
+    if((c = getopt_long(argc, argv, "0:1:2:3:4:5:6:7:8:9:b:cde:fhk:l:m:nop:r:t:v:x:XzF:H:I:J:K:B:O:P:Q:S:T:U", long_options, &optind)) == -1) break;
     switch(c) {
       case 0:
         printf("Option %s", long_options[optind].name);
         if(optarg) printf(" with arg %s", optarg);  printf ("\n");
         break;
 		
+      case 'b': _bsize = atoi(optarg); if(_bsize<1) _bsize=1; if(_bsize > BLKMAX) _bsize = BLKMAX; break;
+      case 'e': scmd = optarg; dobench++; break;
 	  case 'f': xprep8=1; break;	  
       case 'F': { char *s = optarg;    // Input format
 	    switch(*s) {
@@ -726,6 +728,7 @@ int main(int argc, char* argv[]) {
       case 'o': xstdout++; break;
       case 'v': verbose = atoi(optarg); break;
 	  
+      case 'U': nutf8++;    break;
       case 'X': bwtx++;    break;
       case 'S': xsort = atoi(optarg); break;
       case 'z': forcelzp = BWT_LZP; break;
@@ -739,8 +742,6 @@ int main(int argc, char* argv[]) {
 	            } break;
 	  case 'r': { char *p = optarg; if(*p >= '0' && *p <= '9') { prm1 = p[0]-'0'; prm2 = p[1]-'0'; } if(prm1>9) prm1=9; if(prm2>9) prm2=9; } break;
 	  case 't': xtpbyte = atoi(optarg); if(xtpbyte) { if(xtpbyte < 1) xtpbyte = 1;else if(xtpbyte > 16) xtpbyte = 16; } break; 
-      case 'b': _bsize = atoi(optarg); if(_bsize<1) _bsize=1; if(_bsize > BLKMAX) _bsize = BLKMAX; break;
-      case 'e': scmd = optarg; dobench++; break;
  	    #ifndef NO_BENCH
       case 'I': if((tm_Rep  = atoi(optarg))<=0) tm_rep = tm_Rep =1; break;
       case 'J': tm_Rep2 = atoi(optarg); if(tm_Rep2<0) xcheck++,tm_Rep2=-tm_Rep2; if(!tm_Rep2) tm_rep= tm_Rep2=1;  break;
@@ -756,8 +757,8 @@ int main(int argc, char* argv[]) {
         if(l >= 0 && l <= 9)
           codec = (c-'0')*10 + l;                                  
 		if(q = strchr(optarg,'e')) lev    = atoi(q+(q[1]=='='?2:1));  if(lev>9) lev=9;   
-	    if(q = strchr(optarg,'m')) lenmin = atoi(q+(q[1]=='='?2:1));  		    //printf("codec=%d lev=%d lmin=%d", codec, lev, lenmin);
-	    //if(q = strchr(prm,'u')) nutf8  = 1;
+	    if(q = strchr(optarg,'m')) lenmin = atoi(q+(q[1]=='='?2:1));  		    
+	    if(q = strchr(optarg,'U')) nutf8  = 1;                        if(verbose>2) printf("codec=%d lev=%d lmin=%d nutf8=%d ", codec, lev, lenmin, nutf8);
 		decomp = 0;
         if(codec>=0 && codec<=99) break; 
       }
