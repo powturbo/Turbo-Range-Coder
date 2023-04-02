@@ -1,4 +1,5 @@
-TurboRC: Turbo Range Coder
+## TurboRC: Turbo Range Coder
+[![Build ubuntu](https://github.com/powturbo/Turbo-Range-Coder/actions/workflows/build.yaml/badge.svg)](https://github.com/powturbo/Turbo-Range-Coder/actions/workflows/build.yaml)
 
 ======================================
 * **Fastest Range Coder / Arithmetic Coder**
