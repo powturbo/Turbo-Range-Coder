@@ -16,7 +16,6 @@ jobs:
     steps:
       - uses: actions/checkout@v2
         with:
-        submodules: 'true'
-        ssh-key: ${{ secrets.PRIVATE_KEY_FOR_DEPLOY_KEY_IN_SUBMODULE }}
+          submodules: 'true'
       - run: make
       - run: ./turborc -e0 turborc
