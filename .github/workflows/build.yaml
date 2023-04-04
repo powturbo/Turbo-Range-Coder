@@ -18,6 +18,8 @@ jobs:
       CC: ${{ matrix.compiler }}
     steps:
       - uses: actions/checkout@v3
+        with:
+        submodules: 'true'
       - run: make
       - run: ./tb64app -v1
       
