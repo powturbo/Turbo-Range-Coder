@@ -28,6 +28,8 @@ jobs:
         shell: msys2 {0}
     steps:
     - uses: actions/checkout@v3
+      with:
+        submodules: 'true'
     - uses: msys2/setup-msys2@v2
       with:
         msystem: MINGW64
@@ -36,5 +38,5 @@ jobs:
     - name: make
       run: |
         make
-        ./tb64app -v1
+        ./turborc -e0 turborc
  
