@@ -21,7 +21,7 @@ jobs:
         with:
           submodules: 'true'
       - run: make
-      - run: ./tb64app -v1
+      - run: ./turborc -e0 turborc
       
   windows:
     runs-on: windows-latest
