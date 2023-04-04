@@ -40,5 +40,5 @@ jobs:
     - name: make
       run: |
         make
-        ./turborc -e0 turborc
+        ./turborc -e0 turborc.exe
  
