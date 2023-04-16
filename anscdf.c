@@ -22,9 +22,6 @@
     - email    : powturbo [_AT_] gmail [_DOT_] com
 **/
 // TurboRANS Range Asymmetric Numeral Systems 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
   #ifdef __APPLE__
 #include <sys/malloc.h>
   #else
