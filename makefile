@@ -10,7 +10,8 @@ BWT=1
 LIBSAIS16=1
 #V8
 #BWTSATAN=1
-
+DELTA=1
+ANS=1
 #EXT=1
 #NOCOMP=1
 #AVX2=1
@@ -145,24 +146,33 @@ endif
 
 all: turborc
 
-L=./
-$(L)ansn0.o: $(L)ansn.c $(L)ansn_.h
-	$(CC) -c -O3 $(CFLAGS) -falign-loops=32 $(L)ansn.c -o $(L)ansn0.o  
-
-$(L)ansns.o: $(L)ansn.c $(L)ansn_.h
-	$(CC) -c -O3 $(CFLAGS) -D__SSE4_1 -march=corei7-avx -mtune=corei7-avx -mno-aes -falign-loops=32 $(L)ansn.c -o $(L)ansns.o  
-
-$(L)ansnx.o: $(L)ansn.c $(L)ansn_.h
-	$(CC) -c -O3 $(CFLAGS) -D__AVX2__ -march=haswell -falign-loops=32 $(L)ansn.c -o $(L)ansnx.o 
-
 ifneq ($(NOCOMP), 1)
 LIB=rc_ss.o rc_s.o rccdf.o rcutil.o bec_b.o rccm_s.o rccm_ss.o rcqlfc_s.o rcqlfc_ss.o rcqlfc_sf.o 
+
+ifeq ($(DELTA), 1)
+CFLAGS+=-D_DELTA
+LIB+=transform.o
+endif
+
+ifeq ($(ANS), 1)
+CFLAGS+=-D_ANS
+L=./
+$(L)anscdf0.o: $(L)anscdf.c $(L)anscdf_.h
+	$(CC) -c -O3 $(CFLAGS) -mno-sse2 -falign-loops=32 $(L)anscdf.c -o $(L)anscdf0.o  
+
+$(L)anscdfs.o: $(L)anscdf.c $(L)anscdf_.h
+	$(CC) -c -O3 $(CFLAGS) -march=corei7-avx -mtune=corei7-avx -mno-aes -falign-loops=32 $(L)anscdf.c -o $(L)anscdfs.o  
+
+$(L)anscdfx.o: $(L)anscdf.c $(L)anscdf_.h
+	$(CC) -c -O3 $(CFLAGS) -march=haswell -falign-loops=32 $(L)anscdf.c -o $(L)anscdfx.o 
+LIB+=$(L)anscdfx.o $(L)anscdfs.o $(L)anscdf0.o
+endif
 
 ifeq ($(V8), 1)
 CFLAGS+=-D_V8
 LIB+=v8.o
 endif
-#trlec.o trled.o $(L)ansnx.o $(L)ansns.o $(L)ansn0.o 
+#trlec.o trled.o $(L)anscdfx.o $(L)anscdfs.o $(L)anscdf0.o 
 endif
 ifeq ($(BWT), 1)
 LIB+=rcbwt.o
@@ -184,6 +194,7 @@ endif
 ifeq ($(NOCOMP), 1)
 CFLAGS+=-DNO_COMP
 endif
+
 
 #librc.a: $(LIB)
 #	ar cr $@ $+
