@@ -98,26 +98,23 @@ void vfree(void *address) {
 //--------------------------- lzp preprocessor (lenmin >= 32) ------------------------------------------------------------------------  
   #ifndef NCOMP
 #define H_BITS              16										 // hash table size 
-#define HASH32(_h_, _x_)    (((_x_) * 123456791) >> (32-h_bits))
-
 #define emitmatch(_l_,_op_) { unsigned _l = _l_-lenmin+1; *_op_++ = 255; while(_l >= 254) { *_op_++ = 254; _l -= 254; OVERFLOW(in,inlen,out,op,goto end); } *_op_++ = _l; }
 #define emitch(_ch_,_op_)   { *_op_++ = _ch_; if(_ch_ == 255) *_op_++ = 0; OVERFLOW(in,inlen, out, op, goto end); }
+ 
+#define LZPINI(_n_) if(lenmin < 32) lenmin = 32;\
+  if(_n_ < lenmin) { memcpy(out, in, _n_); return _n_;}\
+  if(!hbits) { hbits = _n_ >= (1<<24)?21:H_BITS; }\
+  hbits = hbits>12?hbits:12;\
+  if(hbits > H_BITS && !(htab = calloc(1<<hbits, 4))) { htab = _htab; hbits = H_BITS; }
 
-size_t lzpenc(unsigned char *__restrict in, size_t inlen, unsigned char *__restrict out, unsigned lenmin, unsigned h_bits) {	
-  unsigned      _htab[1<<H_BITS] = {0}, *htab = _htab, cl, cx; 
+size_t lzpenc(unsigned char *__restrict in, size_t inlen, unsigned char *__restrict out, unsigned lenmin, unsigned hbits) {	//printf("m=%u ", lenmin);
+  unsigned      _htab[1<<H_BITS] = {0}, *htab = _htab, cl, cx, h4 = 0;
   unsigned char *ip = in, *cp, *op = out;
-  if(lenmin < 32) lenmin = 32;
-  if(inlen  < lenmin) { memcpy(out, in, inlen); return inlen; }
-  if(!h_bits) h_bits = H_BITS;
-  if(inlen >= (1<<24) && h_bits != H_BITS) {
-	h_bits = 19; //(inlen >= (1<<27))?19:18;
-    if(!(htab = calloc(1<<h_bits, 4))) { h_bits = H_BITS; htab = _htab; } 
-  }
-  unsigned h4 = 0;
+  LZPINI(inlen);										//unsigned cnt = 1<<hbits, lmin = lenmin, ocnt=0;
   for(cx = ctou32(ip), ctou32(op) = cx, cx = BSWAP32(cx), op += 4, ip += 4; ip < in+inlen-lenmin;) { 
-             h4 = HASH32(h4, cx);
-             cp = in + htab[h4];
-       htab[h4] = ip - in;    
+    h4       = HASH(h4, cx);  
+    cp       = in + htab[h4];                                                        //cnt -= htab[h4] == 0; //if(cnt*100/(1<<hbits) != ocnt) { printf("%d ", cnt); ocnt=cnt*100/(1<<hbits); }                                                                    //unsigned p = cnt * 100 / (1<<hbits); if(lmin > 32 && lmin <= lenmin && ip - in > (1<<20)) { if(p < 70) lmin--; else lmin++; printf("l=%u ", lmin);}
+    htab[h4] = ip - in;    
     if(ctou64(ip) == ctou64(cp) && ctou64(ip+8) == ctou64(cp+8) && ctou64(ip+16) == ctou64(cp+16) && ctou64(ip+24) == ctou64(cp+24)) { // match
       for(cl = 32;;) {
         if(ip+cl >= in+inlen-32) break;
@@ -125,7 +122,7 @@ size_t lzpenc(unsigned char *__restrict in, size_t inlen, unsigned char *__restr
         if(ctou64(ip+cl) != ctou64(cp+cl)) break; cl += 8;
         if(ctou64(ip+cl) != ctou64(cp+cl)) break; cl += 8;
         if(ctou64(ip+cl) != ctou64(cp+cl)) break; cl += 8;
-      }
+      }						                                           //unsigned x = PREDLEN(avg, cl); printf("%u,", x);												  
       if(cl >= lenmin) {
         for(; ip+cl < in+inlen && ip[cl] == cp[cl]; cl++);
         emitmatch(cl, op);
@@ -136,24 +133,19 @@ size_t lzpenc(unsigned char *__restrict in, size_t inlen, unsigned char *__restr
     }
     unsigned ch = *ip++; emitch(ch, op); cx = cx<<8 | ch; // literal
   }
-  while(ip < in+inlen) { unsigned c = *ip++; emitch(c, op); }
+  while(ip < in+inlen) { unsigned c = *ip++; emitch(c, op); }   //unsigned cnt = 0; for(int i=0; i < (1<<hbits); i++) cnt += htab[i] != 0;   printf("c=%u %.2f", cnt, (double)cnt*100.0/(1<<hbits) );	
   end:if(htab != _htab) free(htab);
   return op - out;													
 }
   #endif
 
   #ifndef NDECOMP
-size_t lzpdec(unsigned char *in, size_t outlen, unsigned char *out, unsigned lenmin, unsigned h_bits) {
+size_t lzpdec(unsigned char *in, size_t outlen, unsigned char *out, unsigned lenmin, unsigned hbits) {
   unsigned      _htab[1<< H_BITS] = {0}, *htab = _htab, cx, h4 = 0;  
   unsigned char *ip = in, *op = out;
-  if(lenmin < 32) lenmin = 32;
-  if(!h_bits) h_bits = H_BITS;
-  if(outlen >= (1<<24) && h_bits != H_BITS) {
-	h_bits = 19; //(outlen >= (1<<27))?19:18;
-    if(!(htab = calloc(1<<h_bits, 4))) { h_bits = H_BITS; htab = _htab; } 
-  }																								  //char s[5]; memcpy(s,ip,4); s[4]=0; printf("'%s'");
+  LZPINI(outlen);
   for(cx = ctou32(ip), ctou32(op) = cx, cx = BSWAP32(cx), op += 4, ip += 4; op < out+outlen;) {
-    unsigned c;    h4 = HASH32(h4, cx);
+    unsigned c;    h4 = HASH(h4, cx);
     unsigned char *cp = out + htab[h4],*op_;
              htab[h4] = op - out;
     if((c = *ip++) == 255)
@@ -218,7 +210,7 @@ uint8_t *rcqlfc(uint8_t *__restrict in, size_t n, uint8_t *__restrict out, uint8
   return op;
 } 
   #endif 
-       
+
 //------------------------------------------- utf8 preprocessing -----------------------------------------------
   #ifndef NCOMP
 #include "include_/vlcbyte.h" // vsput/vsget
@@ -525,7 +517,7 @@ typedef unsigned cnt_t;
 }
 
 #define N64 64
-void histcalc8(unsigned char *__restrict in, unsigned inlen, unsigned *__restrict cnt) {
+unsigned histcalc8(unsigned char *__restrict in, unsigned inlen, unsigned *__restrict cnt) {
   #define IC 4
   cnt_t c[8][CSIZE] = {0}, i; 
   unsigned char *ip = in; 
@@ -539,6 +531,8 @@ void histcalc8(unsigned char *__restrict in, unsigned inlen, unsigned *__restric
   } 
   while(ip != in+inlen) c[0][*ip++]++; 
   HISTEND8(c, cnt);
+  unsigned a = 256; while(a > 1 && !cnt[a-1]) a--; 
+  return a;
 }
 
 #define UZ 16 // Load size 2x 64 bits = 2*8 bytes
@@ -547,7 +541,7 @@ void histcalc8(unsigned char *__restrict in, unsigned inlen, unsigned *__restric
                                   u0 = ctou64(ip+UZ+_i_*UZ*2+16); v0 = ctou64(ip+UZ+_i_*UZ*2+24); CR64(u1,v1,_o_,_i_);\
 }
 
-void histrcalc8(unsigned char *__restrict in, unsigned inlen, unsigned *__restrict cnt) {
+unsigned histrcalc8(unsigned char *__restrict in, unsigned inlen, unsigned *__restrict cnt) {
   #define IC 4
   cnt_t c[8][CSIZE] = {0},i; 
   unsigned char *ip = in,*in_; 
@@ -561,17 +555,19 @@ void histrcalc8(unsigned char *__restrict in, unsigned inlen, unsigned *__restri
   }
   while(ip != in+inlen) c[0][*ip++]++; 
   HISTEND8(c, cnt);
+  unsigned a = 256; while(a > 1 && !cnt[a-1]) a--; 
+  return a;
 }
 
 void memrev(unsigned char a[], unsigned n) { 
   size_t i, j;
     #if defined(__AVX2__)
-	__m256i cv = _mm256_set_epi8( 0, 1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12,13,14,15,  0, 1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12,13,14,15	),
+	__m256i cv = _mm256_set_epi8( 0, 1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12,13,14,15,  0, 1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12,13,14,15	);
   for(j = i; j < n >> (1+5); ++j,i += 32) {
 	__m256i lo = _mm256_shuffle_epi8(_mm256_loadu_si256((__m256i*)&a[i     ]),cv),
-	__m256i hi = _mm256_shuffle_epi8(_mm256_loadu_si256((__m256i*)&a[n-i-32]),cv);
-	_mm256_storeu_si256((__m256i*)&a[i],           _mm256_permute2x128_si256(hi,hi,1));
-	_mm256_storeu_si256((__m256i*)&a[n - i - 32]), _mm256_permute2x128_si256(lo,lo,1));
+	        hi = _mm256_shuffle_epi8(_mm256_loadu_si256((__m256i*)&a[n-i-32]),cv);
+	_mm256_storeu_si256((__m256i*)&a[i],          _mm256_permute2x128_si256(hi,hi,1));
+	_mm256_storeu_si256((__m256i*)&a[n - i - 32], _mm256_permute2x128_si256(lo,lo,1));
   }
   //for( ; i < (n >> 1); ++i ) { unsigned char t = a[i]; a[i] = a[n - i - 1]; a[n - i - 1] = t; }
     #elif defined(__SSSE3__)
@@ -589,3 +585,34 @@ void memrev(unsigned char a[], unsigned n) {
     #endif
   for(;i < n/2; ++i) { unsigned char t = a[i]; a[i] = a[n-i-1]; a[n-i-1] = t; }
 }
+
+  #ifndef NCOMP
+size_t bitenc(unsigned char *__restrict in, size_t inlen, unsigned char *__restrict out) { 
+  unsigned cnt[256] = {0}, map[256] = {0}, a = histrcalc8(in, inlen, cnt), c = 0;
+  unsigned char *ip = in, *op = out;
+
+  *op++ = 0;
+  for(int i = 0; i < 256; i++) if(cnt[i]) { map[i] = c++; *op++ = i; }
+  if(c > 16) { *out = 0xff; memcpy(out+1, in, inlen); return inlen; }
+  *out = c; 
+       if(c <=  2) { for(; ip < in+(inlen&~(8-1)); ip+=8) *op++ = map[ip[7]]<<7 | map[ip[6]]<<6 | map[ip[5]]<<5 | map[ip[4]]<<4 | map[ip[3]]<<3 | map[ip[2]]<<2 | map[ip[1]]<<1 | map[ip[0]]; }
+  else if(c <=  4) { for(; ip < in+(inlen&~(4-1)); ip+=4) *op++ = map[ip[3]]<<6 | map[ip[2]]<<4 | map[ip[1]]<<2 | map[ip[0]]; }
+  else if(c <= 16) { for(; ip < in+(inlen&~(2-1)); ip+=2) *op++ = map[ip[1]]<<4 | map[ip[0]]; }
+  while(ip < in+inlen) *op++ = *ip++;
+  return op - out;
+}
+  #endif
+  
+  #ifndef NDECOMP
+size_t bitdec(unsigned char *__restrict in, size_t outlen, unsigned char *__restrict out) {
+  unsigned char *ip = in, *op = out, *p;
+  if(*in == 0xff) { memcpy(out, in+1, outlen); return outlen+1; }
+  unsigned c = *ip++; p = ip; ip += c; 
+       if(c <= 2) { for(op = out; op < out+(outlen&~(8-1)); op+=8) { unsigned u = *ip++; op[0] = p[(u   )& 1]; op[1] = p[(u>>1)&1]; op[2] = p[(u>>2)&1]; op[3] = p[(u>>3)&1];
+	                                                                                     op[4] = p[(u>>4)& 1]; op[5] = p[(u>>5)&1]; op[6] = p[(u>>6)&1]; op[7] = p[(u>>7)&1]; }}
+  else if(c <= 4) { for(op = out; op < out+(outlen&~(4-1)); op+=4) { unsigned u = *ip++; op[0] = p[(u   )& 3]; op[1] = p[(u>>2)&3]; op[2] = p[(u>>4)&3]; op[3] = p[(u>>6)&3]; }}
+  else if(c <=16) { for(op = out; op < out+(outlen&~(2-1)); op+=2) { unsigned u = *ip++; op[0] = p[(u   )&15]; op[1] = p[ u    &15]; op[2] = p[u>>4]; }}
+  while(op < out+outlen) *op++ = *ip++;
+  return ip - in;
+}
+  #endif 
