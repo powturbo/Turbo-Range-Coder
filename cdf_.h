@@ -1,62 +1,97 @@
-#define MXV(_i_, _j_) _j_ + ((_j_ <= _i_)?0:(1<<RC_BITS)-16)
-#define MIXIN16(_i_) { MXV(_i_,0), MXV(_i_,1), MXV(_i_, 2), MXV(_i_, 3), MXV(_i_, 4), MXV(_i_, 5), MXV(_i_, 6), MXV(_i_, 7),\
-                       MXV(_i_,8), MXV(_i_,9), MXV(_i_,10), MXV(_i_,11), MXV(_i_,12), MXV(_i_,13), MXV(_i_,14), MXV(_i_,15) }
+/**
+    Copyright (C) powturbo 2013-2023
+    GPL v3 License
 
-static cdf_t mixin16[16][16] = {
- MIXIN16( 0), MIXIN16( 1), MIXIN16( 2), MIXIN16( 3), MIXIN16( 4), MIXIN16( 5), MIXIN16( 6), MIXIN16( 7),
- MIXIN16( 8), MIXIN16( 9), MIXIN16(10), MIXIN16(11), MIXIN16(12), MIXIN16(13), MIXIN16(14), MIXIN16(15)
-};
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 3 of the License, or
+    (at your option) any later version.
 
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License along
+    with this program; if not, write to the Free Software Foundation, Inc.,
+    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+
+    - homepage : https://sites.google.com/site/powturbo/
+    - github   : https://github.com/powturbo
+    - twitter  : https://twitter.com/powturbo
+    - email    : powturbo [_AT_] gmail [_DOT_] com
+**/
+// CDF : Cumulative distribution function for range coder + rans  
+#define RATE16 7
 #define CDF16DEC0(_m_)     cdf_t _m_[17];      { int j;                          for(j = 0; j <= 16; j++)    _m_[j] = j << (RC_BITS-4); }
 #define CDF16DEC1(_m_,_n_) cdf_t _m_[_n_][17]; { int i,j; for(i=0; i < _n_; i++) for(j = 0; j <= 16; j++) _m_[i][j] = j << (RC_BITS-4); }
-  #if 0
-#define IC 10 //10
-#define MIXD ( ((1u<<RC_BITS)-1) & ~((1<<5)-1) )  //#define MIXD 0x7fd9 //((1u<<ANS_BITS)-1-28) //
-#define CDF16DEF __m256i mv = _mm256_set1_epi16(MIXD), v0=_mm256_set_epi16(15*IC,14*IC,13*IC,12*IC,11*IC,10*IC, 9*IC, 8*IC, 7*IC, 6*IC, 5*IC, 4*IC, 3*IC, 2*IC, 1*IC, 0)
-  #else
-#define CDF16DEF  
-  #endif
-#define RATE16 7
 
+#ifndef _CDF2
+#define IC 10 
+#define MIXD ( ((1u<<RC_BITS)-1) & ~((1<<5)-1) )
+  
   #ifdef __AVX2__
-  #if 1
+#define CDF16DEF __m256i _cmv = _mm256_set1_epi16(MIXD), _crv = _mm256_set_epi16(15*IC,14*IC,13*IC,12*IC,11*IC,10*IC, 9*IC, 8*IC, 7*IC, 6*IC, 5*IC, 4*IC, 3*IC, 2*IC, 1*IC, 0)
+#define cdf16upd(_m_, _x_) {\
+  __m256i _mv = _mm256_loadu_si256((const __m256i *)_m_);\
+  __m256i _gv = _mm256_cmpgt_epi16(_mv, _mm256_set1_epi16(_m_[_x_]));\
+  _mv = _mm256_add_epi16(_mv,_mm256_srai_epi16(_mm256_add_epi16(_mm256_sub_epi16(_crv,_mv),_mm256_and_si256(_gv,_cmv)), RATE16));\
+  _mm256_storeu_si256((__m256i *)_m_, _mv);\
+}
+
+#define cdfansdec(_st_, _m_, _y_) { unsigned _xx;\
+  __m256i _mv = _mm256_loadu_si256((const __m256i *)_m_), \
+          _gv = _mm256_cmpgt_epi16(_mv, _mm256_set1_epi16(BZHI32(_st_, ANS_BITS))); \
+  _y_  = ctz32(_mm256_movemask_epi8(_gv))>>1;\
+  _st_ = (state_t)(_m_[_y_] - _m_[_y_-1]) * (_st_ >> ANS_BITS) + BZHI32(_st_, ANS_BITS) - _m_[_y_-1]; _y_--;\
+  _mv = _mm256_add_epi16(_mv,_mm256_srai_epi16(_mm256_add_epi16(_mm256_sub_epi16(_crv,_mv),_mm256_and_si256(_gv,_cmv)), RATE16)); \
+  _mm256_storeu_si256((__m256i *)_m_, _mv);\
+}
+
+  #elif defined(__SSE2__) || defined(__powerpc64__) || defined(__ARM_NEON)
+#define CDF16DEF __m128i _cmv  = _mm_set1_epi16(MIXD),\
+                         _crv0 = _mm_set_epi16( 7*IC,  6*IC,  5*IC,  4*IC,  3*IC,  2*IC, 1*IC, 0   ), \
+                         _crv1 = _mm_set_epi16(15*IC, 14*IC, 13*IC, 12*IC, 11*IC, 10*IC, 9*IC, 8*IC)
+
+#define cdfansdec(_st_, _m_, _y_) {\
+  __m128i _m0 = _mm_loadu_si128((const __m128i *)_m_),\
+          _m1 = _mm_loadu_si128((const __m128i *)&_m_[8]),\
+          _sv = _mm_set1_epi16(BZHI32(_st_, ANS_BITS)),\
+		  _g0 = _mm_cmpgt_epi16(_m0, _sv),\
+		  _g1 = _mm_cmpgt_epi16(_m1, _sv);\
+  _y_ = ctz16(_mm_movemask_epi8(_mm_packs_epi16(_g0, _g1)));\
+  _st_ = (state_t)(_m_[_y_] - _m_[_y_-1]) * (_st_ >> ANS_BITS) + BZHI32(_st_, ANS_BITS) - _m_[_y_-1]; _y_--;\
+  _m0 = _mm_add_epi16(_m0,_mm_srai_epi16(_mm_add_epi16(_mm_sub_epi16(_crv0,_m0),_mm_and_si128(_g0,_cmv)), RATE16));\
+  _m1 = _mm_add_epi16(_m1,_mm_srai_epi16(_mm_add_epi16(_mm_sub_epi16(_crv1,_m1),_mm_and_si128(_g1,_cmv)), RATE16));\
+  _mm_storeu_si128((const __m128i *)(_m_),   _m0);\
+  _mm_storeu_si128((const __m128i *)&_m_[8], _m1);\
+}
 
 #define cdf16upd(_m_, _x_) {\
-  __m256i _vm0 = _mm256_loadu_si256((const __m256i *)(_m_));\
- _mm256_storeu_si256((const __m256i *)(_m_), _mm256_add_epi16(_vm0, _mm256_srai_epi16(_mm256_sub_epi16(_mm256_loadu_si256((const __m256i *)mixin16[_x_]), _vm0), RATE16)));\
+  __m128i _m0 = _mm_loadu_si128((const __m128i *)_m_),\
+          _m1 = _mm_loadu_si128((const __m128i *)&_m_[8]),\
+          _sv = _mm_set1_epi16(_m_[_x_]),\
+		  _g0 = _mm_cmpgt_epi16(_m0, _sv),\
+		  _g1 = _mm_cmpgt_epi16(_m1, _sv);\
+  _m0 = _mm_add_epi16(_m0,_mm_srai_epi16(_mm_add_epi16(_mm_sub_epi16(_crv0,_m0),_mm_and_si128(_g0,_cmv)), RATE16));\
+  _m1 = _mm_add_epi16(_m1,_mm_srai_epi16(_mm_add_epi16(_mm_sub_epi16(_crv1,_m1),_mm_and_si128(_g1,_cmv)), RATE16));\
+  _mm_storeu_si128((const __m128i *)(_m_),   _m0);\
+  _mm_storeu_si128((const __m128i *)&_m_[8], _m1);\
 }
-/*#define cdf16upd2(_m0_, _x0_, _m1_,_x1_) {\
-  __m256i _vm0 = _mm256_loadu_si256((const __m256i *)(_m0_));\
-  __m256i _vm1 = _mm256_loadu_si256((const __m256i *)(_m1_));\
-  __m256i _vx0 = _mm256_loadu_si256((const __m256i *)mixin16[_x0_]);\
-	      _vm0 = _mm256_add_epi16(_vm0, _mm256_srai_epi16(_mm256_sub_epi16(_vx0, _vm0), RATE16));\
-  __m256i _vx1 = _mm256_loadu_si256((const __m256i *)mixin16[_x1_]);\
-	      _vm1 = _mm256_add_epi16(_vm1, _mm256_srai_epi16(_mm256_sub_epi16(_vx1, _vm1), RATE16));\
-  _mm256_storeu_si256((const __m256i *)(_m0_), _vm0);\
-  _mm256_storeu_si256((const __m256i *)(_m1_), _vm1);\
-}*/
-#else
-	
-#define cdf16upd(_m_, _x_) {\
-  __m256i _m0 = _mm256_loadu_si256((const __m256i *)_m_);\
-  __m256i _g0 = _mm256_cmpgt_epi16(_m0, _mm256_set1_epi16(_m_[_x_]));\
-  _m0 = _mm256_add_epi16(_m0,_mm256_srai_epi16(_mm256_add_epi16(_mm256_sub_epi16(v0,_m0),_mm256_and_si256(_g0,mv)), RATE16));\
-  _mm256_storeu_si256((__m256i *)_m_, _m0);\
-}
-#endif
-
-  #elif defined(__SSE2__) || defined(__ARM_NEON) || defined(__powerpc64__)
-#define cdf16upd(_m_, _y_) {\
-  __m128i _vx0 = _mm_loadu_si128((const __m128i *) mixin16[_y_]);\
-  __m128i _vm0 = _mm_loadu_si128((const __m128i *)(_m_));\
-  __m128i _vx1 = _mm_loadu_si128((const __m128i *)&mixin16[_y_][8]); \
-  __m128i _vm1 = _mm_loadu_si128((const __m128i *)&(_m_)[8]);\
-	_vm0 = _mm_add_epi16(_vm0, _mm_srai_epi16(_mm_sub_epi16(_vx0, _vm0), RATE16));\
-	_vm1 = _mm_add_epi16(_vm1, _mm_srai_epi16(_mm_sub_epi16(_vx1, _vm1), RATE16));\
-	_mm_storeu_si128((const __m128i *)( _m_),  _vm0);\
-	_mm_storeu_si128((const __m128i *)&_m_[8], _vm1);\
-}
+  #elif defined(__ARM_NEON) // TODO: custom arm functions
   #else
-#define cdf16upd(_m_, _x_) { int _i; for(_i = 0; _i < 16; _i++) _m_[_i] += (mixin16[_x_][_i] - _m_[_i]) >> RATE16; }
-  #endif
+#define CDF16DEF
+#define cdf16upd(_m_,_y_) { unsigned _i; \
+  for(_i = 0; _i < 16; _i++) { \
+    int _tmp = 2 - (1<<RATE16) + _i*IC + (32767 + (1<<RATE16) - 16)*(_i > _y_);\
+    _m_[_i] -= (_m_[_i] - _tmp) >> RATE16; \
+  }\
+}
 
+#define cdfansdec(_st_, _m_, _y_) { _y_=0; while(BZHI32(_st_, ANS_BITS) >= _m_[_y_]) ++_y_;\
+  unsigned _s = _m_[_y_--],_t=_m_[_y_]; _st_ = (state_t)(_s - _t) * (_st_ >> ANS_BITS) + BZHI32(_st_, ANS_BITS) - _t; cdf16upd(_m_,_y_);\
+}                                                                                                   
+  #endif
+#else //----------------------------------------------------------------------------
+#include "xcdf_.h"
+#endif
