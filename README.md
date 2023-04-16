@@ -1,4 +1,4 @@
-## TurboRC: Turbo Range Coder
+## TurboRC: Turbo Range Coder + rANS Asymmetric Numeral Systems
 [![Build ubuntu](https://github.com/powturbo/Turbo-Range-Coder/actions/workflows/build.yaml/badge.svg)](https://github.com/powturbo/Turbo-Range-Coder/actions/workflows/build.yaml)
 
 ======================================
@@ -22,11 +22,13 @@
     - postprocessing: QLFC (Quantized Local Frequency Coding),<br/>
     RLE and Bit entropy coder
   * BWT :libsais + optimized libdivsufsort + optimized inverse bwt included
-  * static + adaptive cdf - cumulative distribution functions
+  * static + adaptive CDF - cumulative distribution functions
   * stdin/stdout file compressor included
   * TurboRC App for benchmarking all the functions and test allmost all byte, integer, floating point, date and timestamp file types.
     - read and convert text, csv or binary files to 8/16/32 bits before processing
     - set predictor and parameters at the command line
+* **Asymmetric Numeral Systems**
+  * :new:(2023.04) Adaptive CDF rANS Asymmetric Numeral Systems
 
 ## Usage examples
         ./turborc -e0   file           " benchmark all basic functions using the default simple predictor
@@ -227,4 +229,4 @@ See examples in "turborc.c"
 * **References:**
   * <a name="a"></a>[Entropy Coder Benchmark](https://sites.google.com/site/powturbo/entropy-coder) 
 
-Last update:  27 MAR 2023
+Last update:  16 APR 2023
