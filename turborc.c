@@ -41,10 +41,11 @@
 #include "include_/rcutil.h"
 #include "include_/bec.h"
 #include "rcutil_.h"
+#ifdef _DELTA
 #include "transform.h"
-
+#endif
   #ifdef _ANS
-#include "anscdf.h"
+#include "include/anscdf.h"
   #endif
   
   #ifdef _BWTDIV      
@@ -486,9 +487,10 @@ unsigned bench(unsigned char *in, unsigned n, unsigned char *out, unsigned char 
     case 61:         TM("61:utf8 preprocessor                    ",l=utf8enc(in,n,out, flag|BWT_COPY|BWT_RATIO),n,l,l==n?memcpy(cpy,out,n):utf8dec(out,n,cpy)); break;
     case 62:         TM("62:lzp                                  ",l=lzpenc( in,n,out,lenmin,0),                n,l,l==n?memcpy(cpy,out,n):lzpdec( out,n,cpy,lenmin,0)); break;
     case 63:         TM("63:bitenc                               ",l=bitenc( in,n,out),                         n,l,     bitdec(out,n,cpy)); break;
+      #ifdef _DELTA
     case 64:l=n;     TM("64:delta8e24                            ",delta8e24( in,n,out),                        n,l,     delta8d24( out,n,cpy)); break;
     case 65:l=n;     TM("65:delta24e24                           ",delta24e24(in,n,out),                        n,l,     delta24d24(out,n,cpy)); break;
-
+      #endif   
 	  #ifdef _ANS
 	#define ANSBLKSIZE (1<<21)
     case 55:if(m<16){TM("56:ans auto   nibble                    ",l=anscdf4enc(  in,n,out,on,ANSBLKSIZE), n,l, anscdf4dec(  out,n,cpy,ANSBLKSIZE));}
