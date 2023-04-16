@@ -28,9 +28,13 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
+  #ifdef __APPLE__
+#include <sys/malloc.h>
+  #else
 #include <malloc.h>
+  #endif
 
-  #ifdef __AVX2__
+#ifdef __AVX2__
 #include <immintrin.h>
   #elif defined(__AVX__)
 #include <immintrin.h>
