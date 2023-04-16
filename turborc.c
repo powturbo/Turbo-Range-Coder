@@ -493,6 +493,8 @@ unsigned bench(unsigned char *in, unsigned n, unsigned char *out, unsigned char 
       #endif   
 	  #ifdef _ANS
 	#define ANSBLKSIZE (1<<21)
+    case 54:if(m<16){TM("56:ans direct nibble                    ",l=_anscdf4enc( in,n,out,on,ANSBLKSIZE), n,l, _anscdf4dec( out,n,cpy,ANSBLKSIZE));}
+            else    {TM("56:ans direct                           ",l=_anscdfenc(  in,n,out,on,ANSBLKSIZE), n,l, _anscdfdec(  out,n,cpy,ANSBLKSIZE));} break;
     case 55:if(m<16){TM("56:ans auto   nibble                    ",l=anscdf4enc(  in,n,out,on,ANSBLKSIZE), n,l, anscdf4dec(  out,n,cpy,ANSBLKSIZE));}
             else    {TM("56:ans auto                             ",l=anscdfenc(   in,n,out,on,ANSBLKSIZE), n,l, anscdfdec(   out,n,cpy,ANSBLKSIZE));} break;
   //case 56:if(m<16){TM("56:ans scalar nibble                    ",l=anscdf4enc0( in,n,out,on,ANSBLKSIZE), n,l, anscdf4dec0( out,n,cpy,ANSBLKSIZE));}
@@ -795,8 +797,7 @@ int main(int argc, char* argv[]) {
         exit(0); 
     }
   } 
-  anscdfini(0x20); // initialize sse (avx2 actually slower)
-  if(verbose>1) printf("detected simd id=%x, %s\n\n", cpuini(0), cpustr(cpuini(0)));
+  anscdfini(0);                                                                   if(verbose>1) printf("detected simd id=%x, %s\n\n", cpuini(0), cpustr(cpuini(0)));
   tm_init(tm_Rep, tm_verbose /* 2 print id */);  
   #define ERR(e) do { rc = e; printf("line=%d ", __LINE__); goto err; } while(0)
   size_t bsize = _bsize * Mb;
