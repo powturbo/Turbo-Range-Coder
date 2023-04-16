@@ -34,10 +34,10 @@
 #include "anscdf_.h"
  
   #ifdef __AVX2__
-#include <immintrin.h>
 #define FSUFFIX x
   #elif defined(__SSE2__)
-#include <smmintrin.h>
+#define FSUFFIX s
+  #elif defined(__ARM_NEON)
 #define FSUFFIX s
   #else
 #define FSUFFIX 0
