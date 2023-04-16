@@ -25,6 +25,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+  #ifdef __APPLE__
+#include <sys/malloc.h>
+  #else
+#include <malloc.h>
+  #endif
 #include "include/anscdf.h"
 #include "include_/conf.h" 
 #define _DIVTDEF32
