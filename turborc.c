@@ -499,8 +499,10 @@ unsigned bench(unsigned char *in, unsigned n, unsigned char *out, unsigned char 
   //        else    {TM("56:ans scalar                           ",l=anscdfenc0(  in,n,out,on,ANSBLKSIZE), n,l, anscdfdec0(  out,n,cpy,ANSBLKSIZE));} break;
     case 57:if(m<16){TM("57:ans sse nibble                       ",l=anscdf4encs( in,n,out,on,ANSBLKSIZE), n,l, anscdf4decs( out,n,cpy,ANSBLKSIZE));}
             else    {TM("57:ans sse                              ",l=anscdfencs(  in,n,out,on,ANSBLKSIZE), n,l, anscdfdecs(  out,n,cpy,ANSBLKSIZE));} break;
-    case 58:if(m<16){TM("58:ans avx2 nibble                      ",l=anscdf4encx( in,n,out,on,ANSBLKSIZE), n,l, anscdf4decx( out,n,cpy,ANSBLKSIZE));}
-            else    {TM("58:ans avx2                             ",l=anscdfencx(  in,n,out,on,ANSBLKSIZE), n,l, anscdfdecx(  out,n,cpy,ANSBLKSIZE));} break;
+    case 58:if(cpuisa()>=0x60) {
+              if(m<16){TM("58:ans avx2 nibble                      ",l=anscdf4encx( in,n,out,on,ANSBLKSIZE), n,l, anscdf4decx( out,n,cpy,ANSBLKSIZE));}
+              else    {TM("58:ans avx2                             ",l=anscdfencx(  in,n,out,on,ANSBLKSIZE), n,l, anscdfdecx(  out,n,cpy,ANSBLKSIZE));} 
+            }  break;
 	  #endif
       #ifdef _EXT
     #include "xturborc.c"
@@ -794,6 +796,7 @@ int main(int argc, char* argv[]) {
     }
   } 
   anscdfini(0x20); // initialize sse (avx2 actually slower)
+  if(verbose>1) printf("detected simd id=%x, %s\n\n", cpuini(0), cpustr(cpuini(0)));
   tm_init(tm_Rep, tm_verbose /* 2 print id */);  
   #define ERR(e) do { rc = e; printf("line=%d ", __LINE__); goto err; } while(0)
   size_t bsize = _bsize * Mb;
