@@ -28,7 +28,7 @@
 #include <malloc.h>
   #endif
 
-  #ifdef __AVX2__  													// SIMD includes
+  #ifdef __AVX2__  								// SIMD includes
 #include <immintrin.h>
   #elif defined(__AVX__)
 #include <immintrin.h>
@@ -60,7 +60,7 @@
   #ifdef __AVX2__ // Get position of existing c
 #define MEMGET8(_in_,_ip_,_cv_,_c_) do { for(;;) { unsigned m = _mm256_movemask_epi8(_mm256_cmpeq_epi8(_mm256_loadu_si256((__m256i*)_ip_), _cv_)); if(m) { _ip_ += ctz32(m); break; } _ip_ += 32;} while(*_ip_ != _c_) _ip_++; } while(0)
   #elif defined(__SSE__)
-#define MEMGET8(_in_,_ip_,_cv_,_c_) do { for(;;) { uint16_t m =    _mm_movemask_epi8(   _mm_cmpeq_epi8(   _mm_loadu_si128((__m128i*)_ip_), _cv_)); if(m) { _ip_ += ctz16(m); break; } _ip_ += 16; } while(*_ip_ != _c_) _ip_++; } while(0)
+#define MEMGET8(_in_,_ip_,_cv_,_c_) do { for(;;) { uint16_t m =    _mm_movemask_epi8(   _mm_cmpeq_epi8(   _mm_loadu_si128((__m128i*)_ip_), _cv_)); if(m) { _ip_ += ctz16(m); break; } _ip_ += 16;} while(*_ip_ != _c_) _ip_++; } while(0)
   #else
 #define MEMGET8(_in_,_ip_,_cv_,_c_) while(*_ip_ != _c_) _ip_++;		   
   #endif
@@ -143,11 +143,12 @@ static ALWAYS_INLINE size_t memrun16(uint16_t const *in, uint16_t const *in_) { 
 	
 //-------------- misc --------------------------------------------------------------------------------------------------
 //#define EMA(  _n_,_x_,_a_,_y_) (((_x_)*_a_ + ((1<<(_n_)) -_a_)*(_y_) ) >>(_n_)) // Exponential moving average EMA2=1->2 EMA4=2->4 EMA8=3->8,...
-#define EMA( _n_,_x_,_a_,_y_) (((_x_)*_a_ + ((1<<(_n_)) -_a_)*(_y_) + (1<<((_n_)-2)) ) >>(_n_)) // Exponential moving average + rounding EMA2=1->2 EMA4=2->4 EMA8=3->8,...
+#define EMA( _n_,_x_,_a_,_y_) (((_x_)*_a_ + ((1ull<<(_n_)) -_a_)*(_y_) + (1ull<<((_n_)-2)) ) >>(_n_)) // Exponential moving average + rounding EMA2=1->2 EMA4=2->4 EMA8=3->8,...
 #define RICEK(_x_)             __bsr32((_x_)+1)                                // Rice parameter
 
 #define OVERFLOW( _in_,_inlen_,_out_, _op_, _goto_) if( _op_                >= _out_+(_inlen_*255)/256-8) { memcpy(_out_,_in_,_inlen_); _op_ = _out_+_inlen_; _goto_; }
 #define OVERFLOWR(_in_,_inlen_,_out_, _op_, _goto_) if((_out_+_inlen_-_op_) >=       (_inlen_*255)/256-8) { memcpy(_out_,_in_,_inlen_); _op_ = _out_+_inlen_; _goto_; }
+
 // store the last bytes without encoding, when inlen is not multiple of array element size
 #define INDEC  size_t inlen  = _inlen /sizeof( in[0]); { unsigned char *p_=_in+_inlen,  *_p = _in +(_inlen & ~(sizeof(in[0] )-1)); while(_p < p_) { *op++  = *_p++; } }
 #define OUTDEC size_t outlen = _outlen/sizeof(out[0]); { unsigned char *p_=_out+_outlen,*_p = _out+(_outlen& ~(sizeof(out[0])-1)); while(_p < p_) *_p++  = *ip++; }
@@ -199,9 +200,9 @@ static inline  int64_t       zigzagdec64(uint64_t x)       { return x >> 1 ^ -(x
 #define bitdinir( _bw_,_br_,_ip_)        bitdini(_bw_,_br_),_ip_ -= sizeof(_bw_)
 #define bitdnormr(_bw_,_br_,_ip_)        _bw_  = *(bitget_t *)(_ip_ -= _br_>>3), _br_ &= 7 //, _bw_  <<= _br_
 
-//------------- hash table : open adressing with linear probing --------------------------------------------------
-#define HASH32(_x_) (((_x_) * 123456791))
-#define chash(_c_, _hbits_)  (HASH32(_c_) >> (32 - (_hbits_)))
+//------------- hash functions -------------------------------------------------------
+#define HASH32(_x_) (((_x_) * 123456791)) //0x1af42f
+#define HASH(_c_, _hbits_)   (HASH32(_c_) >> (32 - (_hbits_)))
 
 static ALWAYS_INLINE uint32_t tmhash32(uint32_t x) { // https://stackoverflow.com/questions/664014/what-integer-hash-function-are-good-that-accepts-an-integer-hash-key/12996028
     x = ((x >> 16) ^ x) * 0x45d9f3b;
@@ -209,7 +210,21 @@ static ALWAYS_INLINE uint32_t tmhash32(uint32_t x) { // https://stackoverflow.co
     x = ((x >> 16) ^ x);
     return x;
 }
+
+//https://gist.github.com/psema4/bee2614208944f08f5c4640ff582c611
+static ALWAYS_INLINE unsigned squirrel32(unsigned x) {	// get1d(), get2d() and get3d() each return an integer
+  unsigned seed = 0, h = x;
+  h *= 0xB5297A4D;
+  h += seed;
+  h ^= (h >> 8);
+  h += 0x68E31DA4;
+  h ^= (h << 8);
+  h *= 0x1B56C4E9;
+  h ^= (h >> 8);
+  return h;
+}
 #define chash(_c_, _hbits_) bzhi32(tmhash32(_c_),_hbits_)
+//------------- hash table : open adressing with linear probing --------------------------------------------------
 
 #define HNEW(_htab_, _hbits_, _hmask_, _c_, _h_)             { _h_ = chash(_c_,_hbits_); while(_htab_[_h_]) _h_ = (_h+1)&_hmask_; }// search unused slot
 																	// add item with key c and value v to the array a with the hash slot h
@@ -234,9 +249,11 @@ extern "C" {
 void *vmalloc(size_t size);
 void vfree(void *address);
 
-void histcalc8( unsigned char *__restrict in, unsigned inlen, unsigned *__restrict cnt);  // Histogram construction
-void histrcalc8(unsigned char *__restrict in, unsigned inlen, unsigned *__restrict cnt);
+unsigned histcalc8( unsigned char *__restrict in, unsigned inlen, unsigned *__restrict cnt);  // Histogram construction
+unsigned histrcalc8(unsigned char *__restrict in, unsigned inlen, unsigned *__restrict cnt);
 void memrev(unsigned char a[], unsigned n);  // reverse bytes in memory buffer
+size_t bitenc(unsigned char *__restrict in, size_t inlen,  unsigned char *__restrict out);
+size_t bitdec(unsigned char *__restrict in, size_t outlen, unsigned char *__restrict out);
 
 #ifdef __cplusplus
 }
