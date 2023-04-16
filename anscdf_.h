@@ -28,11 +28,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
-  #ifdef __APPLE__
-#include <sys/malloc.h>
-  #else
-#include <malloc.h>
-  #endif
 
 #ifdef __AVX2__
 #include <immintrin.h>
@@ -57,8 +52,8 @@
 #define IOBITS   16
 typedef unsigned state_t;
 typedef unsigned short io_t;
-#define ANS_LBITS                   (8*(sizeof(state_t) - sizeof(io_t)) - 1)
-#define ANS_LOW                     (1u << ANS_LBITS)
+#define ANS_LBITS                       (8*(sizeof(state_t) - sizeof(io_t)) - 1)
+#define ANS_LOW                         (1u << ANS_LBITS)
 
 #define _putc(_ch_, _out_) 	        _out_ -= sizeof(io_t),*(io_t *)_out_ = (_ch_)
 #define _getc(_in_) 		        *(io_t *)_in_;_in_+=sizeof(io_t)
