@@ -23,7 +23,7 @@
 **/
 // TurboRC: Range Coder 
 #include <stdint.h>
-#include <assert.h>
+//#include <assert.h>
 #include "include_/conf.h"
 //----------------------------- Logging/statistics macros (ex. counting number of 0/1 bits ) --------------------------
   #ifdef RC_LOG 
@@ -92,6 +92,7 @@
 #define rcout_t T3(uint,RC_IO,_t)
 #define RCPUT(_x_,_op_) { T2(ctou, RC_IO)(_op_) = _RC_BSWAP(_x_); _op_ += (RC_IO/8); }
 #define RCGET(_ip_) ((rcout_t)_RC_BSWAP(T2(ctou, RC_IO)(_ip_))), _ip_ += (RC_IO/8)
+//#define RCGETX(_ip_) ((rcout_t)_RC_BSWAP(T2(ctou, RC_IO)(_ip_)))&(-_c), _ip_ += (RC_IO/8)&(-_c)
 
 //--------------------------- Renormalization -----------------------------------------------------
   #if RC_IO == 8
@@ -102,8 +103,16 @@
 
 #define RC_S(rcrange) (sizeof(rcrange)*8-RC_IO)
 #define _rcenorm_(rcrange, rclow, _op_) _LOOP(unlikely(rcrange < ((rcrange_t)1<<RC_S(rcrange)))) { RCPUT((rcout_t)(rclow >> RC_S(rcrange)),_op_); rclow <<= RC_IO; rcrange <<= RC_IO; }
-#define _rcdnorm_(rcrange, rccode,_ip_) _LOOP(rcrange          < ((rcrange_t)1<<RC_S(rcrange)))  { rccode <<= RC_IO; rccode |= RCGET(_ip_); rcrange <<= RC_IO; }
 #define _rccarry_(_ilow_, _rclow_, _op_) if(unlikely((_ilow_) > (_rclow_))) { rcout_t *_pca = (rcout_t *)_op_; while(unlikely(!++*--_pca)); }
+
+#define _rcdnorm_(rcrange, rccode,_ip_) _LOOP(rcrange          < ((rcrange_t)1<<RC_S(rcrange)))  { rccode <<= RC_IO; rccode |= RCGET(_ip_); rcrange <<= RC_IO; }
+
+/*#define _rcdnorm_(rcrange, rccode,_ip_) {\
+  unsigned _c = rcrange < ((rcrange_t)1<<RC_S(rcrange)); \
+    rccode <<= RC_IO&(-_c); \
+    rccode |= RCGETX(_ip_); \
+    rcrange <<= RC_IO&(-_c); \
+}*/
 
 //------------------------- Initialization encode ----------------------------------------------------
 #define rcencdef(rcrange,rclow) RC_BG; rcrange_t rcrange,rclow;
