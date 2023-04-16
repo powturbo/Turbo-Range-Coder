@@ -35,9 +35,7 @@
  
   #ifdef __AVX2__
 #define FSUFFIX x
-  #elif defined(__SSE2__)
-#define FSUFFIX s
-  #elif defined(__ARM_NEON)
+  #elif defined(__SSE2__) || defined(__ARM_NEON) || defined(__powerpc64__)
 #define FSUFFIX s
   #else
 #define FSUFFIX 0
@@ -246,6 +244,7 @@ unsigned cpuisa(void) {
       }}}
     }}}}}}}}}
     #elif defined(__powerpc64__)
+
   _cpuisa = IS_POWER9; // power9
     #elif defined(__ARM_NEON)
   _cpuisa = IS_NEON; // ARM_NEON
