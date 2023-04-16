@@ -82,8 +82,10 @@
 |  209.19 | 24977328| 24.98%|    101.66|47:cdfi   |  byte   adaptive interleaved|       
 |  168.84 | 31121404| 31.12%|     73.52|48:cdf-8  |  vnibble                    |       
 |  175.66 | 31121412| 31.12%|     81.25|49:cdfi-8 |  vnibble interleaved        |       
+|  107.30 | 24851000| 24.85%|    144.47|49:rans   |  sse adaptive interleaved   |       
 |16482.00 |100000012|100.00%|  16094.51|59:memcpy |                             |       
 
+61349658  61.35%      99.67   144.47 57:ans sse  
 ## BWT Benchmark: TurboRC vs the best BWT compressors (2023.04)
 - [bsc](https://github.com/IlyaGrebnov/libbsc)
 - [bzip3](https://github.com/kspalaiologos/bzip3)
