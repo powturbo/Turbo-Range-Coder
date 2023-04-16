@@ -911,7 +911,7 @@ size_t T3(rcrle1,RC_PRD,enc)(unsigned char *in, size_t inlen, unsigned char *out
     unsigned char *p = ip, u = *ip++; 
 	while(ip < in_ && *ip == u) ip++;
     unsigned r = ip - p > (unsigned)-1?(unsigned)-1:ip - p,cr; r--; // r:run length
-	mbu *m = mb[cx];        mb8enc(rcrange,rclow, m,                                          RCPRM0,RCPRM1,op, u); cx = u; 
+	mbu *m = mb[cx];        mb8enc(rcrange,rclow, m,                                          RCPRM0,RCPRM1,op, u); cx = u; //cx = (cx<<8|u)&0xfff; cx = (cx<<8|(uint8_t)ch)&0xfff;
 	cr = HISTPRED(hist[u]); mbgxenc(rcrange,rclow, &mbg0r[cr<<8|u], mbgur[cr<<8|u], mbgbr[u], RCPRM0,RCPRM1,op, r); hist[u] = HISTUPD(hist[u],r);//mbgxenc(rcrange,rclow, &mbg0[u], mbgu[u], mbgb[u], RCPRM0,RCPRM1,op, r);
     OVERFLOW(in,inlen,out, op, goto e);
   }
