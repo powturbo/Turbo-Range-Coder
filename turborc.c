@@ -41,9 +41,10 @@
 #include "include_/rcutil.h"
 #include "include_/bec.h"
 #include "rcutil_.h"
+#include "transform.h"
 
   #ifdef _ANS
-#include "ansn.h"
+#include "anscdf.h"
   #endif
   
   #ifdef _BWTDIV      
@@ -396,95 +397,109 @@ unsigned bench(unsigned char *in, unsigned n, unsigned char *out, unsigned char 
     cdfini(in, n, cdf, 0x100); 					                                // calculte freq. for static distribution functions	
   }
   switch(id) {  
-    case  1:         TMBENCH("",l=rcenc(      in,n,out,r),n);     pr(l,n); TMBENCH2(" 1:rc        o0                         ",l==n?memcpy(cpy,out,n):rcdec(     out,n,cpy,r), n); break;
-    case  2:         TMBENCH("",l=rccenc(     in,n,out,r),n);     pr(l,n); TMBENCH2(" 2:rcc       o1                         ",l==n?memcpy(cpy,out,n):rccdec(    out,n,cpy,r), n); break;
-    case  3:         TMBENCH("",l=rcc2enc(    in,n,out,r),n);     pr(l,n); TMBENCH2(" 3:rcc2      o2                         ",l==n?memcpy(cpy,out,n):rcc2dec(   out,n,cpy,r), n); break;
-    case  4:         TMBENCH("",l=rcxenc(     in,n,out,r),n);     pr(l,n); TMBENCH2(" 4:rcx       o8b =o1 context slide      ",l==n?memcpy(cpy,out,n):rcxdec(    out,n,cpy,r), n); break;
-    case  5:         TMBENCH("",l=rcx2enc(    in,n,out,r),n);     pr(l,n); TMBENCH2(" 5:rcx2      o16b=o2 context slide      ",l==n?memcpy(cpy,out,n):rcx2dec(   out,n,cpy,r), n); break;
-    case  6:if(z==2){TMBENCH("",l=rcenc16(    in,n,out,r),n);     pr(l,n); TMBENCH2(" 6:rc-16     o0  16-bits                ",l==n?memcpy(cpy,out,n):rcdec16(   out,n,cpy,r), n); break; }
-            if(z==4){TMBENCH("",l=rcenc32(    in,n,out,r),n);     pr(l,n); TMBENCH2(" 6:rc-32     o0  32-bits                ",l==n?memcpy(cpy,out,n):rcdec32(   out,n,cpy,r), n); } break;
-    case  7:if(z==2){TMBENCH("",l=rccenc16(   in,n,out,r),n);     pr(l,n); TMBENCH2(" 7:rcc-16    o1  16-bits                ",l==n?memcpy(cpy,out,n):rccdec16(  out,n,cpy,r), n); break; }
-            if(z==4){TMBENCH("",l=rccenc32(   in,n,out,r),n);     pr(l,n); TMBENCH2(" 7:rcc-32    o7bs  32-bits o[24-30]     ",l==n?memcpy(cpy,out,n):rccdec32(  out,n,cpy,r), n); } break;
-    case  8:if(z==4){TMBENCH("",l=rcc2enc32(  in,n,out,r),n);     pr(l,n); TMBENCH2(" 8:rcc2-32   o11bs 32-bits o[20-30]     ",l==n?memcpy(cpy,out,n):rcc2dec32( out,n,cpy,r), n); } break;
-    case  9:         TMBENCH("",l=rcmenc(     in,n,out,r),n);     pr(l,n); TMBENCH2(" 9:rcms      o1 mixer/sse               ",l==n?memcpy(cpy,out,n):rcmdec(    out,n,cpy,r), n); break;
-    case 10:         TMBENCH("",l=rcm2enc(    in,n,out,r),n);     pr(l,n); TMBENCH2("10:rcm2      o2 mixer/sse               ",l==n?memcpy(cpy,out,n):rcm2dec(   out,n,cpy,r), n); break;
-    case 11:         TMBENCH("",l=rcmrenc(    in,n,out,r),n);     pr(l,n); TMBENCH2("11:rcmr      o2 8b mixer/sse run        ",l==n?memcpy(cpy,out,n):rcmrdec(   out,n,cpy,r), n); break;
-    case 12:         TMBENCH("",l=rcmrrenc(   in,n,out,r),n);     pr(l,n); TMBENCH2("12:rcmrr     o2 8b mixer/sse run > 2    ",l==n?memcpy(cpy,out,n):rcmrrdec(  out,n,cpy,r), n); break;
-    case 13:if(z==2){TMBENCH("",l=rcrleenc16( in,n,out,r),n);     pr(l,n); TMBENCH2("13:rcrle-16  RLE o0                     ",l==n?memcpy(cpy,out,n):rcrledec16(out,n,cpy,r), n); }
-            else    {TMBENCH("",l=rcrleenc(   in,n,out,r),n);     pr(l,n); TMBENCH2("13:rcrle     RLE o0                     ",l==n?memcpy(cpy,out,n):rcrledec(  out,n,cpy,r), n);} break;
-    case 14:if(z==2){TMBENCH("",l=rcrle1enc16(in,n,out,r),n);     pr(l,n); TMBENCH2("14:rcrle1-16 RLE o1                     ",l==n?memcpy(cpy,out,n):rcrle1dec16(out,n,cpy,r),n);}
-            else    {TMBENCH("",l=rcrle1enc(  in,n,out,r),n);     pr(l,n); TMBENCH2("14:rcrle1    RLE o1                     ",l==n?memcpy(cpy,out,n):rcrle1dec( out,n,cpy,r), n); } break;
-    case 17:         TMBENCH("",l=rcu3enc(    in,n,out,r),n);     pr(l,n); TMBENCH2("17:rcu3      varint8 3/5/8 bits         ",l==n?memcpy(cpy,out,n):rcu3dec(   out,n,cpy,r), n); break;
-    case 18:         TMBENCH("",l=rcqlfcenc(  in,n,out,r),n);     pr(l,n); TMBENCH2("18:rcqlfc    QLFC                       ",l==n?memcpy(cpy,out,n):rcqlfcdec( out,n,cpy,r), n); break;
-    case 19:if(z==2){TMBENCH("",l=becenc16(   in,n,out),n);       pr(l,n); TMBENCH2("19:bec-16    Bit EC                     ",l==n?memcpy(cpy,out,n):becdec16(out,n,cpy       ), n);}
-            else    {TMBENCH("",l=becenc8(    in,n,out),n);       pr(l,n); TMBENCH2("18:bec       Bit EC                     ",l==n?memcpy(cpy,out,n):becdec8(out,n,cpy       ), n); } break;
+    case  1:         TM(" 1:rc        o0                         ",l=rcenc(      in,n,out,r), n,l, l==n?memcpy(cpy,out,n):rcdec(      out,n,cpy,r));   break;
+    case  2:         TM(" 2:rcc       o1                         ",l=rccenc(     in,n,out,r), n,l, l==n?memcpy(cpy,out,n):rccdec(     out,n,cpy,r));   break;
+    case  3:         TM(" 3:rcc2      o2                         ",l=rcc2enc(    in,n,out,r), n,l, l==n?memcpy(cpy,out,n):rcc2dec(    out,n,cpy,r));   break;
+    case  4:         TM(" 4:rcx       o8b =o1 context slide      ",l=rcxenc(     in,n,out,r), n,l, l==n?memcpy(cpy,out,n):rcxdec(     out,n,cpy,r));   break;
+    case  5:         TM(" 5:rcx2      o16b=o2 context slide      ",l=rcx2enc(    in,n,out,r), n,l, l==n?memcpy(cpy,out,n):rcx2dec(    out,n,cpy,r));   break;
+    case  6:if(z==2){TM(" 6:rc-16     o0  16-bits                ",l=rcenc16(    in,n,out,r), n,l, l==n?memcpy(cpy,out,n):rcdec16(    out,n,cpy,r));   break;}
+            if(z==4){TM(" 6:rc-32     o0  32-bits                ",l=rcenc32(    in,n,out,r), n,l, l==n?memcpy(cpy,out,n):rcdec32(    out,n,cpy,r)); } break;
+    case  7:if(z==2){TM(" 7:rcc-16    o1  16-bits                ",l=rccenc16(   in,n,out,r), n,l, l==n?memcpy(cpy,out,n):rccdec16(   out,n,cpy,r));   break;}
+            if(z==4){TM(" 7:rcc-32    o7bs  32-bits o[24-30]     ",l=rccenc32(   in,n,out,r), n,l, l==n?memcpy(cpy,out,n):rccdec32(   out,n,cpy,r)); } break;
+    case  8:if(z==4){TM(" 8:rcc2-32   o11bs 32-bits o[20-30]     ",l=rcc2enc32(  in,n,out,r), n,l, l==n?memcpy(cpy,out,n):rcc2dec32(  out,n,cpy,r)); } break;
+    case  9:         TM(" 9:rcms      o1 mixer/sse               ",l=rcmenc(     in,n,out,r), n,l, l==n?memcpy(cpy,out,n):rcmdec(     out,n,cpy,r));   break;
+    case 10:         TM("10:rcm2      o2 mixer/sse               ",l=rcm2enc(    in,n,out,r), n,l, l==n?memcpy(cpy,out,n):rcm2dec(    out,n,cpy,r));   break;
+    case 11:         TM("11:rcmr      o2 8b mixer/sse run        ",l=rcmrenc(    in,n,out,r), n,l, l==n?memcpy(cpy,out,n):rcmrdec(    out,n,cpy,r));   break;
+    case 12:         TM("12:rcmrr     o2 8b mixer/sse run > 2    ",l=rcmrrenc(   in,n,out,r), n,l, l==n?memcpy(cpy,out,n):rcmrrdec(   out,n,cpy,r));   break;
+    case 13:if(z==2){TM("13:rcrle-16  RLE o0                     ",l=rcrleenc16( in,n,out,r), n,l, l==n?memcpy(cpy,out,n):rcrledec16( out,n,cpy,r)); }
+            else    {TM("13:rcrle     RLE o0                     ",l=rcrleenc(   in,n,out,r), n,l, l==n?memcpy(cpy,out,n):rcrledec(   out,n,cpy,r)); } break;
+    case 14:if(z==2){TM("14:rcrle1-16 RLE o1                     ",l=rcrle1enc16(in,n,out,r), n,l, l==n?memcpy(cpy,out,n):rcrle1dec16(out,n,cpy,r)); }
+            else    {TM("14:rcrle1    RLE o1                     ",l=rcrle1enc(  in,n,out,r), n,l, l==n?memcpy(cpy,out,n):rcrle1dec(  out,n,cpy,r)); } break;
+    case 17:         TM("17:rcu3      varint8 3/5/8 bits         ",l=rcu3enc(    in,n,out,r), n,l, l==n?memcpy(cpy,out,n):rcu3dec(    out,n,cpy,r));   break;
+    case 18:         TM("18:rcqlfc    QLFC                       ",l=rcqlfcenc(  in,n,out,r), n,l, l==n?memcpy(cpy,out,n):rcqlfcdec(  out,n,cpy,r));   break;
+    case 19:if(z==2){TM("19:bec-16    Bit EC                     ",l=becenc16(   in,n,out),   n,l, l==n?memcpy(cpy,out,n):becdec16(   out,n,cpy  )); }
+            else    {TM("18:bec       Bit EC                     ",l=becenc8(    in,n,out),   n,l, l==n?memcpy(cpy,out,n):becdec8(    out,n,cpy  )); } break;
 	  #ifdef _BWT
     case 20:if(n > BLKBWTMAX*MB) printf("blocksize too big for bwt.max=%d\n", BLKBWTMAX);
-		    else {   TMBENCH("",l=rcbwtenc(   in,n,out,lev,thnum, flag),n);pr(l,n); TMBENCH2("20:bwt                                  ",l==n?memcpy(cpy,out,n):rcbwtdec(  out,n,cpy,lev, thnum), n); } break;
+		    else {   TM("20:bwt                                  ",l=rcbwtenc(in,n,out,lev,thnum,flag), n,l, l==n?memcpy(cpy,out,n):rcbwtdec(  out,n,cpy,lev, thnum));} break;
       #endif
-    case 26:if(z==1){TMBENCH("",l=rcgenc8(    in,n,out,r),n);     pr(l,n); TMBENCH2("26:rcg-8     gamma                      ",l==n?memcpy(cpy,out,n):rcgdec8(   out,n,cpy,r), n); break;}
-            if(z==2){TMBENCH("",l=rcgenc16(   in,n,out,r),n);     pr(l,n); TMBENCH2("26:rcg-16    gamma                      ",l==n?memcpy(cpy,out,n):rcgdec16(  out,n,cpy,r), n); break;}
-            if(z==4){TMBENCH("",l=rcgenc32(   in,n,out,r),n);     pr(l,n); TMBENCH2("26:rcg-32    gamma                      ",l==n?memcpy(cpy,out,n):rcgdec32(  out,n,cpy,r), n);} break;
-    case 27:if(z==1){TMBENCH("",l=rcgzenc8(   in,n,out,r),n);     pr(l,n); TMBENCH2("27:rcgz-8    gamma zigzag               ",l==n?memcpy(cpy,out,n):rcgzdec8(  out,n,cpy,r), n); break;}
-            if(z==2){TMBENCH("",l=rcgzenc16(  in,n,out,r),n);     pr(l,n); TMBENCH2("27:rcgz-16   gamma zigzag               ",l==n?memcpy(cpy,out,n):rcgzdec16( out,n,cpy,r), n); break;}
-            if(z==4){TMBENCH("",l=rcgzenc32(  in,n,out,r),n);     pr(l,n); TMBENCH2("27:rcgz-32   gamma zigzag               ",l==n?memcpy(cpy,out,n):rcgzdec32( out,n,cpy,r), n);} break;
-
-    case 28:if(z==1){TMBENCH("",l=rcrenc8(    in,n,out,r),n);     pr(l,n); TMBENCH2("28:rcr-8     rice                       ",l==n?memcpy(cpy,out,n):rcrdec8(   out,n,cpy,r), n); break;}
-            if(z==2){TMBENCH("",l=rcrenc16(   in,n,out,r),n);     pr(l,n); TMBENCH2("28:rcr-16    rice                       ",l==n?memcpy(cpy,out,n):rcrdec16(  out,n,cpy,r), n); break;}
-            if(z==4){TMBENCH("",l=rcrenc32(   in,n,out,r),n);     pr(l,n); TMBENCH2("28:rcr-32    rice                       ",l==n?memcpy(cpy,out,n):rcrdec32(  out,n,cpy,r), n); } break;
-    case 29:if(z==1){TMBENCH("",l=rcrzenc8(   in,n,out,r),n);     pr(l,n); TMBENCH2("29:rcrz-8    rice zigzag                ",l==n?memcpy(cpy,out,n):rcrzdec8(  out,n,cpy,r), n); break;}
-            if(z==2){TMBENCH("",l=rcrzenc16(  in,n,out,r),n);     pr(l,n); TMBENCH2("29:rcr-16    rice zigzag                ",l==n?memcpy(cpy,out,n):rcrzdec16( out,n,cpy,r), n); break;}
-            if(z==4){TMBENCH("",l=rcrzenc32(  in,n,out,r),n);     pr(l,n); TMBENCH2("29:rcr-32    rice zigzag                ",l==n?memcpy(cpy,out,n):rcrzdec32( out,n,cpy,r), n);} break;
-	  
-    case 30:if(z==2){TMBENCH("",l=rcvenc16(   in,n,out,r),n);     pr(l,n); TMBENCH2("30:rcv-16    Turbo vlc8                 ",l==n?memcpy(cpy,out,n):rcvdec16( out,n,cpy,r), n); break;}
-            if(z==4){TMBENCH("",l=rcvenc32(   in,n,out,r),n);     pr(l,n); TMBENCH2("30:rcv-32    Turbo vlc8                 ",l==n?memcpy(cpy,out,n):rcvdec32( out,n,cpy,r), n);} break;
-    case 31:if(z==4){TMBENCH("",l=rcv10senc32(  in,n,out),n);     pr(l,n); TMBENCH2("31:rcvc-32   Turbo vlc10                ",l==n?memcpy(cpy,out,n):rcv10sdec32( out,n,cpy), n); } break;
-    case 32:if(z==4){TMBENCH("",l=rcveenc32(  in,n,out,r),n);     pr(l,n); TMBENCH2("32:rcve-32   Turbo vlc12                ",l==n?memcpy(cpy,out,n):rcvedec32( out,n,cpy,r), n); } break;
-    case 33:if(z==2){TMBENCH("",l=rcvzenc16(  in,n,out,r),n);     pr(l,n); TMBENCH2("33:rcvz-16   Turbo vlc8 zigzag          ",l==n?memcpy(cpy,out,n):rcvzdec16( out,n,cpy,r), n); break;}
-            if(z==4){TMBENCH("",l=rcvzenc32(  in,n,out,r),n);     pr(l,n); TMBENCH2("33:rcvz-32   Turbo vlc8 zigzag          ",l==n?memcpy(cpy,out,n):rcvzdec32( out,n,cpy,r), n);} break;
-    case 34:if(z==4){TMBENCH("",l=rcvezenc32( in,n,out,r),n);     pr(l,n); TMBENCH2("34:rcvez-32  Turbo vlc12 zigzag         ",l==n?memcpy(cpy,out,n):rcvezdec32( out,n,cpy,r), n);} break;
-    case 35:if(z==2){TMBENCH("",l=rcvgenc16(  in,n,out,r),n);     pr(l,n); TMBENCH2("35:rcvg-16   Turbo vlc8 gamma           ",l==n?memcpy(cpy,out,n):rcvgdec16( out,n,cpy,r), n); break;}
-            if(z==4){TMBENCH("",l=rcvgenc32(  in,n,out,r),n);     pr(l,n); TMBENCH2("35:rcvg-32   Turbo vlc8 gamma           ",l==n?memcpy(cpy,out,n):rcvgdec32( out,n,cpy,r), n); } break;
-    case 36:if(z==2){TMBENCH("",l=rcvgzenc16( in,n,out,r),n);     pr(l,n); TMBENCH2("36:rcvgz-16  Turbo vlc8 gamma zigzag    ",l==n?memcpy(cpy,out,n):rcvgzdec16( out,n,cpy,r), n); break;}
-            if(z==4){TMBENCH("",l=rcvgzenc32( in,n,out,r),n);     pr(l,n); TMBENCH2("36:rcvgz-32  Turbo vlc8 gamma zigzag    ",l==n?memcpy(cpy,out,n):rcvgzdec32( out,n,cpy,r), n);} break;
-	  #ifdef _V8
-	case 37:if(z==2){TMBENCH("",l=rcv8enc16(  in,n,out,r),n);     pr(l,n); TMBENCH2("37:rcv8-16   Turbobyte                  ",l==n?memcpy(cpy,out,n):rcv8dec16(  out,n,cpy,r), n);  break;}
-            if(z==4){TMBENCH("",l=rcv8enc32(  in,n,out,r),n);     pr(l,n); TMBENCH2("37:rcv8-32   TurboByte                  ",l==n?memcpy(cpy,out,n):rcv8dec32(  out,n,cpy,r), n);} break;
-    case 38:if(z==2){TMBENCH("",l=rcv8zenc16( in,n,out,r),n);     pr(l,n); TMBENCH2("38:rcv8-16   Turbobyte zigzag           ",l==n?memcpy(cpy,out,n):rcv8zdec16( out,n,cpy,r), n);  break;}
-            if(z==4){TMBENCH("",l=rcv8zenc32( in,n,out,r),n);     pr(l,n); TMBENCH2("38:rcv8-32   TurboByte zigzag           ",l==n?memcpy(cpy,out,n):rcv8zdec32( out,n,cpy,r), n);} break;
+    case 26:if(z==1){TM("26:rcg-8     gamma                      ",l=rcgenc8(    in,n,out,r), n,l, l==n?memcpy(cpy,out,n):rcgdec8(    out,n,cpy,r));   break;}
+            if(z==2){TM("26:rcg-16    gamma                      ",l=rcgenc16(   in,n,out,r), n,l, l==n?memcpy(cpy,out,n):rcgdec16(   out,n,cpy,r));   break;}
+            if(z==4){TM("26:rcg-32    gamma                      ",l=rcgenc32(   in,n,out,r), n,l, l==n?memcpy(cpy,out,n):rcgdec32(   out,n,cpy,r)); } break;
+    case 27:if(z==1){TM("27:rcgz-8    gamma zigzag               ",l=rcgzenc8(   in,n,out,r), n,l, l==n?memcpy(cpy,out,n):rcgzdec8(   out,n,cpy,r));   break;}
+            if(z==2){TM("27:rcgz-16   gamma zigzag               ",l=rcgzenc16(  in,n,out,r), n,l, l==n?memcpy(cpy,out,n):rcgzdec16(  out,n,cpy,r));   break;}
+            if(z==4){TM("27:rcgz-32   gamma zigzag               ",l=rcgzenc32(  in,n,out,r), n,l, l==n?memcpy(cpy,out,n):rcgzdec32(  out,n,cpy,r)); } break;
+                        
+    case 28:if(z==1){TM("28:rcr-8     rice                       ",l=rcrenc8(    in,n,out,r), n,l, l==n?memcpy(cpy,out,n):rcrdec8(    out,n,cpy,r));   break;}
+            if(z==2){TM("28:rcr-16    rice                       ",l=rcrenc16(   in,n,out,r), n,l, l==n?memcpy(cpy,out,n):rcrdec16(   out,n,cpy,r));   break;}
+            if(z==4){TM("28:rcr-32    rice                       ",l=rcrenc32(   in,n,out,r), n,l, l==n?memcpy(cpy,out,n):rcrdec32(   out,n,cpy,r)); } break;
+    case 29:if(z==1){TM("29:rcrz-8    rice zigzag                ",l=rcrzenc8(   in,n,out,r), n,l, l==n?memcpy(cpy,out,n):rcrzdec8(   out,n,cpy,r));   break;}
+            if(z==2){TM("29:rcr-16    rice zigzag                ",l=rcrzenc16(  in,n,out,r), n,l, l==n?memcpy(cpy,out,n):rcrzdec16(  out,n,cpy,r));   break;}
+            if(z==4){TM("29:rcr-32    rice zigzag                ",l=rcrzenc32(  in,n,out,r), n,l, l==n?memcpy(cpy,out,n):rcrzdec32(  out,n,cpy,r));}  break;
+	                    
+    case 30:if(z==2){TM("30:rcv-16    Turbo vlc8                 ",l=rcvenc16(   in,n,out,r), n,l, l==n?memcpy(cpy,out,n):rcvdec16(   out,n,cpy,r));   break;}
+            if(z==4){TM("30:rcv-32    Turbo vlc8                 ",l=rcvenc32(   in,n,out,r), n,l, l==n?memcpy(cpy,out,n):rcvdec32(   out,n,cpy,r));}  break;
+    case 31:if(z==4){TM("31:rcvc-32   Turbo vlc10                ",l=rcv10senc32(in,n,out ),  n,l, l==n?memcpy(cpy,out,n):rcv10sdec32(out,n,cpy)); }   break;
+    case 32:if(z==4){TM("32:rcve-32   Turbo vlc12                ",l=rcveenc32(  in,n,out,r), n,l, l==n?memcpy(cpy,out,n):rcvedec32(  out,n,cpy,r)); } break;
+    case 33:if(z==2){TM("33:rcvz-16   Turbo vlc8 zigzag          ",l=rcvzenc16(  in,n,out,r), n,l, l==n?memcpy(cpy,out,n):rcvzdec16(  out,n,cpy,r));   break;}
+            if(z==4){TM("33:rcvz-32   Turbo vlc8 zigzag          ",l=rcvzenc32(  in,n,out,r), n,l, l==n?memcpy(cpy,out,n):rcvzdec32(  out,n,cpy,r)); } break;
+    case 34:if(z==4){TM("34:rcvez-32  Turbo vlc12 zigzag         ",l=rcvezenc32( in,n,out,r), n,l, l==n?memcpy(cpy,out,n):rcvezdec32( out,n,cpy,r)); } break;
+    case 35:if(z==2){TM("35:rcvg-16   Turbo vlc8 gamma           ",l=rcvgenc16(  in,n,out,r), n,l, l==n?memcpy(cpy,out,n):rcvgdec16(  out,n,cpy,r));   break;}
+            if(z==4){TM("35:rcvg-32   Turbo vlc8 gamma           ",l=rcvgenc32(  in,n,out,r), n,l, l==n?memcpy(cpy,out,n):rcvgdec32(  out,n,cpy,r)); } break;
+    case 36:if(z==2){TM("36:rcvgz-16  Turbo vlc8 gamma zigzag    ",l=rcvgzenc16( in,n,out,r), n,l, l==n?memcpy(cpy,out,n):rcvgzdec16( out,n,cpy,r));   break;}
+            if(z==4){TM("36:rcvgz-32  Turbo vlc8 gamma zigzag    ",l=rcvgzenc32( in,n,out,r), n,l, l==n?memcpy(cpy,out,n):rcvgzdec32( out,n,cpy,r));}  break;
+	  #ifdef _V8        
+	case 37:if(z==2){TM("37:rcv8-16   Turbobyte                  ",l=rcv8enc16(  in,n,out,r), n,l, l==n?memcpy(cpy,out,n):rcv8dec16(  out,n,cpy,r));   break;}
+            if(z==4){TM("37:rcv8-32   TurboByte                  ",l=rcv8enc32(  in,n,out,r), n,l, l==n?memcpy(cpy,out,n):rcv8dec32(  out,n,cpy,r));}  break;
+    case 38:if(z==2){TM("38:rcv8-16   Turbobyte zigzag           ",l=rcv8zenc16( in,n,out,r), n,l, l==n?memcpy(cpy,out,n):rcv8zdec16( out,n,cpy,r));   break;}
+            if(z==4){TM("38:rcv8-32   TurboByte zigzag           ",l=rcv8zenc32( in,n,out,r), n,l, l==n?memcpy(cpy,out,n):rcv8zdec32( out,n,cpy,r));}  break;
 	  #endif		
-    case 40:if(m<16){TMBENCH("",l=rc4csenc(   in,n,out),n);       pr(l,n); TMBENCH2("40:rc4cs     bitwise nibble static      ",l==n?memcpy(cpy,out,n):rc4csdec(  out,n,cpy), n); } break;            // Static
-    case 41:if(m<16){TMBENCH("",l=rc4senc(    in,n,out),n);       pr(l,n); TMBENCH2("41:rc4s      bitwise nibble adaptive    ",l==n?memcpy(cpy,out,n):rc4sdec(   out,n,cpy), n); } break;           // Adaptive
-    case 42:         TMBENCH("",l=rccdfsenc( in,n,out,cdf,m+1),n);pr(l,n); TMBENCH2("42:cdfsb     static/decode search       ",l==n?memcpy(cpy,out,n):(m<16?rccdfsldec( out,n,cpy, cdf, m+1):rccdfsbdec( out,n,cpy, cdf, m+1)), n); break; // static
-    case 43:         TMBENCH("",l=rccdfsenc( in,n,out,cdf,m+1),n);pr(l,n); TMBENCH2("43:cdfsv     static/decode division     ",l==n?memcpy(cpy,out,n):(m<16?rccdfsvldec(out,n,cpy, cdf, m+1):rccdfsvbdec(out,n,cpy, cdf, m+1)), n); break;
-    case 44:         TMBENCH("",l=rccdfsmenc(in,n,out,cdf,m+1),n);pr(l,n); TMBENCH2("44:cdfsm     static/decode division lut ",l==n?memcpy(cpy,out,n):(m<16?rccdfsmldec(out,n,cpy, cdf, m+1):rccdfsmbdec(out,n,cpy, cdf, m+1)), n); break;
-    case 45:         TMBENCH("",l=rccdfs2enc(in,n,out,cdf,m+1),n);pr(l,n); TMBENCH2("45:cdfsb     static interlv/dec. search ",l==n?memcpy(cpy,out,n):(m<16?rccdfsl2dec(out,n,cpy, cdf, m+1):rccdfsb2dec(out,n,cpy, cdf, m+1)), n); break; // static
-    case 46:if(m<16){TMBENCH("",l=rccdf4enc(  in,n,out),n);       pr(l,n); TMBENCH2("46:cdf4      nibble adaptive            ",l==n?memcpy(cpy,out,n):rccdf4dec( out,n,cpy), n); }
-            else {   TMBENCH("",l=rccdfenc(   in,n,out),n);       pr(l,n); TMBENCH2("46:cdf       byte   adaptive            ",l==n?memcpy(cpy,out,n):rccdfdec(  out,n,cpy), n); } break;
-    case 47:if(m<16){TMBENCH("",l=rccdf4ienc( in,n,out),n);       pr(l,n); TMBENCH2("47:cdf4i     nibble adaptive interleaved",l==n?memcpy(cpy,out,n):rccdf4idec(out,n,cpy), n); }
-            else {   TMBENCH("",l=rccdfienc(  in,n,out),n);       pr(l,n); TMBENCH2("47:cdfi      byte   adaptive interleaved",l==n?memcpy(cpy,out,n):rccdfidec( out,n,cpy), n); } break;
-    case 48:         TMBENCH("",l=rccdfenc8(  in,n,out),n);       pr(l,n); TMBENCH2("48:cdf-8     vnibble                    ",l==n?memcpy(cpy,out,n):rccdfdec8( out,n,cpy), n); break;
-    case 49:         TMBENCH("",l=rccdfienc8( in,n,out),n);       pr(l,n); TMBENCH2("49:cdfi-8    vnibble interleaved        ",l==n?memcpy(cpy,out,n):rccdfidec8(out,n,cpy), n); break; 
-    case 50:if(z==2){TMBENCH("",l=rccdfuenc16(in,n,out),n);       pr(l,n); TMBENCH2("50:cdf-16    Turbo vlc6                 ",l==n?memcpy(cpy,out,n):rccdfudec16(out,n,cpy), n); break; }
-            if(z==4){TMBENCH("",l=rccdfuenc32(in,n,out),n);       pr(l,n); TMBENCH2("50:cdf-32    Turbo vlc6                 ",l==n?memcpy(cpy,out,n):rccdfudec32(out,n,cpy), n);} break;
-    case 51:if(z==2){TMBENCH("",l=rccdfvenc16(in,n,out),n);       pr(l,n); TMBENCH2("51:cdf-16    Turbo vlc7                 ",l==n?memcpy(cpy,out,n):rccdfvdec16(out,n,cpy), n); break;}
-            if(z==4){TMBENCH("",l=rccdfvenc32(in,n,out),n);       pr(l,n); TMBENCH2("51:cdf-32    Turbo vlc7                 ",l==n?memcpy(cpy,out,n):rccdfvdec32(out,n,cpy), n);} break;
-    case 52:if(z==2){TMBENCH("",l=rccdfvzenc16(in,n,out),n);      pr(l,n); TMBENCH2("52:cdf-16    Turbo vlc7 zigzag          ",l==n?memcpy(cpy,out,n):rccdfvzdec16(out,n,cpy), n); break;}
-            if(z==4){TMBENCH("",l=rccdfvzenc32(in,n,out),n);      pr(l,n); TMBENCH2("52:cdf-32    Turbo vlc7 zigzag          ",l==n?memcpy(cpy,out,n):rccdfvzdec32(out,n,cpy), n);} break;			
+    case 40:if(m<16){TM("40:rc4cs     bitwise nibble static      ",l=rc4csenc(   in,n,out),   n,l, l==n?memcpy(cpy,out,n):rc4csdec(  out,n,cpy)); } break;            // Static
+    case 41:if(m<16){TM("41:rc4s      bitwise nibble adaptive    ",l=rc4senc(    in,n,out),   n,l, l==n?memcpy(cpy,out,n):rc4sdec(   out,n,cpy)); } break;           // Adaptive
+    case 42:         TM("42:cdfsb     static/decode search       ",l=rccdfsenc( in,n,out,cdf,m+1),n,l, l==n?memcpy(cpy,out,n):(m<16?rccdfsldec( out,n,cpy, cdf, m+1):rccdfsbdec( out,n,cpy, cdf, m+1))); break; // static
+    case 43:         TM("43:cdfsv     static/decode division     ",l=rccdfsenc( in,n,out,cdf,m+1),n,l, l==n?memcpy(cpy,out,n):(m<16?rccdfsvldec(out,n,cpy, cdf, m+1):rccdfsvbdec(out,n,cpy, cdf, m+1))); break;
+    case 44:         TM("44:cdfsm     static/decode division lut ",l=rccdfsmenc(in,n,out,cdf,m+1),n,l, l==n?memcpy(cpy,out,n):(m<16?rccdfsmldec(out,n,cpy, cdf, m+1):rccdfsmbdec(out,n,cpy, cdf, m+1))); break;
+    case 45:         TM("45:cdfsb     static interlv/dec. search ",l=rccdfs2enc(in,n,out,cdf,m+1),n,l, l==n?memcpy(cpy,out,n):(m<16?rccdfsl2dec(out,n,cpy, cdf, m+1):rccdfsb2dec(out,n,cpy, cdf, m+1))); break; // static
+    case 46:if(m<16){TM("46:cdf4      nibble adaptive            ",l=rccdf4enc(  in,n,out),   n,l, l==n?memcpy(cpy,out,n):rccdf4dec( out,n,cpy)); }
+            else {   TM("46:cdf       byte   adaptive            ",l=rccdfenc(   in,n,out),   n,l, l==n?memcpy(cpy,out,n):rccdfdec(  out,n,cpy)); } break;
+    case 47:if(m<16){TM("47:cdf4i     nibble adaptive interleaved",l=rccdf4ienc( in,n,out),   n,l, l==n?memcpy(cpy,out,n):rccdf4idec(out,n,cpy)); }
+            else {   TM("47:cdfi      byte   adaptive interleaved",l=rccdfienc(  in,n,out),   n,l, l==n?memcpy(cpy,out,n):rccdfidec( out,n,cpy)); } break;
+    case 48:         TM("48:cdf-8     vnibble                    ",l=rccdfenc8(  in,n,out),   n,l, l==n?memcpy(cpy,out,n):rccdfdec8( out,n,cpy)); break;
+    case 49:         TM("49:cdfi-8    vnibble interleaved        ",l=rccdfienc8( in,n,out),   n,l, l==n?memcpy(cpy,out,n):rccdfidec8(out,n,cpy)); break; 
+    case 50:if(z==2){TM("50:cdf-16    Turbo vlc6                 ",l=rccdfuenc16(in,n,out),   n,l, l==n?memcpy(cpy,out,n):rccdfudec16(out,n,cpy)); break; }
+            if(z==4){TM("50:cdf-32    Turbo vlc6                 ",l=rccdfuenc32(in,n,out),   n,l, l==n?memcpy(cpy,out,n):rccdfudec32(out,n,cpy));} break;
+    case 51:if(z==2){TM("51:cdf-16    Turbo vlc7                 ",l=rccdfvenc16(in,n,out),   n,l, l==n?memcpy(cpy,out,n):rccdfvdec16(out,n,cpy)); break;}
+            if(z==4){TM("51:cdf-32    Turbo vlc7                 ",l=rccdfvenc32(in,n,out),   n,l, l==n?memcpy(cpy,out,n):rccdfvdec32(out,n,cpy));} break;
+    case 52:if(z==2){TM("52:cdf-16    Turbo vlc7 zigzag          ",l=rccdfvzenc16(in,n,out),  n,l, l==n?memcpy(cpy,out,n):rccdfvzdec16(out,n,cpy)); break;}
+            if(z==4){TM("52:cdf-32    Turbo vlc7 zigzag          ",l=rccdfvzenc32(in,n,out),  n,l, l==n?memcpy(cpy,out,n):rccdfvzdec32(out,n,cpy));} break;			
     #define ID_LAST 59
     #define ID_MEMCPY 59 
-    case ID_MEMCPY:  TMBENCH("", memcpy(out,in,n) ,n); pr(n,n);            TMBENCH2("59:memcpy                               ", memcpy(cpy,out,n), n);  l=n; break;
+    case ID_MEMCPY:  TM("59:memcpy                               ", memcpy(out,in,n),         n,n, memcpy(cpy,out,n));  l = n; break;
 	  #ifdef _BWT
-    case 60:{ unsigned *sa=malloc((n+1)*sizeof(sa[0]));if(!sa) die("malloc of '' failed\n", n*4);
+    case 60:{ unsigned *sa = malloc((n+1)*sizeof(sa[0]));if(!sa) die("malloc of '' failed\n", n*4);
 	    #ifdef _BWTDIV
-	                 TMBENCH("",l=divbwt(in,out,sa,n),n);         pr(n,n); TMBENCH2("60:bwt libdivsufsort                    ",obwt_unbwt_biPSIv2(out,cpy,sa,n,l), n); free(sa); } break; //ctou32(out)=l; fwrite(out,1,n+4,fdbg); 
+	                 TM("60:bwt libdivsufsort                    ",l=divbwt(in,out,sa,n),     n,n, obwt_unbwt_biPSIv2(out,cpy,sa,n,l)); free(sa); } break; //ctou32(out)=l; fwrite(out,1,n+4,fdbg); 
         #else
-	                 TMBENCH("",l=libsais_bwt(in,out,sa,n,0,0),n);pr(n,n); TMBENCH2("60:bwt libsais                          ",libsais_unbwt(out,cpy,sa,n,0,l), n); free(sa);} break;
+	                 TM("60:bwt libsais                          ",l=libsais_bwt(in,out,sa,n,0,0), n,n, libsais_unbwt(out,cpy,sa,n,0,l)); free(sa);} break;
 	    #endif
 	  #endif
-    case 61:         TMBENCH("",l=utf8enc( in,n,out, flag|BWT_COPY|BWT_RATIO),n); 
-	                                                              pr(l,n); TMBENCH2("61:utf8 preprocessor                    ",l==n?memcpy(cpy,out,n):utf8dec(   out,n,cpy), n); break;
-    case 62:         TMBENCH("",l=lzpenc(  in,n,out,lenmin,0),n);   pr(l,n); TMBENCH2("62:lzp                                  ",l==n?memcpy(cpy,out,n):lzpdec(    out,n,cpy,lenmin,0), n); break;
+    case 61:         TM("61:utf8 preprocessor                    ",l=utf8enc(in,n,out, flag|BWT_COPY|BWT_RATIO),n,l,l==n?memcpy(cpy,out,n):utf8dec(out,n,cpy)); break;
+    case 62:         TM("62:lzp                                  ",l=lzpenc( in,n,out,lenmin,0),                n,l,l==n?memcpy(cpy,out,n):lzpdec( out,n,cpy,lenmin,0)); break;
+    case 63:         TM("63:bitenc                               ",l=bitenc( in,n,out),                         n,l,     bitdec(out,n,cpy)); break;
+    case 64:l=n;     TM("64:delta8e24                            ",delta8e24( in,n,out),                        n,l,     delta8d24( out,n,cpy)); break;
+    case 65:l=n;     TM("65:delta24e24                           ",delta24e24(in,n,out),                        n,l,     delta24d24(out,n,cpy)); break;
+
+	  #ifdef _ANS
+	#define ANSBLKSIZE (1<<21)
+    case 55:if(m<16){TM("56:ans auto   nibble                    ",l=anscdf4enc(  in,n,out,on,ANSBLKSIZE), n,l, anscdf4dec(  out,n,cpy,ANSBLKSIZE));}
+            else    {TM("56:ans auto                             ",l=anscdfenc(   in,n,out,on,ANSBLKSIZE), n,l, anscdfdec(   out,n,cpy,ANSBLKSIZE));} break;
+  //case 56:if(m<16){TM("56:ans scalar nibble                    ",l=anscdf4enc0( in,n,out,on,ANSBLKSIZE), n,l, anscdf4dec0( out,n,cpy,ANSBLKSIZE));}
+  //        else    {TM("56:ans scalar                           ",l=anscdfenc0(  in,n,out,on,ANSBLKSIZE), n,l, anscdfdec0(  out,n,cpy,ANSBLKSIZE));} break;
+    case 57:if(m<16){TM("57:ans sse nibble                       ",l=anscdf4encs( in,n,out,on,ANSBLKSIZE), n,l, anscdf4decs( out,n,cpy,ANSBLKSIZE));}
+            else    {TM("57:ans sse                              ",l=anscdfencs(  in,n,out,on,ANSBLKSIZE), n,l, anscdfdecs(  out,n,cpy,ANSBLKSIZE));} break;
+    case 58:if(m<16){TM("58:ans avx2 nibble                      ",l=anscdf4encx( in,n,out,on,ANSBLKSIZE), n,l, anscdf4decx( out,n,cpy,ANSBLKSIZE));}
+            else    {TM("58:ans avx2                             ",l=anscdfencx(  in,n,out,on,ANSBLKSIZE), n,l, anscdfdecx(  out,n,cpy,ANSBLKSIZE));} break;
+	  #endif
       #ifdef _EXT
     #include "xturborc.c"
       #endif
@@ -494,7 +509,7 @@ unsigned bench(unsigned char *in, unsigned n, unsigned char *out, unsigned char 
   return l;
 } 
 #endif //NO_BENCH
-
+ 
 static void usage(char *pgm) {
     #ifdef _BWTSATAN
   fprintf(stderr, "\nBwtSatan 23.04 Copyright (c) 2018-2023 Powturbo %s\n", __DATE__);
@@ -669,6 +684,7 @@ int main(int argc, char* argv[]) {
     }
   }
     #endif
+  tm_verbose = 4;
   
   for(;;) {
     int this_option_optind = optind ? optind : 1, optind = 0;
@@ -676,7 +692,7 @@ int main(int argc, char* argv[]) {
       { "help",     0, 0, 'h'},
       { 0,          0, 0, 0}
     }; 
-    if((c = getopt_long(argc, argv, "0:1:2:3:4:5:6:7:8:9:b:cde:fhk:l:m:nop:r:t:v:x:XzF:H:I:J:K:B:O:P:Q:S:T:U", long_options, &optind)) == -1) break;
+    if((c = getopt_long(argc, argv, "0:1:2:3:4:5:6:7:8:9:b:cde:fhk:l:m:nop:q:r:t:v:x:XzF:H:I:J:K:B:O:P:Q:S:T:UV:", long_options, &optind)) == -1) break;
     switch(c) {
       case 0:
         printf("Option %s", long_options[optind].name);
@@ -748,6 +764,13 @@ int main(int argc, char* argv[]) {
 	    #endif
 	  case 'l': lev = atoi(optarg); if(lev>9) lev=9; break;
       case 'm': lenmin = atoi(optarg); if(lenmin > 256) lenmin = 256; break;
+      case 'q':      if(!strcasecmp(optarg,"sse"))    cpuini(0x33);  
+                else if(!strcasecmp(optarg,"avx"))    cpuini(0x50); 
+                else if(!strcasecmp(optarg,"avx2"))   cpuini(0x60); 
+                else if(!strcasecmp(optarg,"avx512")) cpuini(0x78);   
+				else cpuini(0x1);
+			    break;
+      case 'V': tm_verbose = atoi(optarg);  break;
 	    #ifndef NO_BENCH
 	  case 'x': { int m = atoi(optarg); if(m<4) m=4;else if(m>16) m=16; mbcset(m); /*set context bits*/} break;
 	    #endif
@@ -767,7 +790,9 @@ int main(int argc, char* argv[]) {
         usage(argv[0]);
         exit(0); 
     }
-  } 																							
+  } 
+  anscdfini(0x20); // initialize sse (avx2 actually slower)
+  tm_init(tm_Rep, tm_verbose /* 2 print id */);  
   #define ERR(e) do { rc = e; printf("line=%d ", __LINE__); goto err; } while(0)
   size_t bsize = _bsize * Mb;
   int  rc = 0, inlen;
@@ -780,7 +805,7 @@ int main(int argc, char* argv[]) {
     char _scmd[33];
     int  fno, nblk = 0, nid = 0, cminid, cminl = (unsigned)-1;
     sprintf(_scmd, "1-%d", ID_MEMCPY);                          			    if(verbose>2) printf("BENCHMARK ARGS: fno=%d,optind=%d,argc=%d\n", fno, optind, argc);
-    printf("   E MB/s    size     ratio%%     D MB/s function prdid=");
+    printf("      size   ratio     E MB/s   D MB/s function prdid=");
     switch(prdid) {
       case 1: printf("'s(5)'\n"); break;
       case 2: printf("'ss(%u,%u)'\n", prm1, prm2); break;
@@ -821,8 +846,11 @@ int main(int argc, char* argv[]) {
         n = dfmt?befgen(fi, in, b, dfmt, isize, osize, kid, skiph, decs, divs, keysep, mdelta):fread(in, 1, b, fi); 
 		if(n <=0 ) break; 														if(verbose>2) printf("read=%u\n", n);
 		switch(tpbyte) {
-          //case 16: delta8e24(in, n, out); memcpy(in, out, n); break;
-          //case 15: delta8e24(in, n, out); n=trlec(out,n,in); printf("rle=%d\n", n);break;
+		  case 14: { unsigned l = bitenc(in, n, out); memcpy(in, out, l); n = l; } break;
+		    #ifdef _DELTA
+		  case 15: delta8e24( in,n,out); memcpy(in, out, n); break;
+		  case 16: delta24e24(in,n,out); memcpy(in, out, n); break;
+		    #endif
 		}
 
 	    nblk++;
@@ -924,6 +952,9 @@ int main(int argc, char* argv[]) {
         case 20: clen = rcbwtenc( in, inlen, out, lev, thnum, bwtflag(osize)); break;
 	      #endif		
 		case 21: clen = utf8enc( in, inlen, out, bwtflag(osize)); break; 
+		  #ifdef _DELTA
+		case 22: delta8e24(in,inlen,out); clen = inlen+1; break;
+		  #endif
         default: ERR(E_CODEC); 
       }
       hdb_t hdb; hdb.inlen = inlen; hdb.bsize = bsize; hdb.clen = clen; if((rc = hdbwr(&hdb, fo)) < 0) ERR(-rc); folen += rc;
@@ -965,6 +996,9 @@ int main(int argc, char* argv[]) {
         case 20: rcbwtdec(  in, outlen, out, lev, thnum); break;
           #endif
         case 21: utf8dec(   in, outlen, out);        break;
+		  #ifdef _DELTA
+		case 22: delta8d24(in,outlen,out); break; 
+		  #endif
         default: ERR(E_CODEC); 
       }  
       if(fwrite(out, 1, outlen, fo) != outlen) ERR(E_FWR); folen += outlen;  
