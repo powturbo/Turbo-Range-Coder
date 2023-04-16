@@ -59,6 +59,6 @@ jobs:
           update: true
       - run: git submodule update --init --recursive
       - run: make
-      - run: ./turborc -e0 turborc -V2
+      - run: ./turborc -e0 turborc.exe -V2
 
  
