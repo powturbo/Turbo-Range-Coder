@@ -24,7 +24,7 @@
 // TurboRANS Range Asymmetric Systems : include header 
 #define LIBAPI
 
-typedef LIBAPI unsigned *(*fanscdfenc)(unsigned char *in, unsigned inlen, unsigned char *out, unsigned outsize, unsigned blksize);
+typedef LIBAPI unsigned *(*fanscdfenc)(unsigned char *in, unsigned inlen, unsigned char *out, unsigned blksize);
 typedef LIBAPI unsigned *(*fanscdfdec)(unsigned char *in, unsigned inlen, unsigned char *out, unsigned blksize);
 
 extern fanscdfenc _anscdfenc;
@@ -36,22 +36,22 @@ extern fanscdfdec _anscdf4dec;
 extern "C" {
 #endif
 void anscdfini(unsigned id);
-LIBAPI unsigned anscdfenc(  unsigned char *in, unsigned inlen,  unsigned char *out, unsigned outsize, unsigned blksize);
+LIBAPI unsigned anscdfenc(  unsigned char *in, unsigned inlen,  unsigned char *out, unsigned blksize);
 LIBAPI unsigned anscdfdec(  unsigned char *in, unsigned outlen, unsigned char *out, unsigned blksize);
-LIBAPI unsigned anscdf4enc( unsigned char *in, unsigned inlen,  unsigned char *out, unsigned outsize, unsigned blksize);
+LIBAPI unsigned anscdf4enc( unsigned char *in, unsigned inlen,  unsigned char *out, unsigned blksize);
 LIBAPI unsigned anscdf4dec( unsigned char *in, unsigned outlen, unsigned char *out, unsigned blksize);
 
 //-------------- direct function calls --------------------------------------------------------
-LIBAPI unsigned anscdfenc0( unsigned char *in, unsigned inlen,  unsigned char *out, unsigned outsize, unsigned blksize);
-LIBAPI unsigned anscdfencs( unsigned char *in, unsigned inlen,  unsigned char *out, unsigned outsize, unsigned blksize);
-LIBAPI unsigned anscdfencx( unsigned char *in, unsigned inlen,  unsigned char *out, unsigned outsize, unsigned blksize);
+LIBAPI unsigned anscdfenc0( unsigned char *in, unsigned inlen,  unsigned char *out, unsigned blksize);
+LIBAPI unsigned anscdfencs( unsigned char *in, unsigned inlen,  unsigned char *out, unsigned blksize);
+LIBAPI unsigned anscdfencx( unsigned char *in, unsigned inlen,  unsigned char *out, unsigned blksize);
 LIBAPI unsigned anscdfdec0( unsigned char *in, unsigned outlen, unsigned char *out, unsigned blksize);
 LIBAPI unsigned anscdfdecs( unsigned char *in, unsigned outlen, unsigned char *out, unsigned blksize);
 LIBAPI unsigned anscdfdecx( unsigned char *in, unsigned outlen, unsigned char *out, unsigned blksize);
 
-LIBAPI unsigned anscdf4enc0(unsigned char *in, unsigned inlen,  unsigned char *out, unsigned outsize, unsigned blksize);
-LIBAPI unsigned anscdf4encs(unsigned char *in, unsigned inlen,  unsigned char *out, unsigned outsize, unsigned blksize);
-LIBAPI unsigned anscdf4encx(unsigned char *in, unsigned inlen,  unsigned char *out, unsigned outsize, unsigned blksize);
+LIBAPI unsigned anscdf4enc0(unsigned char *in, unsigned inlen,  unsigned char *out, unsigned blksize);
+LIBAPI unsigned anscdf4encs(unsigned char *in, unsigned inlen,  unsigned char *out, unsigned blksize);
+LIBAPI unsigned anscdf4encx(unsigned char *in, unsigned inlen,  unsigned char *out, unsigned blksize);
 LIBAPI unsigned anscdf4dec0(unsigned char *in, unsigned outlen, unsigned char *out, unsigned blksize);
 LIBAPI unsigned anscdf4decs(unsigned char *in, unsigned outlen, unsigned char *out, unsigned blksize);
 LIBAPI unsigned anscdf4decx(unsigned char *in, unsigned outlen, unsigned char *out, unsigned blksize);
@@ -60,4 +60,3 @@ LIBAPI unsigned anscdf4decx(unsigned char *in, unsigned outlen, unsigned char *o
 #ifdef __cplusplus
 }
 #endif
-
