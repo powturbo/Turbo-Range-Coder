@@ -147,7 +147,7 @@ LIBAPI unsigned T2(anscdf4enc,FSUFFIX)(unsigned char *in, unsigned inlen, unsign
 } 
 
   #if !defined(__SSE3__) && !defined(__ARM_NEON)
-#ifdef _CPUISA  
+#ifndef _NCPUISA  
   static unsigned _cpuisa;
 //--------------------- CPU detection -------------------------------------------
     #if defined(__i386__) || defined(__x86_64__)
