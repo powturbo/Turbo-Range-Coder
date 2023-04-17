@@ -551,13 +551,15 @@ size_t rccdfuenc16(unsigned char *_in, size_t _inlen, unsigned char *out) {
   CDF16DEF; 
   rcencdef(rcrange,rclow); rceinit(rcrange,rclow);
   bitedef(bw,br); biteinir(bw,br,op_);
-
+  printf("A");fflush(stdout);
   for(ip = in; ip < in+inlen; ip++) {
 	unsigned x = ip[0];
 	bitvrput(bw,br,op_, 1, 0, x);
 	cdfe6(rcrange,rclow,rcrange,rclow, cdf0,cdf1,     x,op,op);
 	if(op+8 >= op_) { memcpy(out, _in, _inlen); op = out_; goto e; }
   }
+  printf("B");fflush(stdout);
+
   rceflush(rcrange,rclow, op);
   bitflushr(bw,br,op_); unsigned l = out_-op_; memmove(op, op_, l); op += l; ctou32(out) = op-out;   OVERFLOW(_in,_inlen,out, op, goto e); 
   e:return op - out;   
