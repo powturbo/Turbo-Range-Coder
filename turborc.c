@@ -493,17 +493,17 @@ unsigned bench(unsigned char *in, unsigned n, unsigned char *out, unsigned char 
       #endif   
 	  #ifdef _ANS
 	#define ANSBLKSIZE (1<<21)
-    case 54:if(m<16){TM("56:ans direct nibble                    ",l=_anscdf4enc( in,n,out,on,ANSBLKSIZE), n,l, _anscdf4dec( out,n,cpy,ANSBLKSIZE));}
-            else    {TM("56:ans direct                           ",l=_anscdfenc(  in,n,out,on,ANSBLKSIZE), n,l, _anscdfdec(  out,n,cpy,ANSBLKSIZE));} break;
-    case 55:if(m<16){TM("56:ans auto   nibble                    ",l=anscdf4enc(  in,n,out,on,ANSBLKSIZE), n,l, anscdf4dec(  out,n,cpy,ANSBLKSIZE));}
-            else    {TM("56:ans auto                             ",l=anscdfenc(   in,n,out,on,ANSBLKSIZE), n,l, anscdfdec(   out,n,cpy,ANSBLKSIZE));} break;
-  //case 56:if(m<16){TM("56:ans scalar nibble                    ",l=anscdf4enc0( in,n,out,on,ANSBLKSIZE), n,l, anscdf4dec0( out,n,cpy,ANSBLKSIZE));}
-  //        else    {TM("56:ans scalar                           ",l=anscdfenc0(  in,n,out,on,ANSBLKSIZE), n,l, anscdfdec0(  out,n,cpy,ANSBLKSIZE));} break;
-    case 57:if(m<16){TM("57:ans sse nibble                       ",l=anscdf4encs( in,n,out,on,ANSBLKSIZE), n,l, anscdf4decs( out,n,cpy,ANSBLKSIZE));}
-            else    {TM("57:ans sse                              ",l=anscdfencs(  in,n,out,on,ANSBLKSIZE), n,l, anscdfdecs(  out,n,cpy,ANSBLKSIZE));} break;
+    case 54:if(m<16){TM("56:ans direct nibble                    ",l=_anscdf4enc( in,n,out,ANSBLKSIZE), n,l, l==n?memcpy(cpy,out,n):_anscdf4dec( out,n,cpy,ANSBLKSIZE));}
+            else    {TM("56:ans direct                           ",l=_anscdfenc(  in,n,out,ANSBLKSIZE), n,l, l==n?memcpy(cpy,out,n):_anscdfdec(  out,n,cpy,ANSBLKSIZE));} break;
+    case 55:if(m<16){TM("56:ans auto   nibble                    ",l=anscdf4enc(  in,n,out,ANSBLKSIZE), n,l, l==n?memcpy(cpy,out,n):anscdf4dec(  out,n,cpy,ANSBLKSIZE));}
+            else    {TM("56:ans auto                             ",l=anscdfenc(   in,n,out,ANSBLKSIZE), n,l, l==n?memcpy(cpy,out,n):anscdfdec(   out,n,cpy,ANSBLKSIZE));} break;
+  //case 56:if(m<16){TM("56:ans scalar nibble                    ",l=anscdf4enc0( in,n,out,ANSBLKSIZE), n,l, anscdf4dec0( out,n,cpy,ANSBLKSIZE));}
+  //        else    {TM("56:ans scalar                           ",l=anscdfenc0(  in,n,out,ANSBLKSIZE), n,l, anscdfdec0(  out,n,cpy,ANSBLKSIZE));} break;
+    case 57:if(m<16){TM("57:ans sse nibble                       ",l=anscdf4encs( in,n,out,ANSBLKSIZE), n,l, l==n?memcpy(cpy,out,n):anscdf4decs( out,n,cpy,ANSBLKSIZE));}
+            else    {TM("57:ans sse                              ",l=anscdfencs(  in,n,out,ANSBLKSIZE), n,l, l==n?memcpy(cpy,out,n):anscdfdecs(  out,n,cpy,ANSBLKSIZE));} break;
     case 58:if(cpuisa()>=0x60) {
-              if(m<16){TM("58:ans avx2 nibble                      ",l=anscdf4encx( in,n,out,on,ANSBLKSIZE), n,l, anscdf4decx( out,n,cpy,ANSBLKSIZE));}
-              else    {TM("58:ans avx2                             ",l=anscdfencx(  in,n,out,on,ANSBLKSIZE), n,l, anscdfdecx(  out,n,cpy,ANSBLKSIZE));} 
+              if(m<16){TM("58:ans avx2 nibble                      ",l=anscdf4encx( in,n,out,ANSBLKSIZE), n,l, anscdf4decx( out,n,cpy,ANSBLKSIZE));}
+              else    {TM("58:ans avx2                             ",l=anscdfencx(  in,n,out,ANSBLKSIZE), n,l, anscdfdecx(  out,n,cpy,ANSBLKSIZE));} 
             }  break;
 	  #endif
       #ifdef _EXT
