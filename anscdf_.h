@@ -107,11 +107,11 @@ typedef unsigned short mbu;
 
 //------------------------------- Model --------------------------------------------
 #define ANSN           2 
-#define STATEDEF(_st_) state_t _st_[ANSN] = {ANS_LOW,ANS_LOW}
+#define STATEDEF(_st_) state_t _st_[ANSN] = {ANS_LOW, ANS_LOW}
 
 //-- encode
-#define mn4enc(_m_,_y_,_si_, _stk_) { \
-  unsigned _cp = _m_[_y_]; /*AS(_stk_ + 2 <= _stk+isize, "mn4enc:Fatal error");*/ \
+#define mn4enc(_m_,_y_,_si_, _stk_) {\
+  unsigned _cp = _m_[_y_];                   /*AC(_stk_ + 2 <= _stk + blksize*4, "mn4enc:Fatal error");*/\
   *_stk_++ = _si_<<15 | _cp;\
   *_stk_++ = _m_[(_y_)+1] - _cp;\
   cdf16upd(_m_,_y_);\
@@ -120,14 +120,14 @@ typedef unsigned short mbu;
 #define mn8enc(_mh_, _ml_, _x_,_stk_) {\
   unsigned _x = _x_, _yh = _x>>4, _yl = _x & 0xf;\
   mn4enc(_mh_, _yh, 1, _stk_);\
-  mbu *_m = _ml_[_yh]; \
+  mbu *_m = _ml_[_yh];\
   mn4enc(_m, _yl, 0, _stk_);\
 }
 
 #define mnflush(_op_,_op__,__stk_,_stk_) {\
-  unsigned char *_ep = _op__, _i; \
+  unsigned char *_ep = _op__, _i; /*printf("stk=%d ", (_stk_ - __stk_)/sizeof(_stk[0]) );*/ \
   STATEDEF(_st);\
-  while(_stk_ != __stk_) { 													if(_ep < _op_+sizeof(io_t)+ANSN*sizeof(_st[0])) { memcpy(out,in,inlen); op=out+inlen; goto end; }\
+  while(_stk_ != __stk_) { 							if(_ep < _op_+sizeof(io_t)+ANSN*sizeof(_st[0])) { memcpy(out,in,inlen); op=out+inlen; goto end; }\
     unsigned _pb = *--_stk_, _si = *--_stk_, _cpb = _si&0x7fff;\
 	ece(_st[_si>>15], _pb, _cpb, _ep);                         \
   }\
