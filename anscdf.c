@@ -58,7 +58,7 @@ LIBAPI unsigned T2(anscdfdec,FSUFFIX)(unsigned char *in, unsigned outlen, unsign
     CDF16DEC1(mb,16);  
     CDF16DEF; 
     mnfill(st, ip);
-	oplen = out_ - out;  oplen = min(oplen, blksize);
+        oplen = out_ - out;  oplen = min(oplen, blksize);
     for(; op < out+(oplen&~3);op+=4) {  
       mn8dec(mb0,mb,op[0],st); 
       mn8dec(mb0,mb,op[1],st); 
@@ -71,11 +71,11 @@ LIBAPI unsigned T2(anscdfdec,FSUFFIX)(unsigned char *in, unsigned outlen, unsign
 }
  
 LIBAPI unsigned T2(anscdfenc,FSUFFIX)(unsigned char *in, unsigned inlen, unsigned char *out, unsigned blksize) {
-  size_t isize = inlen*2, iplen; 
   unsigned char *op = out,*ip=in,*in_ = in+inlen, *out_ = out+inlen; 
-  mbu *_stk = malloc(isize*sizeof(_stk[0])+64),*stk = _stk; if(!_stk) die("malloc error %d ", isize);      			                      
-  anscdfini(0);
+  unsigned      iplen; 
   blksize = min(blksize,inlen);
+  mbu *_stk = malloc(blksize*4*sizeof(_stk[0])+64),*stk = _stk; if(!_stk) die("malloc error %d ", blksize); // 2 x stk[0] per nibble                                                  
+  anscdfini(0);
   
   for(; in < in_; in += iplen) { 
     CDF16DEC0(mb0); 
@@ -83,13 +83,13 @@ LIBAPI unsigned T2(anscdfenc,FSUFFIX)(unsigned char *in, unsigned inlen, unsigne
     CDF16DEF;
     iplen = in_-in; iplen = min(iplen, blksize);
     for(; ip < in + (iplen&~3); ip += 4) {
-	  mn8enc(mb0,mb,ip[0],stk); 
-	  mn8enc(mb0,mb,ip[1],stk); 
-	  mn8enc(mb0,mb,ip[2],stk); 
-	  mn8enc(mb0,mb,ip[3],stk); 
+          mn8enc(mb0,mb,ip[0],stk); 
+          mn8enc(mb0,mb,ip[1],stk); 
+          mn8enc(mb0,mb,ip[2],stk); 
+          mn8enc(mb0,mb,ip[3],stk); 
     }
     for(; ip < in + iplen; ip++) 
-	  mn8enc(mb0,mb,ip[0],stk);
+          mn8enc(mb0,mb,ip[0],stk);
     mnflush(op,out_,_stk,stk);
   }
   end:free(_stk);
@@ -107,7 +107,7 @@ LIBAPI unsigned T2(anscdf4dec,FSUFFIX)(unsigned char *in, unsigned outlen, unsig
     CDF16DEC0(mb); 
     CDF16DEF;  
     mnfill(st,ip); 
-	oplen = out_-out; oplen = min(oplen, blksize);
+        oplen = out_-out; oplen = min(oplen, blksize);
     for(; op < out+(oplen&~3);op+=4) { 
       mn4dec0(ip,mb,op[0],0,st); 
       mn4dec0(ip,mb,op[1],1,st); 
@@ -115,22 +115,22 @@ LIBAPI unsigned T2(anscdf4dec,FSUFFIX)(unsigned char *in, unsigned outlen, unsig
       mn4dec0(ip,mb,op[3],1,st); 
     }
     for(; op < out+oplen;op++) 
-	  mn4dec0(ip,mb,op[0],0,st);
+          mn4dec0(ip,mb,op[0],0,st);
   }
   return outlen;  
 }
  
-LIBAPI unsigned T2(anscdf4enc,FSUFFIX)(unsigned char *in, unsigned inlen, unsigned char *out, unsigned blksize) { 	
-  size_t isize = inlen*2, iplen; 
-  mbu *_stk = malloc(isize*sizeof(_stk[0])+64), *stk = _stk; if(!_stk) die("malloc error %d ", isize);      			                      
-  unsigned char *op = out,*ip=in,*in_ = in+inlen, *out_=out+inlen; 
-  anscdfini(0);
+LIBAPI unsigned T2(anscdf4enc,FSUFFIX)(unsigned char *in, unsigned inlen, unsigned char *out, unsigned blksize) {       
+  unsigned char *op = out,*ip=in,*in_ = in+inlen, *out_ = out+inlen; 
+  unsigned      iplen; 
   blksize = min(blksize,inlen);
+  mbu *_stk = malloc(blksize*2*sizeof(_stk[0])+64),*stk = _stk; if(!_stk) die("malloc error %d ", blksize);                                           
+  anscdfini(0);
 
   for(; in < in_; in += iplen) { 
     CDF16DEC0(mb); 
     CDF16DEF;
-    iplen = in_-in; iplen = min(iplen, blksize);
+    iplen = in_-in; iplen = min(iplen, blksize); stk = _stk;
     for(; ip < in + (iplen&~3); ip += 4) { 
       mn4enc(mb,ip[0],1,stk);  
       mn4enc(mb,ip[1],0,stk);
@@ -138,7 +138,7 @@ LIBAPI unsigned T2(anscdf4enc,FSUFFIX)(unsigned char *in, unsigned inlen, unsign
       mn4enc(mb,ip[3],0,stk);
     }
     for(; ip < in + iplen; ip++) 
-	  mn4enc(mb,ip[0],0,stk); 
+          mn4enc(mb,ip[0],0,stk); 
     mnflush(op,out_,_stk,stk);
   }
   end:free(_stk);
@@ -300,8 +300,8 @@ char *cpustr(unsigned cpuisa) {
   return "none";
 }
 #else
-unsigned cpuisa(void);	
-#endif	
+unsigned cpuisa(void);  
+#endif  
 
 fanscdfenc _anscdfenc  = anscdfencs; //set sse2
 fanscdfdec _anscdfdec  = anscdfdecs;
