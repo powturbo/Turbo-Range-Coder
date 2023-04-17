@@ -156,5 +156,5 @@ typedef unsigned short mbu;
 }
 
 #define mnfill(_st_, _ip_) {\
-  unsigned _i; for(_i = 0; _i < ANSN; _i++) { if(_st_[_i] != ANS_LOW) { fprintf(stderr, "Archive error: st=%X\n", _st_[_i]); exit(1); } ecdini(_st_[_i], _ip_); }\
+  unsigned _i; for(_i = 0; _i < ANSN; _i++) { if(_st_[_i] != ANS_LOW) { fprintf(stderr, "Fatal error: st=%X\n", _st_[_i]); exit(1); } ecdini(_st_[_i], _ip_); }\
 }  
