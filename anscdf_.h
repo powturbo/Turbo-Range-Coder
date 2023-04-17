@@ -55,8 +55,8 @@ typedef unsigned short io_t;
 #define ANS_LBITS                       (8*(sizeof(state_t) - sizeof(io_t)) - 1)
 #define ANS_LOW                         (1u << ANS_LBITS)
 
-#define _putc(_ch_, _out_) 	        _out_ -= sizeof(io_t),*(io_t *)_out_ = (_ch_)
-#define _getc(_in_) 		        *(io_t *)_in_;_in_+=sizeof(io_t)
+#define _putc(_ch_, _out_) 	            _out_ -= sizeof(io_t),*(io_t *)_out_ = (_ch_)
+#define _getc(_in_) 		            *(io_t *)_in_;_in_+=sizeof(io_t)
 //------------------------------- Entropy coder -----------------------
 #define eceflush(_x_, _op_) 		{ _op_ -= sizeof(state_t); *(state_t *)_op_ = _x_; }
 #define ecdini(  _x_, _ip_) 		{ _x_   = *(state_t *)_ip_; _ip_ += sizeof(state_t); }
@@ -74,7 +74,8 @@ typedef unsigned short io_t;
     "cmovb  %%rax, %0\n\t"\
      : "=r" (_ip_), "=r" (_x_)\
      : "0"  (_ip_), "1"  (_x_)\
-     : "eax", "edx" ); }
+     : "eax", "edx", "memory" );\
+  }
   #elif defined(__clang__)
 #define ecdnorm(_x_,_ip_) do { \
 unsigned _y = _x_ << 16 | ctou16(_ip_); \
@@ -109,52 +110,47 @@ typedef unsigned short mbu;
 #define STATEDEF(_st_) state_t _st_[ANSN] = {ANS_LOW,ANS_LOW}
 
 //-- encode
-#define mn4enc(_m_,_y_,_si_, _inp_) { \
-  unsigned _cp = _m_[_y_]; \
-  if(_inp_ + 2 >= _stk+isize) { \
-    isize <<= 1;\
-    unsigned _l = _inp_-_stk;\
-	if(!(_stk=realloc(_stk,isize*sizeof(_stk[0])))) die("mallo error"); \
-	_inp_=_stk+_l;\
-  }\
-  *_inp_++ = _si_<<15 | _cp;\
-  *_inp_++ = _m_[(_y_)+1] - _cp;\
+#define mn4enc(_m_,_y_,_si_, _stk_) { \
+  unsigned _cp = _m_[_y_]; /*AS(_stk_ + 2 <= _stk+isize, "mn4enc:Fatal error");*/ \
+  *_stk_++ = _si_<<15 | _cp;\
+  *_stk_++ = _m_[(_y_)+1] - _cp;\
   cdf16upd(_m_,_y_);\
 }
 
-#define mn8enc(_mh_, _ml_, _x_,_inp_) {\
+#define mn8enc(_mh_, _ml_, _x_,_stk_) {\
   unsigned _x = _x_, _yh = _x>>4, _yl = _x & 0xf;\
-  mn4enc(_mh_, _yh, 0, _inp_);\
+  mn4enc(_mh_, _yh, 1, _stk_);\
   mbu *_m = _ml_[_yh]; \
-  mn4enc(_m, _yl, 1, _inp_);\
+  mn4enc(_m, _yl, 0, _stk_);\
 }
 
-#define mnflush(_op_,_op__,ins,inp) {\
+#define mnflush(_op_,_op__,__stk_,_stk_) {\
   unsigned char *_ep = _op__, _i; \
-  STATEDEF(st);\
-  while(inp != ins) { \
-    unsigned _pb = *--inp, _si = *--inp, _cpb = _si&0x7fff;\
-	ece(st[_si>>15], _pb, _cpb, _ep);\
+  STATEDEF(_st);\
+  while(_stk_ != __stk_) { 													if(_ep < _op_+sizeof(io_t)+ANSN*sizeof(_st[0])) { memcpy(out,in,inlen); op=out+inlen; goto end; }\
+    unsigned _pb = *--_stk_, _si = *--_stk_, _cpb = _si&0x7fff;\
+	ece(_st[_si>>15], _pb, _cpb, _ep);                         \
   }\
   for(_i = 0; _i < ANSN; _i++)\
-    eceflush(st[_i],_ep);\
-  int l = _op__-_ep; 														if(_op_ + l >_op__) { printf("overflow");exit(-1); } \
+    eceflush(_st[_i],_ep);\
+  int l = _op__-_ep;\
   memcpy(_op_, _ep, l); \
   _op_ += l;\
 }
 
 //-- Decode
-#define mn4dec(_m_,_y_,_si_) cdfansdec(st[_si_], _m_, _y_)
-#define mn4dec0(_ip_,_m_,_y_,_si_) do { mn4dec(_m_,_y_,_si_); ecdnorm(st[_si_], _ip_); } while(0)
-#define mn8dec(_mh_, _ml_, _x_) { \
+#define mn4dec(_m_,_y_,_si_, _st_) cdfansdec(_st_[_si_], _m_, _y_)
+#define mn4dec0(_ip_,_m_,_y_,_si_, _st_) do { mn4dec(_m_,_y_,_si_, _st_); ecdnorm(_st_[_si_], _ip_); } while(0)
+#define mn8dec(_mh_, _ml_, _x_, _st_) { \
   unsigned _yh,_yl;\
-  mn4dec(_mh_,_yh,1);\
+  mn4dec(_mh_,_yh,0, _st_);\
   mbu *_m = _ml_[_yh];\
-  mn4dec(_m,_yl,0); _x_ = _yh << 4| _yl;\
-  ecdnorm(st[1], ip); \
-  ecdnorm(st[0], ip); \
+  mn4dec(_m,_yl,1, _st_);\
+  _x_ = _yh << 4| _yl;\
+  ecdnorm(_st_[0], ip);\
+  ecdnorm(_st_[1], ip);\
 }
 
 #define mnfill(_st_, _ip_) {\
-  unsigned _i; for(_i = 0; _i < ANSN; _i++) { if(_st_[_i] != ANS_LOW) { fprintf(stderr, "Fatal error: st=%X\n", _st_[_i]); exit(1); } ecdini(_st_[_i], _ip_); }\
+  unsigned _i; for(_i = 0; _i < ANSN; _i++) { if(_st_[_i] != ANS_LOW) die("Fatal error: st=%X\n", _st_[_i]); ecdini(_st_[_i], _ip_); }\
 }  
