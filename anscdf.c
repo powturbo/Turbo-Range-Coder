@@ -47,10 +47,11 @@
   #endif
   
 LIBAPI unsigned T2(anscdfdec,FSUFFIX)(unsigned char *in, unsigned outlen, unsigned char *out, unsigned blksize) {
-  unsigned char *op = out, *out_ = out+outlen, *ip=in;  
+  unsigned char *op = out, *out_ = out+outlen, *ip  = in;  
   unsigned oplen,i;
   anscdfini(0);
-
+  blksize = min(blksize,outlen);
+  
   for(;out < out_; out += oplen) {  
     STATEDEF(st);
     CDF16DEC0(mb0);
@@ -59,21 +60,22 @@ LIBAPI unsigned T2(anscdfdec,FSUFFIX)(unsigned char *in, unsigned outlen, unsign
     mnfill(st, ip);
 	oplen = out_ - out;  oplen = min(oplen, blksize);
     for(; op < out+(oplen&~3);op+=4) {  
-      mn8dec(mb0,mb,op[0]); 
-      mn8dec(mb0,mb,op[1]); 
-      mn8dec(mb0,mb,op[2]);    
-      mn8dec(mb0,mb,op[3]);  
+      mn8dec(mb0,mb,op[0],st); 
+      mn8dec(mb0,mb,op[1],st); 
+      mn8dec(mb0,mb,op[2],st);    
+      mn8dec(mb0,mb,op[3],st);  
     } 
-    for(; op < out+oplen;op++) mn8dec(mb0,mb,op[0]); 
+    for(; op < out+oplen;op++) mn8dec(mb0,mb,op[0],st); 
   }
   return outlen;   
 }
  
-LIBAPI unsigned T2(anscdfenc,FSUFFIX)(unsigned char *in, unsigned inlen, unsigned char *out, unsigned osize, unsigned blksize) {
-  size_t isize = inlen*2+256, iplen; 
-  unsigned char *op = out,*ip=in,*in_ = in+inlen, *out_ = out+osize; 
-  mbu *_stk = malloc(isize*sizeof(_stk[0])),*stk=_stk; if(!_stk) die("malloc error %d ", isize);      			                      
+LIBAPI unsigned T2(anscdfenc,FSUFFIX)(unsigned char *in, unsigned inlen, unsigned char *out, unsigned blksize) {
+  size_t isize = inlen*2, iplen; 
+  unsigned char *op = out,*ip=in,*in_ = in+inlen, *out_ = out+inlen; 
+  mbu *_stk = malloc(isize*sizeof(_stk[0])+64),*stk = _stk; if(!_stk) die("malloc error %d ", isize);      			                      
   anscdfini(0);
+  blksize = min(blksize,inlen);
   
   for(; in < in_; in += iplen) { 
     CDF16DEC0(mb0); 
@@ -89,8 +91,8 @@ LIBAPI unsigned T2(anscdfenc,FSUFFIX)(unsigned char *in, unsigned inlen, unsigne
     for(; ip < in + iplen; ip++) 
 	  mn8enc(mb0,mb,ip[0],stk);
     mnflush(op,out_,_stk,stk);
-  } 
-  free(_stk);
+  }
+  end:free(_stk);
   return op - out;    
 }  
 
@@ -98,30 +100,32 @@ LIBAPI unsigned T2(anscdf4dec,FSUFFIX)(unsigned char *in, unsigned outlen, unsig
   unsigned char *op = out, *out_ = out+outlen, *ip = in;  
   unsigned      oplen,i;
   anscdfini(0);
+  blksize = min(blksize,outlen);
   
-  for(;out < out_; out += oplen) { 
+  for(;out < out_; out += oplen) {
     STATEDEF(st);
     CDF16DEC0(mb); 
     CDF16DEF;  
     mnfill(st,ip); 
 	oplen = out_-out; oplen = min(oplen, blksize);
     for(; op < out+(oplen&~3);op+=4) { 
-      mn4dec0(ip,mb,op[0],0); 
-      mn4dec0(ip,mb,op[1],1); 
-      mn4dec0(ip,mb,op[2],0); 
-      mn4dec0(ip,mb,op[3],1); 
+      mn4dec0(ip,mb,op[0],0,st); 
+      mn4dec0(ip,mb,op[1],1,st); 
+      mn4dec0(ip,mb,op[2],0,st); 
+      mn4dec0(ip,mb,op[3],1,st); 
     }
     for(; op < out+oplen;op++) 
-	  mn4dec0(ip,mb,op[0],0);
+	  mn4dec0(ip,mb,op[0],0,st);
   }
   return outlen;  
 }
  
-LIBAPI unsigned T2(anscdf4enc,FSUFFIX)(unsigned char *in, unsigned inlen, unsigned char *out, unsigned osize, unsigned blksize) { 	
-  size_t isize = inlen*2+256, iplen; 
-  mbu *_stk = malloc(isize*sizeof(_stk[0])),*stk=_stk; if(!_stk) die("malloc error %d ", isize);      			                      
-  unsigned char *op = out,*ip=in,*in_ = in+inlen, *out_=out+osize; 
+LIBAPI unsigned T2(anscdf4enc,FSUFFIX)(unsigned char *in, unsigned inlen, unsigned char *out, unsigned blksize) { 	
+  size_t isize = inlen*2, iplen; 
+  mbu *_stk = malloc(isize*sizeof(_stk[0])+64), *stk = _stk; if(!_stk) die("malloc error %d ", isize);      			                      
+  unsigned char *op = out,*ip=in,*in_ = in+inlen, *out_=out+inlen; 
   anscdfini(0);
+  blksize = min(blksize,inlen);
 
   for(; in < in_; in += iplen) { 
     CDF16DEC0(mb); 
@@ -137,12 +141,13 @@ LIBAPI unsigned T2(anscdf4enc,FSUFFIX)(unsigned char *in, unsigned inlen, unsign
 	  mn4enc(mb,ip[0],0,stk); 
     mnflush(op,out_,_stk,stk);
   }
-  free(_stk);
+  end:free(_stk);
   return op - out;    
 
 } 
 
   #if !defined(__SSE3__) && !defined(__ARM_NEON)
+#ifdef _CPUISA  
   static unsigned _cpuisa;
 //--------------------- CPU detection -------------------------------------------
     #if defined(__i386__) || defined(__x86_64__)
@@ -294,7 +299,10 @@ char *cpustr(unsigned cpuisa) {
     #endif
   return "none";
 }
- 
+#else
+unsigned cpuisa(void);	
+#endif	
+
 fanscdfenc _anscdfenc  = anscdfencs; //set sse2
 fanscdfdec _anscdfdec  = anscdfdecs;
 fanscdfenc _anscdf4enc = anscdf4encs;
@@ -323,8 +331,8 @@ void anscdfini(unsigned id) {
   }
 }
 
-LIBAPI unsigned anscdfenc( unsigned char *in, unsigned inlen,  unsigned char *out, unsigned outsize, unsigned blksize) { anscdfini(0); return _anscdfenc( in, inlen,  out, outsize, blksize); };
-LIBAPI unsigned anscdfdec( unsigned char *in, unsigned outlen, unsigned char *out, unsigned blksize) {                   anscdfini(0); return _anscdfdec( in, outlen, out,          blksize); };
-LIBAPI unsigned anscdf4enc(unsigned char *in, unsigned inlen,  unsigned char *out, unsigned outsize, unsigned blksize) { anscdfini(0); return _anscdf4enc(in, inlen,  out, outsize, blksize); };
-LIBAPI unsigned anscdf4dec(unsigned char *in, unsigned outlen, unsigned char *out, unsigned blksize) {                   anscdfini(0); return _anscdf4dec(in, outlen, out,          blksize); };
+LIBAPI unsigned anscdfenc( unsigned char *in, unsigned inlen,  unsigned char *out, unsigned blksize) { anscdfini(0); return _anscdfenc( in, inlen,  out, blksize); };
+LIBAPI unsigned anscdfdec( unsigned char *in, unsigned outlen, unsigned char *out, unsigned blksize) { anscdfini(0); return _anscdfdec( in, outlen, out, blksize); };
+LIBAPI unsigned anscdf4enc(unsigned char *in, unsigned inlen,  unsigned char *out, unsigned blksize) { anscdfini(0); return _anscdf4enc(in, inlen,  out, blksize); };
+LIBAPI unsigned anscdf4dec(unsigned char *in, unsigned outlen, unsigned char *out, unsigned blksize) { anscdfini(0); return _anscdf4dec(in, outlen, out, blksize); };
   #endif    
