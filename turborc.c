@@ -127,9 +127,9 @@ uint64_t strtots(char *p, char **pq, int type) {  // string to timestamp
 
 #define EPUSH(_op_, _out__, _osize_, _u_) {\
   switch(abs(_osize_)) {\
-	case 1:       *_op_++ = _u_;            if(_u_ >       0xffu) ovf++;break;\
-	case 2: ctou16(_op_)  = _u_; _op_ += 2; if(_u_ >     0xffffu) ovf++;break;\
-	case 4: ctou32(_op_)  = _u_; _op_ += 4; if(_u_ > 0xffffffffu) ovf++;break;\
+        case 1:       *_op_++ = _u_;            if(_u_ >       0xffu) ovf++;break;\
+        case 2: ctou16(_op_)  = _u_; _op_ += 2; if(_u_ >     0xffffu) ovf++;break;\
+        case 4: ctou32(_op_)  = _u_; _op_ += 4; if(_u_ > 0xffffffffu) ovf++;break;\
     case 8: ctou64(_op_)  = _u_; _op_ += 8; break;\
   } if(_op_+_osize_ > _out__) goto end;\
 }
@@ -178,8 +178,8 @@ size_t befgen(FILE *fi, unsigned char *out, size_t outsize, int fmt, int isize, 
           EPUSH(op,out_,osize,u);                                               c=*q;   *q=0; if(verbose>=5 && (op-out)/osize < 100 || verbose>=9) printf("\'%s\'->%lld ", p, u); *q = c;
         } else {
           while(*p && !isdigit(*p) && *p != '-' && *p != '.' && *p != '+') {  
-		    if(keysep && strchr(keysep,*p)) keyid++; p++; 
-		  }
+                    if(keysep && strchr(keysep,*p)) keyid++; p++; 
+                  }
           double d = strtod(p, &q) - mdelta;
           uint64_t u;
           memcpy(&u,&d,sizeof(u));
@@ -195,7 +195,7 @@ size_t befgen(FILE *fi, unsigned char *out, size_t outsize, int fmt, int isize, 
           int64_t u;
           while((c = getc(fi)) >= '0' && c <= '9' || c == '-' || c == '+')
             if(p - s < LSIZE) *p++ = c;
-		  if(c == EOF) break;
+                  if(c == EOF) break;
           if(c == '.')  {
             *p++ = c;
             while((c = getc(fi)) >= '0' && c <= '9' || c == '-' || c == '+' || c == 'e' || c == 'E')
@@ -204,9 +204,9 @@ size_t befgen(FILE *fi, unsigned char *out, size_t outsize, int fmt, int isize, 
             u = pre>1.0?round(strtod(s, &q)*pre):strtod(s, &q) - mdelta;
           } else {
             *p = 0;
-			unsigned char *q = s; 
-			while((*q < '0' || *q > '9') && *q != '-' && *q == '+' && *q != 'e' && *q != 'E' && *q != '.') q++;
-			if(q == p) continue;
+                        unsigned char *q = s; 
+                        while((*q < '0' || *q > '9') && *q != '-' && *q == '+' && *q != 'e' && *q != 'E' && *q != '.') q++;
+                        if(q == p) continue;
             u = strtoll(q, &p, 10) - mdelta;
           }
           EPUSH(op,out_,osize,u);                                               if(verbose>=5 && (op-out)/osize < 100 || verbose>=9) printf("'%s'->%lld ", s, (int64_t)u);
@@ -227,39 +227,39 @@ size_t befgen(FILE *fi, unsigned char *out, size_t outsize, int fmt, int isize, 
       break;
     default: { unsigned char *ip = s;
       for(;;) {
-	  if(fread(s, 1, abs(isize), fi) != abs(isize)) goto end; 
-	  switch(abs(isize)) {
-		case 1: 
-		  switch(abs(osize)) {
-			case 1: *op++      = *ip;        break;
-			case 2: ctou16(op) = *ip; op+=2; break;
-			case 4: ctou32(op) = *ip; op+=4; break;
-			case 8: ctou64(op) = *ip; op+=8; break;
-		  } break;
-		case 2: 
-		  switch(abs(osize)) {
-			case 1: *op++      = ctou16(ip);        if(ctou16(ip) >      0xffu) ovf++; break;
-			case 2: ctou16(op) = ctou16(ip); op+=2; break;
-			case 4: ctou32(op) = ctou16(ip); op+=4; break;
-			case 8: ctou64(op) = ctou16(ip); op+=8; break;
-		  } break;
-		case 4: 
-		  switch(abs(osize)) {
-			case 1: *op++      = ctou32(ip);        if(ctou32(ip) >       0xffu) ovf++; break;
-			case 2: ctou16(op) = ctou32(ip); op+=2; if(ctou32(ip) >     0xffffu) ovf++; break;
-			case 4: ctou32(op) = ctou32(ip); op+=4; break;
-			case 8: ctou64(op) = ctou32(ip); op+=8; break;
-		  } break;
-		case 8: 
-		  switch(abs(osize)) {
-			case 1: *op++      = ctou64(ip);        if(ctou64(ip) >       0xffu) ovf++; break;
-			case 2: ctou16(op) = ctou64(ip); op+=2; if(ctou64(ip) >     0xffffu) ovf++;break;
-			case 4: ctou32(op) = ctou64(ip); op+=4; if(ctou64(ip) > 0xffffffffu) ovf++;break;
-			case 8: ctou64(op) = ctou64(ip); op+=8; break;
-		  } break;
-	    }
-	  }
-	}
+          if(fread(s, 1, abs(isize), fi) != abs(isize)) goto end; 
+          switch(abs(isize)) {
+                case 1: 
+                  switch(abs(osize)) {
+                        case 1: *op++      = *ip;        break;
+                        case 2: ctou16(op) = *ip; op+=2; break;
+                        case 4: ctou32(op) = *ip; op+=4; break;
+                        case 8: ctou64(op) = *ip; op+=8; break;
+                  } break;
+                case 2: 
+                  switch(abs(osize)) {
+                        case 1: *op++      = ctou16(ip);        if(ctou16(ip) >      0xffu) ovf++; break;
+                        case 2: ctou16(op) = ctou16(ip); op+=2; break;
+                        case 4: ctou32(op) = ctou16(ip); op+=4; break;
+                        case 8: ctou64(op) = ctou16(ip); op+=8; break;
+                  } break;
+                case 4: 
+                  switch(abs(osize)) {
+                        case 1: *op++      = ctou32(ip);        if(ctou32(ip) >       0xffu) ovf++; break;
+                        case 2: ctou16(op) = ctou32(ip); op+=2; if(ctou32(ip) >     0xffffu) ovf++; break;
+                        case 4: ctou32(op) = ctou32(ip); op+=4; break;
+                        case 8: ctou64(op) = ctou32(ip); op+=8; break;
+                  } break;
+                case 8: 
+                  switch(abs(osize)) {
+                        case 1: *op++      = ctou64(ip);        if(ctou64(ip) >       0xffu) ovf++; break;
+                        case 2: ctou16(op) = ctou64(ip); op+=2; if(ctou64(ip) >     0xffffu) ovf++;break;
+                        case 4: ctou32(op) = ctou64(ip); op+=4; if(ctou64(ip) > 0xffffffffu) ovf++;break;
+                        case 8: ctou64(op) = ctou64(ip); op+=8; break;
+                  } break;
+            }
+          }
+        }
   }
   end:;if(verbose >= 5) printf(" n=%d \n", op-out);
   if(ovf) { unsigned l = (op-out)/abs(osize); 
@@ -292,17 +292,17 @@ extern int fsm[]; // fsm global array declared as fsm_t in rc_s.c "
 #define RCGEN(_p_) \
 size_t _p_##enc(unsigned char *in, size_t inlen, unsigned char *out, int prdid) {\
   switch(prdid) {\
-	case RC_PRD_S :    return _p_##senc( in, inlen, out);\
-	case RC_PRD_SS:    return _p_##ssenc(in, inlen, out, prm1,prm2);\
-	case RC_PRD_SF: SF(return _p_##sfenc(in, inlen, out, fsm));\
+        case RC_PRD_S :    return _p_##senc( in, inlen, out);\
+        case RC_PRD_SS:    return _p_##ssenc(in, inlen, out, prm1,prm2);\
+        case RC_PRD_SF: SF(return _p_##sfenc(in, inlen, out, fsm));\
   }\
 }\
 \
 size_t _p_##dec(unsigned char *in, size_t outlen, unsigned char *out, int prdid) {\
   switch(prdid) {\
-	case RC_PRD_S :    return _p_##sdec( in, outlen, out);\
-	case RC_PRD_SS:    return _p_##ssdec(in, outlen, out, prm1,prm2);\
-	case RC_PRD_SF: SF(return _p_##sfdec(in, outlen, out, fsm));\
+        case RC_PRD_S :    return _p_##sdec( in, outlen, out);\
+        case RC_PRD_SS:    return _p_##ssdec(in, outlen, out, prm1,prm2);\
+        case RC_PRD_SF: SF(return _p_##sfdec(in, outlen, out, fsm));\
   }\
 }
 
@@ -310,17 +310,17 @@ size_t _p_##dec(unsigned char *in, size_t outlen, unsigned char *out, int prdid)
 #define RCGEN2(_p_, _s_) \
 size_t _p_##enc##_s_(unsigned char *in, size_t inlen, unsigned char *out, int prdid) {\
   switch(prdid) {\
-	case RC_PRD_S :    return _p_##senc##_s_( in, inlen, out);\
-	case RC_PRD_SS:    return _p_##ssenc##_s_(in, inlen, out, prm1,prm2);\
-	case RC_PRD_SF: SF(return _p_##sfenc##_s_(in, inlen, out, fsm));\
+        case RC_PRD_S :    return _p_##senc##_s_( in, inlen, out);\
+        case RC_PRD_SS:    return _p_##ssenc##_s_(in, inlen, out, prm1,prm2);\
+        case RC_PRD_SF: SF(return _p_##sfenc##_s_(in, inlen, out, fsm));\
   }\
 }\
 \
 size_t _p_##dec##_s_(unsigned char *in, size_t outlen, unsigned char *out, int prdid) {\
   switch(prdid) {\
-	case RC_PRD_S :    return _p_##sdec##_s_( in, outlen, out);\
-	case RC_PRD_SS:    return _p_##ssdec##_s_(in, outlen, out, prm1,prm2);\
-	case RC_PRD_SF: SF(return _p_##sfdec##_s_(in, outlen, out, fsm));\
+        case RC_PRD_S :    return _p_##sdec##_s_( in, outlen, out);\
+        case RC_PRD_SS:    return _p_##ssdec##_s_(in, outlen, out, prm1,prm2);\
+        case RC_PRD_SF: SF(return _p_##sfdec##_s_(in, outlen, out, fsm));\
   }\
 }
 
@@ -335,7 +335,7 @@ RCGEN2(rcc2,  32)
 RCGEN(rcx)
 RCGEN(rcx2)
 
-RCGEN(rcm)    		// context mixing
+RCGEN(rcm)              // context mixing
 RCGEN(rcm2)
 RCGEN(rcmr)  
 RCGEN(rcmrr)  
@@ -344,17 +344,17 @@ RCGEN(rcrle)        // rle
 RCGEN2(rcrle, 16)
 RCGEN(rcrle1)
 RCGEN2(rcrle1,16)
-RCGEN(rcqlfc)     	// qlfc
+RCGEN(rcqlfc)           // qlfc
 RCGEN(rcu3)         // varint8
 
-RCGEN2(rcg,   8)  	// gamma
+RCGEN2(rcg,   8)        // gamma
 RCGEN2(rcg,  16)
 RCGEN2(rcg,  32)
 RCGEN2(rcgz,  8)
 RCGEN2(rcgz, 16)
 RCGEN2(rcgz, 32)
 
-RCGEN2(rcr,   8)   	// rice
+RCGEN2(rcr,   8)        // rice
 RCGEN2(rcr,  16)
 RCGEN2(rcr,  32)
 RCGEN2(rcrz,  8)
@@ -387,15 +387,15 @@ unsigned bench(unsigned char *in, unsigned n, unsigned char *out, unsigned char 
   unsigned i,l = 0, m, flag = bwtflag(z), on = OSIZE(n);  
     
   cdf_t cdf[0x100+1]; 
-  if(xnibble) 										                            // use only low nibble
+  if(xnibble)                                                                                                       // use only low nibble
     for(int i = 0; i < n; i++) in[i] &= 0xf;
     #ifndef _MSC_VER
   memrcpy(cpy,in,n); 
     #endif
   if(id >= 40 && id <= 59  || id >= 66 && id <= 68) {                           // enable low nibble functions, if input values are <=0xf
     for(m = i = 0; i < n; i++) 
-	  if(in[i] > m) m = in[i]; 
-    cdfini(in, n, cdf, 0x100); 					                                // calculte freq. for static distribution functions	
+          if(in[i] > m) m = in[i]; 
+    cdfini(in, n, cdf, 0x100);                                                                  // calculte freq. for static distribution functions     
   }
   switch(id) {  
     case  1:         TM(" 1:rc        o0                         ",l=rcenc(      in,n,out,r), n,l, l==n?memcpy(cpy,out,n):rcdec(      out,n,cpy,r));   break;
@@ -420,9 +420,9 @@ unsigned bench(unsigned char *in, unsigned n, unsigned char *out, unsigned char 
     case 18:         TM("18:rcqlfc    QLFC                       ",l=rcqlfcenc(  in,n,out,r), n,l, l==n?memcpy(cpy,out,n):rcqlfcdec(  out,n,cpy,r));   break;
     case 19:if(z==2){TM("19:bec-16    Bit EC                     ",l=becenc16(   in,n,out),   n,l, l==n?memcpy(cpy,out,n):becdec16(   out,n,cpy  )); }
             else    {TM("18:bec       Bit EC                     ",l=becenc8(    in,n,out),   n,l, l==n?memcpy(cpy,out,n):becdec8(    out,n,cpy  )); } break;
-	  #ifdef _BWT
+          #ifdef _BWT
     case 20:if(n > BLKBWTMAX*MB) printf("blocksize too big for bwt.max=%d\n", BLKBWTMAX);
-		    else {   TM("20:bwt                                  ",l=rcbwtenc(in,n,out,lev,thnum,flag), n,l, l==n?memcpy(cpy,out,n):rcbwtdec(  out,n,cpy,lev, thnum));} break;
+                    else {   TM("20:bwt                                  ",l=rcbwtenc(in,n,out,lev,thnum,flag), n,l, l==n?memcpy(cpy,out,n):rcbwtdec(  out,n,cpy,lev, thnum));} break;
       #endif
     case 26:if(z==1){TM("26:rcg-8     gamma                      ",l=rcgenc8(    in,n,out,r), n,l, l==n?memcpy(cpy,out,n):rcgdec8(    out,n,cpy,r));   break;}
             if(z==2){TM("26:rcg-16    gamma                      ",l=rcgenc16(   in,n,out,r), n,l, l==n?memcpy(cpy,out,n):rcgdec16(   out,n,cpy,r));   break;}
@@ -437,7 +437,7 @@ unsigned bench(unsigned char *in, unsigned n, unsigned char *out, unsigned char 
     case 29:if(z==1){TM("29:rcrz-8    rice zigzag                ",l=rcrzenc8(   in,n,out,r), n,l, l==n?memcpy(cpy,out,n):rcrzdec8(   out,n,cpy,r));   break;}
             if(z==2){TM("29:rcr-16    rice zigzag                ",l=rcrzenc16(  in,n,out,r), n,l, l==n?memcpy(cpy,out,n):rcrzdec16(  out,n,cpy,r));   break;}
             if(z==4){TM("29:rcr-32    rice zigzag                ",l=rcrzenc32(  in,n,out,r), n,l, l==n?memcpy(cpy,out,n):rcrzdec32(  out,n,cpy,r));}  break;
-	                    
+                            
     case 30:if(z==2){TM("30:rcv-16    Turbo vlc8                 ",l=rcvenc16(   in,n,out,r), n,l, l==n?memcpy(cpy,out,n):rcvdec16(   out,n,cpy,r));   break;}
             if(z==4){TM("30:rcv-32    Turbo vlc8                 ",l=rcvenc32(   in,n,out,r), n,l, l==n?memcpy(cpy,out,n):rcvdec32(   out,n,cpy,r));}  break;
     case 31:if(z==4){TM("31:rcvc-32   Turbo vlc10                ",l=rcv10senc32(in,n,out ),  n,l, l==n?memcpy(cpy,out,n):rcv10sdec32(out,n,cpy)); }   break;
@@ -449,12 +449,12 @@ unsigned bench(unsigned char *in, unsigned n, unsigned char *out, unsigned char 
             if(z==4){TM("35:rcvg-32   Turbo vlc8 gamma           ",l=rcvgenc32(  in,n,out,r), n,l, l==n?memcpy(cpy,out,n):rcvgdec32(  out,n,cpy,r)); } break;
     case 36:if(z==2){TM("36:rcvgz-16  Turbo vlc8 gamma zigzag    ",l=rcvgzenc16( in,n,out,r), n,l, l==n?memcpy(cpy,out,n):rcvgzdec16( out,n,cpy,r));   break;}
             if(z==4){TM("36:rcvgz-32  Turbo vlc8 gamma zigzag    ",l=rcvgzenc32( in,n,out,r), n,l, l==n?memcpy(cpy,out,n):rcvgzdec32( out,n,cpy,r));}  break;
-	  #ifdef _V8        
-	case 37:if(z==2){TM("37:rcv8-16   Turbobyte                  ",l=rcv8enc16(  in,n,out,r), n,l, l==n?memcpy(cpy,out,n):rcv8dec16(  out,n,cpy,r));   break;}
+          #ifdef _V8        
+    case 37:if(z==2){TM("37:rcv8-16   Turbobyte                  ",l=rcv8enc16(  in,n,out,r), n,l, l==n?memcpy(cpy,out,n):rcv8dec16(  out,n,cpy,r));   break;}
             if(z==4){TM("37:rcv8-32   TurboByte                  ",l=rcv8enc32(  in,n,out,r), n,l, l==n?memcpy(cpy,out,n):rcv8dec32(  out,n,cpy,r));}  break;
     case 38:if(z==2){TM("38:rcv8-16   Turbobyte zigzag           ",l=rcv8zenc16( in,n,out,r), n,l, l==n?memcpy(cpy,out,n):rcv8zdec16( out,n,cpy,r));   break;}
             if(z==4){TM("38:rcv8-32   TurboByte zigzag           ",l=rcv8zenc32( in,n,out,r), n,l, l==n?memcpy(cpy,out,n):rcv8zdec32( out,n,cpy,r));}  break;
-	  #endif		
+          #endif                
     case 40:if(m<16){TM("40:rc4cs     bitwise nibble static      ",l=rc4csenc(   in,n,out),   n,l, l==n?memcpy(cpy,out,n):rc4csdec(  out,n,cpy)); } break;            // Static
     case 41:if(m<16){TM("41:rc4s      bitwise nibble adaptive    ",l=rc4senc(    in,n,out),   n,l, l==n?memcpy(cpy,out,n):rc4sdec(   out,n,cpy)); } break;           // Adaptive
     case 42:         TM("42:cdfsb     static/decode search       ",l=rccdfsenc( in,n,out,cdf,m+1),n,l, l==n?memcpy(cpy,out,n):(m<16?rccdfsldec( out,n,cpy, cdf, m+1):rccdfsbdec( out,n,cpy, cdf, m+1))); break; // static
@@ -472,27 +472,9 @@ unsigned bench(unsigned char *in, unsigned n, unsigned char *out, unsigned char 
     case 51:if(z==2){TM("51:cdf-16    Turbo vlc7                 ",l=rccdfvenc16(in,n,out),   n,l, l==n?memcpy(cpy,out,n):rccdfvdec16(out,n,cpy)); break;}
             if(z==4){TM("51:cdf-32    Turbo vlc7                 ",l=rccdfvenc32(in,n,out),   n,l, l==n?memcpy(cpy,out,n):rccdfvdec32(out,n,cpy));} break;
     case 52:if(z==2){TM("52:cdf-16    Turbo vlc7 zigzag          ",l=rccdfvzenc16(in,n,out),  n,l, l==n?memcpy(cpy,out,n):rccdfvzdec16(out,n,cpy)); break;}
-            if(z==4){TM("52:cdf-32    Turbo vlc7 zigzag          ",l=rccdfvzenc32(in,n,out),  n,l, l==n?memcpy(cpy,out,n):rccdfvzdec32(out,n,cpy));} break;			
-    #define ID_LAST 59
-    #define ID_MEMCPY 59 
-    case ID_MEMCPY:  TM("59:memcpy                               ", memcpy(out,in,n),         n,n, memcpy(cpy,out,n));  l = n; break;
-	  #ifdef _BWT
-    case 60:{ unsigned *sa = malloc((n+1)*sizeof(sa[0]));if(!sa) die("malloc of '' failed\n", n*4);
-	    #ifdef _BWTDIV
-	                 TM("60:bwt libdivsufsort                    ",l=divbwt(in,out,sa,n),     n,n, obwt_unbwt_biPSIv2(out,cpy,sa,n,l)); free(sa); } break; //ctou32(out)=l; fwrite(out,1,n+4,fdbg); 
-        #else
-	                 TM("60:bwt libsais                          ",l=libsais_bwt(in,out,sa,n,0,0), n,n, libsais_unbwt(out,cpy,sa,n,0,l)); free(sa);} break;
-	    #endif
-	  #endif
-    case 61:         TM("61:utf8 preprocessor                    ",l=utf8enc(in,n,out, flag|BWT_COPY|BWT_RATIO),n,l,l==n?memcpy(cpy,out,n):utf8dec(out,n,cpy)); break;
-    case 62:         TM("62:lzp                                  ",l=lzpenc( in,n,out,lenmin,0),                n,l,l==n?memcpy(cpy,out,n):lzpdec( out,n,cpy,lenmin,0)); break;
-    case 63:         TM("63:bitenc                               ",l=bitenc( in,n,out),                         n,l,     bitdec(out,n,cpy)); break;
-      #ifdef _DELTA
-    case 64:l=n;     TM("64:delta8e24                            ",delta8e24( in,n,out),                        n,l,     delta8d24( out,n,cpy)); break;
-    case 65:l=n;     TM("65:delta24e24                           ",delta24e24(in,n,out),                        n,l,     delta24d24(out,n,cpy)); break;
-      #endif   
-	  #ifdef _ANS
-	#define ANSBLKSIZE (1<<21)
+            if(z==4){TM("52:cdf-32    Turbo vlc7 zigzag          ",l=rccdfvzenc32(in,n,out),  n,l, l==n?memcpy(cpy,out,n):rccdfvzdec32(out,n,cpy));} break;
+      #ifdef _ANS           
+    #define ANSBLKSIZE (1<<21)
     case 54:if(m<16){TM("56:ans direct nibble                    ",l=_anscdf4enc( in,n,out,ANSBLKSIZE), n,l, l==n?memcpy(cpy,out,n):_anscdf4dec( out,n,cpy,ANSBLKSIZE));}
             else    {TM("56:ans direct                           ",l=_anscdfenc(  in,n,out,ANSBLKSIZE), n,l, l==n?memcpy(cpy,out,n):_anscdfdec(  out,n,cpy,ANSBLKSIZE));} break;
     case 55:if(m<16){TM("56:ans auto   nibble                    ",l=anscdf4enc(  in,n,out,ANSBLKSIZE), n,l, l==n?memcpy(cpy,out,n):anscdf4dec(  out,n,cpy,ANSBLKSIZE));}
@@ -502,10 +484,28 @@ unsigned bench(unsigned char *in, unsigned n, unsigned char *out, unsigned char 
     case 57:if(m<16){TM("57:ans sse nibble                       ",l=anscdf4encs( in,n,out,ANSBLKSIZE), n,l, l==n?memcpy(cpy,out,n):anscdf4decs( out,n,cpy,ANSBLKSIZE));}
             else    {TM("57:ans sse                              ",l=anscdfencs(  in,n,out,ANSBLKSIZE), n,l, l==n?memcpy(cpy,out,n):anscdfdecs(  out,n,cpy,ANSBLKSIZE));} break;
     case 58:if(cpuisa()>=0x60) {
-              if(m<16){TM("58:ans avx2 nibble                      ",l=anscdf4encx( in,n,out,ANSBLKSIZE), n,l, anscdf4decx( out,n,cpy,ANSBLKSIZE));}
-              else    {TM("58:ans avx2                             ",l=anscdfencx(  in,n,out,ANSBLKSIZE), n,l, anscdfdecx(  out,n,cpy,ANSBLKSIZE));} 
+              if(m<16){TM("58:ans avx2 nibble                      ",l=anscdf4encx( in,n,out,ANSBLKSIZE), n,l, l==n?memcpy(cpy,out,n):anscdf4decx( out,n,cpy,ANSBLKSIZE));}
+              else    {TM("58:ans avx2                             ",l=anscdfencx(  in,n,out,ANSBLKSIZE), n,l, l==n?memcpy(cpy,out,n):anscdfdecx(  out,n,cpy,ANSBLKSIZE));} 
             }  break;
-	  #endif
+      #endif    
+    #define ID_LAST 59
+    #define ID_MEMCPY 59 
+    case ID_MEMCPY:  TM("59:memcpy                               ", memcpy(out,in,n),         n,n, memcpy(cpy,out,n)); l = n; break;
+          #ifdef _BWT
+    case 60:{ unsigned *sa = malloc((n+1)*sizeof(sa[0]));if(!sa) die("malloc of '' failed\n", n*4);
+            #ifdef _BWTDIV
+                     TM("60:bwt libdivsufsort                    ",l=divbwt(in,out,sa,n),     n,n, obwt_unbwt_biPSIv2(out,cpy,sa,n,l)); free(sa); } break; //ctou32(out)=l; fwrite(out,1,n+4,fdbg); 
+        #else
+                     TM("60:bwt libsais                          ",l=libsais_bwt(in,out,sa,n,0,0), n,n, libsais_unbwt(out,cpy,sa,n,0,l)); free(sa);} break;
+            #endif
+          #endif
+    case 61:         TM("61:utf8 preprocessor                    ",l=utf8enc(in,n,out, flag|BWT_COPY|BWT_RATIO),n,l,l==n?memcpy(cpy,out,n):utf8dec(out,n,cpy)); break;
+    case 62:         TM("62:lzp                                  ",l=lzpenc( in,n,out,lenmin,0),                n,l,l==n?memcpy(cpy,out,n):lzpdec( out,n,cpy,lenmin,0)); break;
+    case 63:         TM("63:bitenc                               ",l=bitenc( in,n,out),                         n,l,     bitdec(out,n,cpy)); break;
+      #ifdef _DELTA
+    case 64:l=n;     TM("64:delta8e24                            ",delta8e24( in,n,out),                        n,l,     delta8d24( out,n,cpy)); break;
+    case 65:l=n;     TM("65:delta24e24                           ",delta24e24(in,n,out),                        n,l,     delta24d24(out,n,cpy)); break;
+      #endif   
       #ifdef _EXT
     #include "xturborc.c"
       #endif
@@ -521,7 +521,7 @@ static void usage(char *pgm) {
   fprintf(stderr, "\nBwtSatan 23.04 Copyright (c) 2018-2023 Powturbo %s\n", __DATE__);
     #else
   fprintf(stderr, "\nTurboRC 23.04 Copyright (c) 2018-2023 Powturbo %s\n", __DATE__);
-	#endif
+        #endif
   fprintf(stderr, "\n Usage: %s <options> <infile1> <outfile>\n", pgm);
   fprintf(stderr, "<options>\n");
     #ifndef _BWTSATAN   
@@ -541,7 +541,7 @@ static void usage(char *pgm) {
   fprintf(stderr, "   BWT+rc         : 20 options: -l#  #:0:store, 2:bit ec, 3/4:RLE, 5/6:RLE o1, 7/8:QLFC, 9:Max\n");
     #endif
     #endif
-	#ifndef NO_BENCH
+        #ifndef NO_BENCH
   fprintf(stderr, " -b#     #: block size in MB (default %d)\n", 1<<10);
   fprintf(stderr, " -d      decompress\n");
   fprintf(stderr, " -v      verbose\n");
@@ -600,23 +600,23 @@ static void usage(char *pgm) {
 } 
 
 //----------------------------- File compression header serialization ----------------------------------------------------
-typedef struct hd {											// main header
+typedef struct hd {                                                                                     // main header
   unsigned short magic, _bsize;
   unsigned char  codec, lev, prm1, prm2, prdid;
 } hd_t;
-typedef struct chdb {									    // block header
+typedef struct chdb {                                                                       // block header
   unsigned bsize, inlen, clen;
 } hdb_t;
 
-int hdwr(hd_t *hd, FILE *fo) {													// file header
+int hdwr(hd_t *hd, FILE *fo) {                                                                                                  // file header
   unsigned hdlen = 0, u32 = (hd->_bsize-1) << 20 | hd->codec << 12 | hd->magic; //12+8+12=32 bits
   if(fwrite(&u32, 1, 4, fo) != 4) return -E_FWR;             hdlen  = 4;        // blocksize
   unsigned short u16 = hd->lev<<10 | hd->prm2<<6 | hd->prm1<<2 | (hd->prdid-1); // 2+4+4+4+2=16 bits
   if(fwrite(&u16, 1, 2, fo) != 2) return -E_FWR;             hdlen += 2;   
-  return hdlen;	
+  return hdlen; 
 }
 
-int hdrd(hd_t *hd, FILE *fi) {													// file header
+int hdrd(hd_t *hd, FILE *fi) {                                                                                                  // file header
   unsigned hdlen, u32;
   unsigned short u16;
   if(fread(&u32, 1, 4, fi) != 4) return -E_FRD;                  hdlen  = 4;
@@ -632,19 +632,19 @@ int hdrd(hd_t *hd, FILE *fi) {													// file header
   return hdlen;
 }
 
-int hdbwr(hdb_t *hdb, FILE *fo) {												// block header
+int hdbwr(hdb_t *hdb, FILE *fo) {                                                                                               // block header
   unsigned hdlen, h = hdb->clen >= (1<<30),                                     // block length > 1GB?
            u32 =  hdb->clen << 2 |                                              // compressed length lsb = 30bits
-		          h << 1 |                                                      // large block size?
-		         (hdb->inlen < hdb->bsize);                                     // last block?
+                          h << 1 |                                                      // large block size?
+                         (hdb->inlen < hdb->bsize);                                     // last block?
   if(fwrite(&u32, 1, 4, fo) != 4) return -E_FWR;         hdlen  = 4;            //printf("clen=%u ", hdb->clen);
   if(h) {
     unsigned short u16 = hdb->clen >> 30;                                       // compressed length msb
     if(fwrite(&u16, 1, 2, fo) != 2) return -E_FWR;       hdlen += 2;
   }
-  if(hdb->inlen < hdb->bsize) 									   // length of last block < block size
+  if(hdb->inlen < hdb->bsize)                                                                      // length of last block < block size
     if(fwrite(&hdb->inlen, 1, 4, fo) != 4) return -E_FWR;   
-	                                                     hdlen +=4;
+                                                             hdlen +=4;
   return hdlen;
 }
 
@@ -655,14 +655,14 @@ unsigned hdbrd(hdb_t *hdb, FILE *fi) {
   if(fread(&u32, 1, 4, fi) != 4) return -E_FRD;          hdlen  = 4;
   hdb->clen = u32>>2;                                                           //printf("clen=%u ", hdb->clen);
   if(u32&2) {
-	unsigned short u16;
-	if(fread(&u16, 1, 2, fi) != 2) return -E_FRD;        hdlen += 2;
-	hdb->clen |= (uint32_t)u16 << 30;
+        unsigned short u16;
+        if(fread(&u16, 1, 2, fi) != 2) return -E_FRD;        hdlen += 2;
+        hdb->clen |= (uint32_t)u16 << 30;
   }
   if(u32&1) {                                                                   // last block
     if(fread(&hdb->inlen, 1, 4, fi) != 4) return -E_FRD; hdlen  += 4;
-  }	  
-  return hdlen; 	
+  }       
+  return hdlen;         
 }
 
 typedef struct len_t { unsigned id, len; } len_t;
@@ -673,10 +673,10 @@ static int cmpsna(const void *a, const void *b) { return CMPSA(a, b, len_t, len)
 int main(int argc, char* argv[]) {
   unsigned _bsize = 1536, prdid = RC_PRD_S;
   int      xstdout=0, xstdin=0, decomp=0, codec=0, dobench=0, cmp=1, c, digit_optind=0, decs=0, divs=0, skiph=0, isize=4, dfmt=0, mdelta=0, kid=0, osize=1;
-  char     *scmd = NULL, prids[8]="s", *keysep = NULL;							//fdbg = fopen("test.dat", "wb"); if(!fdbg) perror("fopen failed");
+  char     *scmd = NULL, prids[8]="s", *keysep = NULL;                                                  //fdbg = fopen("test.dat", "wb"); if(!fdbg) perror("fopen failed");
   len_t    lens[100]; 
   for(c=0; c < 100; c++) 
-	lens[c].id = 0, lens[c].len = -1;
+        lens[c].id = 0, lens[c].len = -1;
 
     #ifndef _WIN32 
   { const  rlim_t kStackSize = 32 * 1024 * 1024; 
@@ -684,9 +684,9 @@ int main(int argc, char* argv[]) {
     int rc = getrlimit(RLIMIT_STACK, &rl);
     if (!rc && rl.rlim_cur < kStackSize) { 
       rl.rlim_cur = kStackSize; 
-	  if(rc = setrlimit(RLIMIT_STACK, &rl)) { 
-	    fprintf(stderr, "setrlimit failed. rc = %d. set stack size to '20971520'\n", rc); 
-	  }
+          if(rc = setrlimit(RLIMIT_STACK, &rl)) { 
+            fprintf(stderr, "setrlimit failed. rc = %d. set stack size to '20971520'\n", rc); 
+          }
     }
   }
     #endif
@@ -704,27 +704,27 @@ int main(int argc, char* argv[]) {
         printf("Option %s", long_options[optind].name);
         if(optarg) printf(" with arg %s", optarg);  printf ("\n");
         break;
-		
+                
       case 'b': _bsize = atoi(optarg); if(_bsize<1) _bsize=1; if(_bsize > BLKMAX) _bsize = BLKMAX; break;
       case 'e': scmd = optarg; dobench++; break;
-	  case 'f': xprep8=1; break;	  
+          case 'f': xprep8=1; break;      
       case 'F': { char *s = optarg;    // Input format
-	    switch(*s) {
+            switch(*s) {
           case 'c': dfmt = T_CHAR; s++; break;
           case 't': dfmt = T_TXT; if(*++s > '0' && *s <= '9') { kid = *s++ - '0'; if(*s > '0' && *s <= '9') kid = kid*10 + (*s++ - '0'); } break;
           case 'e': dfmt = T_TST; s++; break;
           case 'r': dfmt = T_RAW; s++; break; // raw default
-		}
-		switch(*s) {
-          case 'b': isize =  1, s++; break;					// 1 byte
-          case 's': isize =  2, s++; break;					// 2 bytes
-          case 'u': isize =  4, s++; break;					// 4 bytes
-          case 'l': isize =  8, s++; break;					// 8 bytes
-          case 'f': isize = -4, s++; break;					// float : 4 bytes
-          case 'd': isize = -8, s++; break;					// double: 8 bytes
+                }
+                switch(*s) {
+          case 'b': isize =  1, s++; break;                                     // 1 byte
+          case 's': isize =  2, s++; break;                                     // 2 bytes
+          case 'u': isize =  4, s++; break;                                     // 4 bytes
+          case 'l': isize =  8, s++; break;                                     // 8 bytes
+          case 'f': isize = -4, s++; break;                                     // float : 4 bytes
+          case 'd': isize = -8, s++; break;                                     // double: 8 bytes
           case 't': isize =  4, s++, dfmt = T_TIM32; break; // 4 bytes, timestamp
           case 'T': isize =  8, s++, dfmt = T_TIM64; break; // 8 bytes, timestamp
-		}
+                }
         if(*s == '.') { if(*++s >= '0' && *s <= '9') { decs = s[0] - '0'; s++; } } // number of decimals after .
         if(*s == 'v') { divs = strtod(++s, &s); }
         if(*s == 'H') { skiph++; s++; } // skip first line(s). ex.  HHH : skip 3 first lines
@@ -738,57 +738,57 @@ int main(int argc, char* argv[]) {
           case 'u': osize =  4, s++; break; // 4 bytes 
           case 'f': osize = -4, s++; break; // float : 4 bytes
           case 'd': osize = -8, s++; break; // double: 8 bytes
-		}
-	  } break;
+                }
+          } break;
       case 'H': skiph = atoi(optarg); break;
       case 'K': { kid = atoi(optarg); if(!keysep) keysep = ",;\t"; } break;
       case 'k': keysep = optarg; break;
-	  case 'T': itmax = atoi(optarg); break;
+          case 'T': itmax = atoi(optarg); break;
       case 'c': cmp++;     break;
       case 'd': decomp++;  break;
       case 'n': xnibble++; break;
       case 'o': xstdout++; break;
       case 'v': verbose = atoi(optarg); break;
-	  
+          
       case 'U': nutf8++;    break;
       case 'X': bwtx++;    break;
       case 'S': xsort = atoi(optarg); break;
       case 'z': forcelzp = BWT_LZP; break;
-	  case 'P': prdid = atoi(optarg); if(prdid<1 || prdid>RC_PRD_LAST) prdid=RC_PRD_LAST; break;
-	  case 'p': { char *p = optarg; strncpy(prids, p, 2); prids[2]=0;
-	              if(p[0]=='s') {
-					     if(!p[1])       prdid = 1; 
-					else if(p[1] == 's') prdid = 2; 
-					else if(p[1] == 'f') prdid = 3;
-			      }          
-	            } break;
-	  case 'r': { char *p = optarg; if(*p >= '0' && *p <= '9') { prm1 = p[0]-'0'; prm2 = p[1]-'0'; } if(prm1>9) prm1=9; if(prm2>9) prm2=9; } break;
-	  case 't': xtpbyte = atoi(optarg); if(xtpbyte) { if(xtpbyte < 1) xtpbyte = 1;else if(xtpbyte > 16) xtpbyte = 16; } break; 
- 	    #ifndef NO_BENCH
+          case 'P': prdid = atoi(optarg); if(prdid<1 || prdid>RC_PRD_LAST) prdid=RC_PRD_LAST; break;
+          case 'p': { char *p = optarg; strncpy(prids, p, 2); prids[2]=0;
+                      if(p[0]=='s') {
+                                             if(!p[1])       prdid = 1; 
+                                        else if(p[1] == 's') prdid = 2; 
+                                        else if(p[1] == 'f') prdid = 3;
+                              }          
+                    } break;
+          case 'r': { char *p = optarg; if(*p >= '0' && *p <= '9') { prm1 = p[0]-'0'; prm2 = p[1]-'0'; } if(prm1>9) prm1=9; if(prm2>9) prm2=9; } break;
+          case 't': xtpbyte = atoi(optarg); if(xtpbyte) { if(xtpbyte < 1) xtpbyte = 1;else if(xtpbyte > 16) xtpbyte = 16; } break; 
+            #ifndef NO_BENCH
       case 'I': if((tm_Rep  = atoi(optarg))<=0) tm_rep = tm_Rep =1; break;
       case 'J': tm_Rep2 = atoi(optarg); if(tm_Rep2<0) xcheck++,tm_Rep2=-tm_Rep2; if(!tm_Rep2) tm_rep= tm_Rep2=1;  break;
-	    #endif
-	  case 'l': lev = atoi(optarg); if(lev>9) lev=9; break;
+            #endif
+          case 'l': lev = atoi(optarg); if(lev>9) lev=9; break;
       case 'm': lenmin = atoi(optarg); if(lenmin > 256) lenmin = 256; break;
       case 'q':      if(!strcasecmp(optarg,"sse"))    cpuini(0x33);  
                 else if(!strcasecmp(optarg,"avx"))    cpuini(0x50); 
                 else if(!strcasecmp(optarg,"avx2"))   cpuini(0x60); 
                 else if(!strcasecmp(optarg,"avx512")) cpuini(0x78);   
-				else cpuini(0x1);
-			    break;
+                                else cpuini(0x1);
+                            break;
       case 'V': tm_verbose = atoi(optarg);  break;
-	    #ifndef NO_BENCH
-	  case 'x': { int m = atoi(optarg); if(m<4) m=4;else if(m>16) m=16; mbcset(m); /*set context bits*/} break;
-	    #endif
+            #ifndef NO_BENCH
+          case 'x': { int m = atoi(optarg); if(m<4) m=4;else if(m>16) m=16; mbcset(m); /*set context bits*/} break;
+            #endif
       case '0':case '1':case '2':case '3': case '4':case '5':case '6':case '7':case '8':case '9': {
         char *q;
-		unsigned l = atoi(optarg); 
+                unsigned l = atoi(optarg); 
         if(l >= 0 && l <= 9)
           codec = (c-'0')*10 + l;                                  
-		if(q = strchr(optarg,'e')) lev    = atoi(q+(q[1]=='='?2:1));  if(lev>9) lev=9;   
-	    if(q = strchr(optarg,'m')) lenmin = atoi(q+(q[1]=='='?2:1));  		    
-	    if(q = strchr(optarg,'U')) nutf8  = 1;                        if(verbose>2) printf("codec=%d lev=%d lmin=%d nutf8=%d ", codec, lev, lenmin, nutf8);
-		decomp = 0;
+                if(q = strchr(optarg,'e')) lev    = atoi(q+(q[1]=='='?2:1));  if(lev>9) lev=9;   
+            if(q = strchr(optarg,'m')) lenmin = atoi(q+(q[1]=='='?2:1));                    
+            if(q = strchr(optarg,'U')) nutf8  = 1;                        if(verbose>2) printf("codec=%d lev=%d lmin=%d nutf8=%d ", codec, lev, lenmin, nutf8);
+                decomp = 0;
         if(codec>=0 && codec<=99) break; 
       }
       case 'h':
@@ -810,78 +810,78 @@ int main(int argc, char* argv[]) {
   if(dobench) { //---------------------------------- Benchmark -----------------------------------------------------
     char _scmd[33];
     int  fno, nblk = 0, nid = 0, cminid, cminl = (unsigned)-1;
-    sprintf(_scmd, "1-%d", ID_MEMCPY);                          			    if(verbose>2) printf("BENCHMARK ARGS: fno=%d,optind=%d,argc=%d\n", fno, optind, argc);
+    sprintf(_scmd, "1-%d", ID_MEMCPY);                                                      if(verbose>2) printf("BENCHMARK ARGS: fno=%d,optind=%d,argc=%d\n", fno, optind, argc);
     printf("      size   ratio     E MB/s   D MB/s function prdid=");
     switch(prdid) {
       case 1: printf("'s(5)'\n"); break;
       case 2: printf("'ss(%u,%u)'\n", prm1, prm2); break;
       case 3: printf("'sf(%u)'\n", prm1); break;
     }
-    uint64_t clen = 0;	
+    uint64_t clen = 0;  
     for(fno = optind; fno < argc; fno++) {
       uint64_t filen;
       int      n,i;    
       char     *finame = argv[fno];                                     
-      FILE     *fi = fopen(finame, "rb");                           		    if(!fi ) { perror(finame); continue; }   if(verbose>2) printf("'%s'\n", finame);
+      FILE     *fi = fopen(finame, "rb");                                           if(!fi ) { perror(finame); continue; }   if(verbose>2) printf("'%s'\n", finame);
 
       fseeko(fi, 0, SEEK_END); 
-      filen = ftello(fi); 													    if(!filen) { printf("file empty: '%s'\n"); continue; }
+      filen = ftello(fi);                                                                                                           if(!filen) { printf("file empty: '%s'\n"); continue; }
       fseeko(fi, 0, SEEK_SET);
     
-      size_t b = (filen < bsize && !dfmt)?filen:bsize, tpbyte=0;			    if(verbose>2) printf("bsize=%zu b=%zu ", bsize, b);
+      size_t b = (filen < bsize && !dfmt)?filen:bsize, tpbyte=0;                            if(verbose>2) printf("bsize=%zu b=%zu ", bsize, b);
       
       in  = vmalloc(b*4/3);    if(!in)  ERR(E_MEM);
       out = vmalloc(b*4/3);    if(!out) ERR(E_MEM);
       cpy = vmalloc(b*4/3);    if(!cpy) ERR(E_MEM);
-	  unsigned tid = 0;
+          unsigned tid = 0;
       if((n = strlen(finame)) >= 3) {                     // auto method determination based on filename
-	    unsigned char *p = finame+n-3;
-		if(!xtpbyte) { 
-	      if(     !strcasecmp(p,"16u") || !strcasecmp(p,"u16")) { tid = 7; prm1=5;prm2=7; }
-		  else if(!strcasecmp(p,"16s") || !strcasecmp(p,"s16")) { tid = 7; prm1=5;prm2=7; }
-	           if(!strcasecmp(p,"32u") || !strcasecmp(p,"u32")) { tid = 8; }
-		  else if(!strcasecmp(p,"32s") || !strcasecmp(p,"s32")) { tid = 8; }
-		  else if(!strcasecmp(p,"64u") || !strcasecmp(p,"u64")) { tpbyte = 8; } // transpose (not included)
-		  else if(!strcasecmp(p,"16f") || !strcasecmp(p,"f16")) { tpbyte = 2; }
-		  else if(!strcasecmp(p,"32f") || !strcasecmp(p,"f32")) { tid = 8; prm1=1; prm2=6; }
-		  else if(!strcasecmp(p,"64f") || !strcasecmp(p,"f64")) { tpbyte = 8; }
-		  //else if(!strcasecmp(p,"bmp")) { tpbyte = 16; }         
-	    } else tpbyte = xtpbyte;
-	  }
-	  for(;;) {															
+            unsigned char *p = finame+n-3;
+                if(!xtpbyte) { 
+              if(     !strcasecmp(p,"16u") || !strcasecmp(p,"u16")) { tid = 7; prm1=5;prm2=7; }
+                  else if(!strcasecmp(p,"16s") || !strcasecmp(p,"s16")) { tid = 7; prm1=5;prm2=7; }
+                   if(!strcasecmp(p,"32u") || !strcasecmp(p,"u32")) { tid = 8; }
+                  else if(!strcasecmp(p,"32s") || !strcasecmp(p,"s32")) { tid = 8; }
+                  else if(!strcasecmp(p,"64u") || !strcasecmp(p,"u64")) { tpbyte = 8; } // transpose (not included)
+                  else if(!strcasecmp(p,"16f") || !strcasecmp(p,"f16")) { tpbyte = 2; }
+                  else if(!strcasecmp(p,"32f") || !strcasecmp(p,"f32")) { tid = 8; prm1=1; prm2=6; }
+                  else if(!strcasecmp(p,"64f") || !strcasecmp(p,"f64")) { tpbyte = 8; }
+                  //else if(!strcasecmp(p,"bmp")) { tpbyte = 16; }         
+            } else tpbyte = xtpbyte;
+          }
+          for(;;) {                                                                                                                     
         n = dfmt?befgen(fi, in, b, dfmt, isize, osize, kid, skiph, decs, divs, keysep, mdelta):fread(in, 1, b, fi); 
-		if(n <=0 ) break; 														if(verbose>2) printf("read=%u\n", n);
-		switch(tpbyte) {
-		  case 14: { unsigned l = bitenc(in, n, out); memcpy(in, out, l); n = l; } break;
-		    #ifdef _DELTA
-		  case 15: delta8e24( in,n,out); memcpy(in, out, n); break;
-		  case 16: delta24e24(in,n,out); memcpy(in, out, n); break;
-		    #endif
-		}
+                if(n <=0 ) break;                                                                                                               if(verbose>2) printf("read=%u\n", n);
+                switch(tpbyte) {
+                  case 14: { unsigned l = bitenc(in, n, out); memcpy(in, out, l); n = l; } break;
+                    #ifdef _DELTA
+                  case 15: delta8e24( in,n,out); memcpy(in, out, n); break;
+                  case 16: delta24e24(in,n,out); memcpy(in, out, n); break;
+                    #endif
+                }
 
-	    nblk++;
-        char *p = (scmd && (scmd[0] != '0' || scmd[1]))?scmd:_scmd;	
-		  
-		if(tid) { 
-		  uint64_t l; 
+            nblk++;
+        char *p = (scmd && (scmd[0] != '0' || scmd[1]))?scmd:_scmd;     
+                  
+                if(tid) { 
+                  uint64_t l; 
           if(l = bench(in, n, out, cpy, tid, prdid, osize)) printf("\t%s\n", finame);  
-		  clen += l;
-		} else
+                  clen += l;
+                } else
         do { 
           int id = strtoul(p, &p, 10),idx = id, i;
-		  uint64_t l; 
+                  uint64_t l; 
           if(id >= 0) {    
             while(isspace(*p)) p++; 
-			if(*p == '-') { if((idx = strtoul(p+1, &p, 10)) < id) idx = id; if(idx > ID_LAST) idx = ID_LAST; } //printf("ID=%d,%d ", id, idx);
+                        if(*p == '-') { if((idx = strtoul(p+1, &p, 10)) < id) idx = id; if(idx > ID_LAST) idx = ID_LAST; } //printf("ID=%d,%d ", id, idx);
             for(i = id; i <= idx; i++) {
               if(l = bench(in, n, out, cpy, i, prdid, osize)) {
-				printf("\t%s\n", finame);  
-			    clen        += l;
-			    lens[i].id   = i;
-			    lens[i].len  = l;
-			    nid++;
-			  }
-            }			  
+                                printf("\t%s\n", finame);  
+                            clen        += l;
+                            lens[i].id   = i;
+                            lens[i].len  = l;
+                            nid++;
+                          }
+            }                     
           }        
         } while(*p++);
       }
@@ -890,24 +890,24 @@ int main(int argc, char* argv[]) {
       if(out) vfree(out); out = NULL; 
       if(cpy) vfree(cpy); cpy = NULL;      
     }
-	
-	if(argc - optind > 1) 
-	  printf("Total compressed %lld\n", clen);
+        
+        if(argc - optind > 1) 
+          printf("Total compressed %lld\n", clen);
     else if(nblk == 1 && nid > 4) { 
-	  int i; 
-	  qsort(lens, 100, sizeof(len_t), cmpsna); 
+          int i; 
+          qsort(lens, 100, sizeof(len_t), cmpsna); 
       printf("Best methods =");
-	  for(i = 0; i < 20; i++) 
-		if(lens[i].len != -1) 
-		  printf("%d,", lens[i].id);  
-	}													                        //if(fdbg) fclose(fdbg); 
-	exit(0);   
+          for(i = 0; i < 20; i++) 
+                if(lens[i].len != -1) 
+                  printf("%d,", lens[i].id);  
+        }                                                                                                                               //if(fdbg) fclose(fdbg); 
+        printf("\n"); exit(0);   
   }
     #endif
   //---------------------------------- File Compression/Decompression -----------------------------------------------------
   if(!decomp && prdid != 1 && prdid !=2) {
-	fprintf(stderr,"Only predictors 's' and 'ss' are supported for file compression\n");
-	exit(0);
+        fprintf(stderr,"Only predictors 's' and 'ss' are supported for file compression\n");
+        exit(0);
   }
   if(argc <= optind) xstdin++;
   unsigned long long filen=0,folen=0;
@@ -915,7 +915,7 @@ int main(int argc, char* argv[]) {
   
   if(xstdout) foname = "stdout";
   else {
-	if(optind+1 >= argc) { fprintf(stderr, "destination file not specified or wrong number of parameters\n");exit(-1); }
+        if(optind+1 >= argc) { fprintf(stderr, "destination file not specified or wrong number of parameters\n");exit(-1); }
     foname = argv[optind+1];                                                                 
     if(!decomp) {
       int len = strlen(foname), xext = len>3 && !strncasecmp(&foname[len-3], ".rc", 3);
@@ -938,9 +938,9 @@ int main(int argc, char* argv[]) {
     out = vmalloc(bsize+1024); if(!in || !out) ERR(E_MEM); 
     unsigned clen;
     while((inlen = fread(in, 1, bsize, fi)) > 0) {        filen += inlen;
-      switch(codec) {		  
+      switch(codec) {             
         case  0: clen = inlen; memcpy(out, in, inlen);    break;
-		  #ifndef NO_RC
+                  #ifndef NO_RC
         case  1: clen = rcenc(    in, inlen, out, prdid); break;
         case  2: clen = rccenc(   in, inlen, out, prdid); break;
         case  3: clen = rcc2enc(  in, inlen, out, prdid); break;
@@ -953,37 +953,37 @@ int main(int argc, char* argv[]) {
         case 17: clen = rcqlfcenc(in, inlen, out, prdid); break;
         case 18: clen = becenc8(  in, inlen, out);        break;
         case 19: clen = becenc16( in, inlen, out);        break;
-		  #endif
-	      #ifdef _BWT
+                  #endif
+              #ifdef _BWT
         case 20: clen = rcbwtenc( in, inlen, out, lev, thnum, bwtflag(osize)); break;
-	      #endif		
-		case 21: clen = utf8enc( in, inlen, out, bwtflag(osize)); break; 
-		  #ifdef _DELTA
-		case 22: delta8e24(in,inlen,out); clen = inlen+1; break;
-		  #endif
+              #endif            
+                case 21: clen = utf8enc( in, inlen, out, bwtflag(osize)); break; 
+                  #ifdef _DELTA
+                case 22: delta8e24(in,inlen,out); clen = inlen+1; break;
+                  #endif
         default: ERR(E_CODEC); 
       }
       hdb_t hdb; hdb.inlen = inlen; hdb.bsize = bsize; hdb.clen = clen; if((rc = hdbwr(&hdb, fo)) < 0) ERR(-rc); folen += rc;
       if(fwrite(out, 1, clen, fo) != clen) ERR(E_FWR);          
-	  folen += clen;
+          folen += clen;
     }                                                                           if(verbose>2) printf("compress: '%s'  %d->%d\n", finame, filen, folen);                                                                    
   } else 
-	#endif
+        #endif
   { // Decompress
-	hd_t hd; if((rc = hdrd(&hd, fi)) < 0) ERR(-rc); filen = rc; _bsize = hd._bsize; codec = hd.codec; lev = hd.lev; prdid = hd.prdid; prm1 = hd.prm1; prm2 = hd.prm2; 
+        hd_t hd; if((rc = hdrd(&hd, fi)) < 0) ERR(-rc); filen = rc; _bsize = hd._bsize; codec = hd.codec; lev = hd.lev; prdid = hd.prdid; prm1 = hd.prm1; prm2 = hd.prm2; 
     bsize = _bsize * Mb;
     in  = vmalloc(bsize); 
     out = vmalloc(bsize); if(!in || !out) ERR(E_MEM); 
     for(;;) {
-	  hdb_t hdb; hdb.bsize = bsize;
-	  if((rc = hdbrd(&hdb, fi)) < 0) break;     
-	  filen += rc;
-	  unsigned outlen = hdb.inlen;
+          hdb_t hdb; hdb.bsize = bsize;
+          if((rc = hdbrd(&hdb, fi)) < 0) break;     
+          filen += rc;
+          unsigned outlen = hdb.inlen;
       if(fread(in, 1, hdb.clen, fi) != hdb.clen) ERR(E_FRD);   
-	  filen += hdb.clen; // read block
+          filen += hdb.clen; // read block
       if(hdb.clen == outlen) memcpy(out, in, outlen);
       else switch(codec) { 
-	      #ifndef NO_RC
+              #ifndef NO_RC
         case  0: memcpy(out,in, outlen);             break;
         case  1: rcdec(     in, outlen, out, prdid); break;
         case  2: rccdec(    in, outlen, out, prdid); break;
@@ -997,18 +997,18 @@ int main(int argc, char* argv[]) {
         case 17: rcqlfcdec( in, outlen, out, prdid); break;
         case 18: becdec8(   in, outlen, out);        break;
         case 19: becdec16(  in, outlen, out);        break;
-		  #endif
-	      #ifdef _BWT
+                  #endif
+              #ifdef _BWT
         case 20: rcbwtdec(  in, outlen, out, lev, thnum); break;
           #endif
         case 21: utf8dec(   in, outlen, out);        break;
-		  #ifdef _DELTA
-		case 22: delta8d24(in,outlen,out); break; 
-		  #endif
+                  #ifdef _DELTA
+                case 22: delta8d24(in,outlen,out); break; 
+                  #endif
         default: ERR(E_CODEC); 
       }  
       if(fwrite(out, 1, outlen, fo) != outlen) ERR(E_FWR); folen += outlen;  
-      if(hdb.inlen < inlen) break;	  
+      if(hdb.inlen < inlen) break;        
     }                                                                           if(verbose>2) printf("decompress:'%s' %d->%d\n", foname, filen, folen);
   }                                                              
   end: rc = 0;
