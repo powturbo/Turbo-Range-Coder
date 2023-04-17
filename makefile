@@ -90,7 +90,7 @@ else
 MARCH=$(_SSE) 
 endif
 
-CFLAGS+= $(DEBUG) $(OPT) -w -Wall -D_CPUISA
+CFLAGS+= $(DEBUG) $(OPT) -w -Wall
 ifeq ($(PGO), 1)
 CFLAGS+=-fprofile-generate 
 LDFLAGS+=-lgcov
