@@ -29,6 +29,9 @@
     - set predictor and parameters at the command line
 * **Asymmetric Numeral Systems**
   * :new:(2023.04) Adaptive CDF rANS Asymmetric Numeral Systems
+###  LICENSE
+- GPL 3.0
+- A commercial license is available. Contact us at powturbo [AT] gmail.com for more information.
 
 ## Usage examples
         ./turborc -e0   file           " benchmark all basic functions using the default simple predictor
