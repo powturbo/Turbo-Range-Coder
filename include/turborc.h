@@ -24,6 +24,7 @@
 // TurboRC Range Coder : include header 
 #ifndef TURBORC_H_
 #define TURBORC_H_
+#include <stddef.h>
   #if defined(__GNUC__)
 #define _PACKED         __attribute__ ((packed))
   #else
