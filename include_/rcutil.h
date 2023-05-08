@@ -35,6 +35,11 @@ size_t utf8enc(unsigned char *__restrict in, size_t inlen,  unsigned char *__res
 size_t utf8dec(unsigned char *__restrict in, size_t outlen, unsigned char *__restrict out);
 void memrev(unsigned char a[], unsigned n);
 
+//----------- 24 = 3x8 -----------------
+unsigned  delta8l24(uint8_t *in, size_t n);
+void      delta8e24(uint8_t *in, size_t n, uint8_t *out);
+void      delta8d24(uint8_t *in, size_t n, uint8_t *out);
+
 #ifdef __cplusplus
 }
 #endif
