@@ -468,7 +468,8 @@ size_t rccdfvenc32(unsigned char *_in, size_t _inlen, unsigned char *out) {
   uint32_t      *in = (uint32_t *)_in, *ip;
   size_t        inlen = (_inlen+sizeof(in[0])-1)/sizeof(in[0]);
 
-  CDF16DEC0(cdf0); CDF16DEC0(cdf1); 
+  CDF16DEC0(cdf0); 
+  CDF16DEC0(cdf1); 
   CDF16DEF; 
   rcencdef(rcrange,rclow); rceinit(rcrange,rclow);
   bitedef(bw,br); biteinir(bw,br,op_);
@@ -488,10 +489,12 @@ size_t rccdfvdec32(unsigned char *in, size_t _outlen, unsigned char *_out) {
   unsigned char *ip    = in+4, *ip_ = in+ctou32(in);
   uint32_t      *out   = (uint32_t *)_out, *op;
   size_t        outlen = (_outlen+sizeof(out[0])-1)/sizeof(out[0]);	
-  CDF16DEC0(cdf0); CDF16DEC0(cdf1); 
+  CDF16DEC0(cdf0); 
+  CDF16DEC0(cdf1); 
   rcdecdef(rcrange,rccode);   rcdinit(rcrange, rccode, ip);
   CDF16DEF;
   bitddef(bw, br); bitdinir(bw,br,ip_);
+  
   for(op = out; op < out+outlen; op++) {
 	unsigned r; 																//cdfd8(rcrange,rccode,rcrange,rccode, cdf0,cdf1,cdf2, r,ip,ip); 
     cdfd7(rcrange,rccode,rcrange,rccode, cdf0,cdf1, r,ip,ip); 	
@@ -551,14 +554,12 @@ size_t rccdfuenc16(unsigned char *_in, size_t _inlen, unsigned char *out) {
   CDF16DEF; 
   rcencdef(rcrange,rclow); rceinit(rcrange,rclow);
   bitedef(bw,br); biteinir(bw,br,op_);
-  printf("A");fflush(stdout);
   for(ip = in; ip < in+inlen; ip++) {
 	unsigned x = ip[0];
 	bitvrput(bw,br,op_, 1, 0, x);
 	cdfe6(rcrange,rclow,rcrange,rclow, cdf0,cdf1,     x,op,op);
 	if(op+8 >= op_) { memcpy(out, _in, _inlen); op = out_; goto e; }
   }
-  printf("B");fflush(stdout);
 
   rceflush(rcrange,rclow, op);
   bitflushr(bw,br,op_); unsigned l = out_-op_; memmove(op, op_, l); op += l; ctou32(out) = op-out;   OVERFLOW(_in,_inlen,out, op, goto e); 
