@@ -146,6 +146,7 @@ static ALWAYS_INLINE size_t memrun16(uint16_t const *in, uint16_t const *in_) { 
 #define EMA( _n_,_x_,_a_,_y_) (((_x_)*_a_ + ((1ull<<(_n_)) -_a_)*(_y_) + (1ull<<((_n_)-2)) ) >>(_n_)) // Exponential moving average + rounding EMA2=1->2 EMA4=2->4 EMA8=3->8,...
 #define RICEK(_x_)             __bsr32((_x_)+1)                                // Rice parameter
 
+#define OVERFLOW0( _in_,_inlen_,_out_, _op_, _goto_) if( _op_               >= _out_+(_inlen_*255)/256-8) _goto_;
 #define OVERFLOW( _in_,_inlen_,_out_, _op_, _goto_) if( _op_                >= _out_+(_inlen_*255)/256-8) { memcpy(_out_,_in_,_inlen_); _op_ = _out_+_inlen_; _goto_; }
 #define OVERFLOWR(_in_,_inlen_,_out_, _op_, _goto_) if((_out_+_inlen_-_op_) >=       (_inlen_*255)/256-8) { memcpy(_out_,_in_,_inlen_); _op_ = _out_+_inlen_; _goto_; }
 
@@ -254,6 +255,10 @@ unsigned histrcalc8(unsigned char *__restrict in, unsigned inlen, unsigned *__re
 void memrev(unsigned char a[], unsigned n);  // reverse bytes in memory buffer
 size_t bitenc(unsigned char *__restrict in, size_t inlen,  unsigned char *__restrict out);
 size_t bitdec(unsigned char *__restrict in, size_t outlen, unsigned char *__restrict out);
+
+unsigned cpuisa(void);
+unsigned cpuini(unsigned cpuisa);
+char *cpustr(unsigned cpuisa);
 
 #ifdef __cplusplus
 }
