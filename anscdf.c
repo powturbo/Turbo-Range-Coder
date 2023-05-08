@@ -21,16 +21,16 @@
     - twitter  : https://twitter.com/powturbo
     - email    : powturbo [_AT_] gmail [_DOT_] com
 **/
-// TurboRANS Range Asymmetric Numeral Systems 
+// TurboRANS Range Asymmetric Numeral Systems
   #ifdef __APPLE__
 #include <sys/malloc.h>
   #else
 #include <malloc.h>
   #endif
+#include "include/turborc.h" // cdf_t
 #include "include/anscdf.h"
-#include "include_/conf.h" 
+#include "include_/conf.h"
 #define _DIVTDEF32
-#include "include/turborc.h"
 #include "anscdf_.h"
  
   #ifdef __AVX2__
@@ -40,299 +40,639 @@
   #else
 #define FSUFFIX 0
   #endif
-  
+
   #ifndef min
 #define min(x,y) (((x)<(y)) ? (x) : (y))
 #define max(x,y) (((x)>(y)) ? (x) : (y))
   #endif
-  
-LIBAPI unsigned T2(anscdfdec,FSUFFIX)(unsigned char *in, unsigned outlen, unsigned char *out, unsigned blksize) {
-  unsigned char *op = out, *out_ = out+outlen, *ip  = in;  
-  unsigned oplen,i;
-  anscdfini(0);
-  blksize = min(blksize,outlen);
-  
-  for(;out < out_; out += oplen) {  
-    STATEDEF(st);
-    CDF16DEC0(mb0);
-    CDF16DEC1(mb,16);  
-    CDF16DEF; 
-    mnfill(st, ip);
-        oplen = out_ - out;  oplen = min(oplen, blksize);
-    for(; op < out+(oplen&~3);op+=4) {  
-      mn8dec(mb0,mb,op[0],st); 
-      mn8dec(mb0,mb,op[1],st); 
-      mn8dec(mb0,mb,op[2],st);    
-      mn8dec(mb0,mb,op[3],st);  
-    } 
-    for(; op < out+oplen;op++) mn8dec(mb0,mb,op[0],st); 
-  }
-  return outlen;   
-}
- 
-LIBAPI unsigned T2(anscdfenc,FSUFFIX)(unsigned char *in, unsigned inlen, unsigned char *out, unsigned blksize) {
-  unsigned char *op = out,*ip=in,*in_ = in+inlen, *out_ = out+inlen; 
-  unsigned      iplen; 
-  blksize = min(blksize,inlen);
-  mbu *_stk = malloc(blksize*4*sizeof(_stk[0])+64),*stk = _stk; if(!_stk) die("malloc error %d ", blksize); // 2 x stk[0] per nibble                                                  
-  anscdfini(0);
-  
-  for(; in < in_; in += iplen) { 
-    CDF16DEC0(mb0); 
-    CDF16DEC1(mb,16);
-    CDF16DEF;
-    iplen = in_-in; iplen = min(iplen, blksize);
-    for(; ip < in + (iplen&~3); ip += 4) {
-          mn8enc(mb0,mb,ip[0],stk); 
-          mn8enc(mb0,mb,ip[1],stk); 
-          mn8enc(mb0,mb,ip[2],stk); 
-          mn8enc(mb0,mb,ip[3],stk); 
-    }
-    for(; ip < in + iplen; ip++) 
-          mn8enc(mb0,mb,ip[0],stk);
-    mnflush(op,out_,_stk,stk);
-  }
-  end:free(_stk);
-  return op - out;    
-}  
 
-LIBAPI unsigned T2(anscdf4dec,FSUFFIX)(unsigned char *in, unsigned outlen, unsigned char *out, unsigned blksize) { 
-  unsigned char *op = out, *out_ = out+outlen, *ip = in;  
-  unsigned      oplen,i;
+#define ANSBLKSIZE (1<<22)
+
+LIBAPI size_t T2(anscdf4senc,FSUFFIX)(unsigned char *in, size_t inlen, unsigned char *out, cdf_t *cdf) {
+  unsigned char *op = out, *ip = in, *ep = out+inlen;
   anscdfini(0);
-  blksize = min(blksize,outlen);
-  
+
+  STATEDEF(st);
+  #define STE(_i_, _si_) ip--; ansenc(cdf,st[_si_],ep,ip[0])
+  for(ip = in+inlen; ip > in+(inlen & ~3);) {                                  if(ep < in +   2+2*4) goto ovr;
+    STE(0,0);
+  }
+  while(ip > in) {                                                             if(ep < in + 4*2+2*4) goto ovr;
+    STE(0,1); STE(1,0); STE(2,1); STE(3, 0);
+  }
+  ansflush(st, ep);
+  size_t l = (out+inlen) - ep;                                                 if(op + l >= out+inlen) goto ovr;
+  memcpy(op, ep, l); op += l;                                                  goto end; ovr:memcpy(out,in,inlen); op = out+inlen;
+  end: return op - out;
+}
+
+LIBAPI size_t T2(anscdf4sdec,FSUFFIX)(unsigned char *in, size_t outlen, unsigned char *out, cdf_t *cdf) {
+  unsigned char *op = out, *ip  = in;
+  anscdfini(0);
+
+  STATEDEF(st);
+  mnfill(st, ip);
+  #define STD(_i_,_si_) ansdec(cdf,st[_si_],ip,op[_i_])
+  for(; op < out+(outlen&~3); op+=4) { STD(0,1); STD(1,0); STD(2,1); STD(3,0); }
+  for(; op < out+outlen; op++) { STD(0,0); }
+  return outlen;
+}
+
+LIBAPI size_t T2(anscdfdec,FSUFFIX)(unsigned char *in, size_t outlen, unsigned char *out) {
+  unsigned char *op = out, *out_ = out+outlen, *ip  = in;
+  size_t        oplen,i;
+  unsigned      blksize = min(ANSBLKSIZE,outlen);
+  anscdfini(0);
+
   for(;out < out_; out += oplen) {
     STATEDEF(st);
-    CDF16DEC0(mb); 
-    CDF16DEF;  
-    mnfill(st,ip); 
-        oplen = out_-out; oplen = min(oplen, blksize);
-    for(; op < out+(oplen&~3);op+=4) { 
-      mn4dec0(ip,mb,op[0],0,st); 
-      mn4dec0(ip,mb,op[1],1,st); 
-      mn4dec0(ip,mb,op[2],0,st); 
-      mn4dec0(ip,mb,op[3],1,st); 
-    }
-    for(; op < out+oplen;op++) 
-          mn4dec0(ip,mb,op[0],0,st);
+    CDF16DEC0(mbh);
+    CDF16DEC1(mbl,16);
+    CDF16DEF;
+    oplen = out_ - out;  oplen = min(oplen, blksize); //	HLOAD(mbh);
+    mnfill(st, ip);
+	#define STD(_i_) mndec8(mbh,mbl,st,ip,op[_i_])
+    for(; op < out+(oplen&~3); op += 4) { STD(0); STD(1); STD(2); STD(3); }
+    for(; op < out+oplen;op++) { STD(0); }
   }
-  return outlen;  
+  return outlen;
 }
- 
-LIBAPI unsigned T2(anscdf4enc,FSUFFIX)(unsigned char *in, unsigned inlen, unsigned char *out, unsigned blksize) {       
-  unsigned char *op = out,*ip=in,*in_ = in+inlen, *out_ = out+inlen; 
-  unsigned      iplen; 
-  blksize = min(blksize,inlen);
-  mbu *_stk = malloc(blksize*2*sizeof(_stk[0])+64),*stk = _stk; if(!_stk) die("malloc error %d ", blksize);                                           
+
+LIBAPI size_t T2(anscdfenc,FSUFFIX)(unsigned char *in, size_t inlen, unsigned char *out) {
+  unsigned char *op = out,*ip = in,*in_ = in+inlen, *out_ = out+inlen;
+  size_t        iplen;
+  unsigned      blksize = min(ANSBLKSIZE,inlen);
+  mbu *_stk = malloc(blksize*4*sizeof(_stk[0])+64),*stk = _stk; if(!_stk) die("malloc error %d ", blksize); // 2 x stk[0] per nibble
   anscdfini(0);
 
-  for(; in < in_; in += iplen) { 
-    CDF16DEC0(mb); 
+  for(; in < in_; in += iplen) {
+    CDF16DEC0(mbh);
+    CDF16DEC1(mbl,16);
+    CDF16DEF;
+    iplen = in_-in; iplen = min(iplen, blksize);
+	#define STE(_i_) mnenc8(mbh,mbl,ip[_i_],stk);
+    for(; ip < in + (iplen&~3); ip += 4) { STE(0); STE(1); STE(2); STE(3); }
+    for(; ip < in + iplen; ip++) { STE(0); }
+    mnflush(op,out_,_stk,stk);
+  }                                                                             goto end; ovr:memcpy(out,in,inlen); op = out_;
+  end:free(_stk);
+  return op - out;
+}
+
+//-- o1
+LIBAPI size_t T2(anscdf1dec,FSUFFIX)(unsigned char *in, size_t outlen, unsigned char *out) {
+ unsigned char *op = out, *out_ = out+outlen, *ip  = in, cx = 0;
+  size_t       oplen,i; 
+  unsigned     blksize = min(ANSBLKSIZE,outlen);
+  anscdfini(0);
+
+  for(;out < out_; out += oplen) {
+    STATEDEF(st); 
+    CDF16DEC1(mbh, 0x100);
+    CDF16DEC2(mbl, 0x100, 16);
+    CDF16DEF;
+    oplen = out_ - out;  oplen = min(oplen, blksize);
+    mnfill(st, ip);
+    #define STD(_i_) { mbu *mh,*ml; mh = mbh[cx]; /*ml = mbl[cx];*/ mndec8x(mh,mbl[cx],st,ip,op[_i_]); cx = op[_i_]; }
+    for(; op < out+(oplen&~3); op += 4) { STD(0); STD(1); STD(2); STD(3); }
+    for(; op < out+oplen;op++) { STD(0); }
+  }
+  return outlen;
+}
+
+LIBAPI size_t T2(anscdf1enc,FSUFFIX)(unsigned char *in, size_t inlen, unsigned char *out) {
+  unsigned char *op = out,*ip = in,*in_ = in+inlen, *out_ = out+inlen, cx = 0;
+  size_t        iplen;
+  unsigned      blksize = min(ANSBLKSIZE,inlen);
+  mbu *_stk = malloc(blksize*4*sizeof(_stk[0])+64),*stk = _stk; if(!_stk) die("malloc error %d ", blksize); // 2 x stk[0] per nibble
+  anscdfini(0);
+
+  for(; in < in_; in += iplen) {
+    CDF16DEC1(mbh, 0x100);
+    CDF16DEC2(mbl, 0x100, 16);
+    CDF16DEF;
+    iplen = in_-in; iplen = min(iplen, blksize);
+    #define STE(_i_) { mbu *mh,*ml; mh = mbh[cx]; /*ml = mbl[cx];*/ mnenc8(mh,mbl[cx],ip[_i_],stk); cx = ip[_i_]; }
+    for(; ip < in + (iplen&~3); ip += 4) { STE(0); STE(1); STE(2); STE(3); }
+    for(; ip < in + iplen; ip++) { STE(0); }
+    mnflush(op,out_,_stk,stk);
+  }                                                                             goto end; ovr:memcpy(out,in,inlen); op = out_;
+  end:free(_stk);
+  return op - out;
+}
+
+
+LIBAPI size_t T2(anscdf4dec,FSUFFIX)(unsigned char *in, size_t outlen, unsigned char *out) {
+  unsigned char *op = out, *out_ = out+outlen, *ip = in;
+  size_t      oplen,i;
+  unsigned     blksize = min(ANSBLKSIZE,outlen);
+  anscdfini(0);
+
+  for(;out < out_; out += oplen) {
+    STATEDEF(st);
+    CDF16DEC0(mb);
+    CDF16DEF;
+    oplen = out_-out; oplen = min(oplen, blksize);//HLOAD(mb);
+    mnfill(st,ip);
+    for(; op < out+(oplen&~3);op+=4) {
+      mndec4(mb,st[0],ip,op[0]);
+      mndec4(mb,st[1],ip,op[1]);
+      mndec4(mb,st[0],ip,op[2]);
+      mndec4(mb,st[1],ip,op[3]);
+    }
+    for(; op < out+oplen;op++)
+      mndec4(mb,st[0],ip,op[0]);
+  }
+  return outlen;
+}
+
+LIBAPI size_t T2(anscdf4enc,FSUFFIX)(unsigned char *in, size_t inlen, unsigned char *out) {
+  unsigned char *op = out,*ip = in,*in_ = in+inlen, *out_ = out+inlen;
+  size_t        iplen;
+  unsigned      blksize = min(ANSBLKSIZE,inlen);
+  mbu *_stk = malloc(blksize*2*sizeof(_stk[0])+64),*stk = _stk; if(!_stk) die("malloc error %d ", blksize);
+  anscdfini(0);
+
+  for(; in < in_; in += iplen) {
+    CDF16DEC0(mb);
     CDF16DEF;
     iplen = in_-in; iplen = min(iplen, blksize); stk = _stk;
-    for(; ip < in + (iplen&~3); ip += 4) { 
-      mn4enc(mb,ip[0],1,stk);  
-      mn4enc(mb,ip[1],0,stk);
-      mn4enc(mb,ip[2],1,stk);
-      mn4enc(mb,ip[3],0,stk);
+    for(; ip < in + (iplen&~3); ip += 4) {
+      mnenc4(mb,1,ip[0],stk);
+      mnenc4(mb,0,ip[1],stk);
+      mnenc4(mb,1,ip[2],stk);
+      mnenc4(mb,0,ip[3],stk);
     }
-    for(; ip < in + iplen; ip++) 
-          mn4enc(mb,ip[0],0,stk); 
+    for(; ip < in + iplen; ip++)
+      mnenc4(mb,0,ip[0],stk);
     mnflush(op,out_,_stk,stk);
   }
+                                                                                goto end; ovr:memcpy(out,in,inlen); op = out_;
   end:free(_stk);
-  return op - out;    
-
-} 
-
-  #if !defined(__SSE3__) && !defined(__ARM_NEON)
-#ifndef _NCPUISA  
-  static unsigned _cpuisa;
-//--------------------- CPU detection -------------------------------------------
-    #if defined(__i386__) || defined(__x86_64__)
-      #if _MSC_VER >=1300
-#include <intrin.h>
-      #elif defined (__INTEL_COMPILER)
-#include <x86intrin.h>
-      #endif
-
-static inline void cpuid(int reg[4], int id) {
-      #if defined (_MSC_VER) //|| defined (__INTEL_COMPILER)
-  __cpuidex(reg, id, 0);
-      #elif defined(__i386__) || defined(__x86_64__)
-  __asm("cpuid" : "=a"(reg[0]),"=b"(reg[1]),"=c"(reg[2]),"=d"(reg[3]) : "a"(id),"c"(0) : );
-      #endif
+  return op - out;
 }
 
-static inline uint64_t xgetbv (int ctr) {
-      #if(defined _MSC_VER && (_MSC_FULL_VER >= 160040219) || defined __INTEL_COMPILER)
-  return _xgetbv(ctr);
-      #elif defined(__i386__) || defined(__x86_64__)
-  unsigned a, d;
-  __asm("xgetbv" : "=a"(a),"=d"(d) : "c"(ctr) : );
-  return (uint64_t)d << 32 | a;
-      #else
-  unsigned a=0, d=0;
-  return (uint64_t)d << 32 | a;
-      #endif
-}
-    #endif
+//----- Turbo VLC
+#include "rcutil_.h"
+#include "include_/vlcbit.h"
 
-#define AVX512F     0x001
-#define AVX512DQ    0x002
-#define AVX512IFMA  0x004
-#define AVX512PF    0x008
-#define AVX512ER    0x010
-#define AVX512CD    0x020
-#define AVX512BW    0x040
-#define AVX512VL    0x080
-#define AVX512VNNI  0x100
-#define AVX512VBMI  0x200
-#define AVX512VBMI2 0x400
+//---------------------------------- Turbo VLC with 6 bits exponent ---------------------------------------------
+LIBAPI size_t T2(anscdfuenc16,FSUFFIX)(unsigned char *_in, size_t _inlen, unsigned char *out) {
+  unsigned char *op = out+4, *out_ = out+_inlen, *bp = out_;
+  uint16_t      *in = (uint16_t *)_in;
+  size_t        inlen = (_inlen+sizeof(in[0])-1)/sizeof(in[0]);
 
-#define IS_SSE       0x10
-#define IS_SSE2      0x20
-#define IS_SSE3      0x30
-#define IS_SSSE3     0x32
-#define IS_POWER9    0x34 // powerpc
-#define IS_NEON      0x38 // arm neon
-#define IS_SSE41     0x40
-#define IS_SSE41x    0x41 //+popcount
-#define IS_SSE42     0x42
-#define IS_AVX       0x50
-#define IS_AVX2      0x60
-#define IS_AVX512    0x800
+  uint16_t      *ip = in, *in_ = in+inlen;
+  unsigned      iplen;
+  unsigned      blksize = min(ANSBLKSIZE,inlen);
+  mbu *_stk = malloc(blksize*4*sizeof(_stk[0])+64),*stk = _stk; if(!_stk) die("malloc error %d ", blksize); // 2 x stk[0] per nibble
+  anscdfini(0);
+  bitddef(bw, br); biteinir(bw,br,bp);
 
-unsigned cpuisa(void) {
-  int c[4] = {0};
-  if(_cpuisa) return _cpuisa;
-  _cpuisa++;
-    #if defined(__i386__) || defined(__x86_64__)
-  cpuid(c, 0);
-  if(c[0]) {
-    cpuid(c, 1);
-    //family = ((c >> 8) & 0xf) + ((c >> 20) & 0xff)
-    //model  = ((c >> 4) & 0xf) + ((c >> 12) & 0xf0)
-    if( c[3] & (1 << 25)) {         _cpuisa  = IS_SSE;
-    if( c[3] & (1 << 26)) {         _cpuisa  = IS_SSE2;
-    if( c[2] & (1 <<  0)) {         _cpuisa  = IS_SSE3;
-      //                            _cpuisa  = IS_SSE3SLOW; // Atom SSSE3 slow
-    if( c[2] & (1 <<  9)) {         _cpuisa  = IS_SSSE3;
-    if( c[2] & (1 << 19)) {         _cpuisa  = IS_SSE41;
-    if( c[2] & (1 << 23)) {         _cpuisa  = IS_SSE41x; // +popcount
-    if( c[2] & (1 << 20)) {         _cpuisa  = IS_SSE42;  // SSE4.2
-    if((c[2] & (1 << 28)) &&
-       (c[2] & (1 << 27)) &&                           // OSXSAVE
-       (c[2] & (1 << 26)) &&                           // XSAVE
-       (xgetbv(0) & 6)==6) {        _cpuisa  = IS_AVX; // AVX
-      if(c[2]& (1 <<  3))           _cpuisa |= 1;      // +FMA3
-      if(c[2]& (1 << 16))           _cpuisa |= 2;      // +FMA4
-      if(c[2]& (1 << 25))           _cpuisa |= 4;      // +AES
-      cpuid(c, 7);
-      if(c[1] & (1 << 5)) {         _cpuisa = IS_AVX2;
-        if(c[1] & (1 << 16)) {
-          cpuid(c, 0xd);
-          if((c[0] & 0x60)==0x60) { _cpuisa = IS_AVX512;
-            cpuid(c, 7);
-            if(c[1] & (1<<16))      _cpuisa |= AVX512F;
-            if(c[1] & (1<<17))      _cpuisa |= AVX512DQ;
-            if(c[1] & (1<<21))      _cpuisa |= AVX512IFMA;
-            if(c[1] & (1<<26))      _cpuisa |= AVX512PF;
-            if(c[1] & (1<<27))      _cpuisa |= AVX512ER;
-            if(c[1] & (1<<28))      _cpuisa |= AVX512CD;
-            if(c[1] & (1<<30))      _cpuisa |= AVX512BW;
-            if(c[1] & (1u<<31))     _cpuisa |= AVX512VL;
-            if(c[2] & (1<< 1))      _cpuisa |= AVX512VBMI;
-            if(c[2] & (1<<11))      _cpuisa |= AVX512VNNI;
-            if(c[2] & (1<< 6))      _cpuisa |= AVX512VBMI2;
-      }}}
-    }}}}}}}}}
-    #elif defined(__powerpc64__)
-
-  _cpuisa = IS_POWER9; // power9
-    #elif defined(__ARM_NEON)
-  _cpuisa = IS_NEON; // ARM_NEON
-    #endif
-  return _cpuisa;
-}
-
-unsigned cpuini(unsigned cpuisa) { if(cpuisa) _cpuisa = cpuisa; return _cpuisa; }
-
-char *cpustr(unsigned cpuisa) {
-  if(!cpuisa) cpuisa = _cpuisa;
-    #if defined(__i386__) || defined(__x86_64__)
-  if(cpuisa >= IS_AVX512) {
-    if(cpuisa & AVX512VBMI2) return "avx512vbmi2";
-    if(cpuisa & AVX512VBMI)  return "avx512vbmi";
-    if(cpuisa & AVX512VNNI)  return "avx512vnni";
-    if(cpuisa & AVX512VL)    return "avx512vl";
-    if(cpuisa & AVX512BW)    return "avx512bw";
-    if(cpuisa & AVX512CD)    return "avx512cd";
-    if(cpuisa & AVX512ER)    return "avx512er";
-    if(cpuisa & AVX512PF)    return "avx512pf";
-    if(cpuisa & AVX512IFMA)  return "avx512ifma";
-    if(cpuisa & AVX512DQ)    return "avx512dq";
-    if(cpuisa & AVX512F)     return "avx512f";
-    return "avx512";
+  for(; in < in_; in += iplen) {
+    CDF16DEC0(cdf0);
+	CDF16DEC0(cdf1);
+    CDF16DEF;
+    iplen = in_-in; iplen = min(iplen, blksize);
+    for(; ip < in + iplen; ip++) {
+	  unsigned x = ip[0];
+	  bitvrput(bw,br,bp, 1, 0, x);
+	  cdfenc6(cdf0, cdf1, x, stk);
+	}
+    mnflush(op,(bp-8),_stk,stk);                                                
   }
-  else if(cpuisa >= IS_AVX2)    return "avx2";
-  else if(cpuisa >= IS_AVX)
-    switch(cpuisa&0xf) {
-      case 1: return "avx+fma3";
-      case 2: return "avx+fma4";
-      case 4: return "avx+aes";
-      case 5: return "avx+fma3+aes";
-      default:return "avx";
-    }
-  else if(cpuisa >= IS_SSE42)   return "sse4.2";
-  else if(cpuisa >= IS_SSE41x)  return "sse4.1+popcnt";
-  else if(cpuisa >= IS_SSE41)   return "sse4.1";
-  else if(cpuisa >= IS_SSSE3)   return "ssse3";
-  else if(cpuisa >= IS_SSE3)    return "sse3";
-  else if(cpuisa >= IS_SSE2)    return "sse2";
-  else if(cpuisa >= IS_SSE)     return "sse";
-     #elif defined(__powerpc64__)
-  if(cpuisa >= IS_POWER9)       return "power9";
-    #elif defined(__ARM_NEON)
-  if(cpuisa >= IS_NEON)         return "arm_neon";
-    #endif
-  return "none";
+  bitflushr(bw,br,bp);
+  unsigned l = out_ - bp;                                                       if(op+l >= out_) goto ovr;
+  memmove(op, bp, l); op += l; ctou32(out) = op - out;                          goto end; ovr:memcpy(out,_in,_inlen); op = out_;
+  end:free(_stk);
+  return op - out;
 }
-#else
-unsigned cpuisa(void);  
-#endif  
 
-fanscdfenc _anscdfenc  = anscdfencs; //set sse2
-fanscdfdec _anscdfdec  = anscdfdecs;
-fanscdfenc _anscdf4enc = anscdf4encs;
-fanscdfdec _anscdf4dec = anscdf4decs;
+LIBAPI size_t T2(anscdfudec16,FSUFFIX)(unsigned char *in, size_t _outlen, unsigned char *_out) {
+  unsigned char *ip    = in+4, *bp = in+ctou32(in);
+  uint16_t      *out   = (uint16_t *)_out;
+  size_t        outlen = (_outlen+sizeof(out[0])-1)/sizeof(out[0]);
+  bitddef(bw, br); bitdinir(bw,br,bp);
+
+  uint16_t      *op = out, *out_ = out+outlen;
+  unsigned      oplen;
+  unsigned     blksize = min(ANSBLKSIZE,outlen);
+  anscdfini(0);
+
+  for(;out < out_; out += oplen) {
+    STATEDEF(st);
+    CDF16DEC0(cdf0);
+	CDF16DEC0(cdf1);
+    CDF16DEF;
+    oplen = out_ - out;  oplen = min(oplen, blksize);
+    mnfill(st, ip);
+    for(; op < out+oplen;op++) {
+	  unsigned r;
+	  cdfdec6(cdf0,cdf1, st, ip, r);
+	  bitvrget(bw,br,bp, 1, 0, r);
+	  op[0] = r;
+	}
+  }
+  return ctou32(in)+4;
+}
+
+LIBAPI size_t T2(anscdfuzenc16,FSUFFIX)(unsigned char *_in, size_t _inlen, unsigned char *out) {
+  unsigned char *op = out+4, *out_ = out+_inlen, *bp = out_;
+  uint16_t      *in = (uint16_t *)_in;
+  size_t        inlen = (_inlen+sizeof(in[0])-1)/sizeof(in[0]);
+
+  uint16_t      *ip = in, *in_ = in+inlen, cx = 0;
+  unsigned      iplen;
+  unsigned     blksize = min(ANSBLKSIZE,inlen);
+  mbu *_stk = malloc(blksize*4*sizeof(_stk[0])+64),*stk = _stk; if(!_stk) die("malloc error %d ", blksize); // 2 x stk[0] per nibble
+  anscdfini(0);
+  bitddef(bw, br); biteinir(bw,br,bp);
+
+  for(; in < in_; in += iplen) {
+    CDF16DEC0(cdf0);
+	CDF16DEC0(cdf1);
+    CDF16DEF;
+    iplen = in_-in; iplen = min(iplen, blksize);
+    for(; ip < in + iplen; ip++) {
+	  uint16_t x = zigzagenc16(ip[0] - cx);
+	  bitvrput(bw,br,bp, 1, 0, x);
+	  cdfenc6(cdf0, cdf1, x, stk);
+      cx = ip[0];
+	}
+    mnflush(op,(bp-8),_stk,stk);                                                //AC(op <= bp,"Fatal");
+  }
+  bitflushr(bw,br,bp);
+  unsigned l = out_-bp;                                                         if(op+l >= out_) goto ovr;
+  memmove(op, bp, l); op += l; ctou32(out) = op - out;                          goto end; ovr:memcpy(out,_in,_inlen); op = out_;
+  end:free(_stk);
+  return op - out;
+}
+
+LIBAPI size_t T2(anscdfuzdec16,FSUFFIX)(unsigned char *in, size_t _outlen, unsigned char *_out) {
+  unsigned char *ip    = in+4, *bp = in+ctou32(in);
+  uint16_t      *out   = (uint16_t *)_out;
+  size_t        outlen = (_outlen+sizeof(out[0])-1)/sizeof(out[0]);
+  bitddef(bw, br); bitdinir(bw,br,bp);
+
+  uint16_t      *op = out, *out_ = out+outlen, cx = 0;
+  unsigned      oplen;
+  unsigned     blksize = min(ANSBLKSIZE,outlen);
+  anscdfini(0);
+
+  for(;out < out_; out += oplen) {
+    STATEDEF(st);
+    CDF16DEC0(cdf0);
+	CDF16DEC0(cdf1);
+    CDF16DEF;
+    oplen = out_ - out;  oplen = min(oplen, blksize);
+    mnfill(st, ip);
+    for(; op < out+oplen;op++) {
+	  uint16_t r;
+	  cdfdec6(cdf0,cdf1, st, ip, r);
+	  bitvrget(bw,br,bp, 1, 0, r);
+	  op[0] = (cx+= zigzagdec16(r));
+	}
+  }
+  return ctou32(in)+4;
+}
+
+//-------------------------------------------- Turbo VLC with 7 bits exponent ------------------------------
+LIBAPI size_t T2(anscdfvenc16,FSUFFIX)(unsigned char *_in, size_t _inlen, unsigned char *out) {
+  unsigned char *op = out+4, *out_ = out+_inlen, *bp = out_;
+  uint16_t      *in = (uint16_t *)_in;
+  size_t        inlen = (_inlen+sizeof(in[0])-1)/sizeof(in[0]);
+
+  uint16_t      *ip = in, *in_ = in+inlen;
+  unsigned      iplen;
+  unsigned      blksize = min(ANSBLKSIZE,inlen);
+  mbu *_stk = malloc(blksize*4*sizeof(_stk[0])+64),*stk = _stk; if(!_stk) die("malloc error %d ", blksize); // 2 x stk[0] per nibble
+  anscdfini(0);
+  bitddef(bw, br); biteinir(bw,br,bp);
+
+  for(; in < in_; in += iplen) {
+    CDF16DEC0(cdf0);
+	CDF16DEC0(cdf1);
+    CDF16DEF;
+    iplen = in_-in; iplen = min(iplen, blksize);
+    for(; ip < in + iplen; ip++) {
+	  uint16_t x = ip[0];
+	  bitvrput(bw,br,bp, 2, 0, x);
+	  cdfenc7(cdf0, cdf1, x, stk);
+	}
+	mnflush(op, (bp-8), _stk, stk);                                             AS(op <= bp,"Fatal");
+  }
+  bitflushr(bw,br,bp);
+  unsigned l = out_ - bp;                                                       if(op+l >= out_) { printf("&"); goto ovr; }
+  memmove(op, bp, l); op += l; ctou32(out) = op - out;                          goto end; ovr:memcpy(out,_in,_inlen); op = out_;
+  end:free(_stk);
+  return op - out;
+}
+
+LIBAPI size_t T2(anscdfvdec16,FSUFFIX)(unsigned char *in, size_t _outlen, unsigned char *_out) {
+  unsigned char *ip    = in+4, *bp = in+ctou32(in);
+  uint16_t      *out   = (uint16_t *)_out;
+  size_t        outlen = (_outlen+sizeof(out[0])-1)/sizeof(out[0]);
+  bitddef(bw, br); bitdinir(bw,br,bp);
+
+  uint16_t      *op = out, *out_ = out+outlen;
+  unsigned      oplen;
+  unsigned     blksize = min(ANSBLKSIZE,outlen);
+  anscdfini(0);
+
+  for(;out < out_; out += oplen) {
+    STATEDEF(st);
+    CDF16DEC0(cdf0);
+	CDF16DEC0(cdf1);
+    CDF16DEF;
+    oplen = out_ - out;  oplen = min(oplen, blksize);
+    mnfill(st, ip);
+    for(; op < out+oplen;op++) {
+	  uint16_t r;
+	  cdfdec7(cdf0,cdf1, st, ip, r);
+	  bitvrget(bw,br,bp, 2, 0, r);
+	  op[0] = r;
+	}
+  }
+  return ctou32(in)+4;
+}
+
+LIBAPI size_t T2(anscdfvzenc16,FSUFFIX)(unsigned char *_in, size_t _inlen, unsigned char *out) {
+  unsigned char *op = out+4, *out_ = out+_inlen, *bp = out_;
+  uint16_t      *in = (uint16_t *)_in;
+  size_t        inlen = (_inlen+sizeof(in[0])-1)/sizeof(in[0]);
+
+  uint16_t     *ip = in, *in_ = in+inlen, cx = 0;
+  unsigned      iplen;
+  unsigned     blksize = min(ANSBLKSIZE,inlen);
+  mbu *_stk = malloc(blksize*4*sizeof(_stk[0])+64),*stk = _stk; if(!_stk) die("malloc error %d ", blksize); // 2 x stk[0] per nibble
+  anscdfini(0);
+  bitddef(bw, br); biteinir(bw,br,bp);
+
+  for(; in < in_; in += iplen) {
+    CDF16DEC0(cdf0);
+	CDF16DEC0(cdf1);
+    CDF16DEF;
+    iplen = in_ - in; iplen = min(iplen, blksize);   //printf("%u,", iplen);
+    for(; ip < in + iplen; ip++) {
+	  uint16_t x = zigzagenc16(ip[0] - cx);
+	  bitvrput(bw,br,bp, 2, 0, x);
+	  cdfenc7(cdf0, cdf1, x, stk);
+      cx = ip[0];
+	}
+    mnflush(op,(bp-8),_stk,stk);                                                AS(op <= bp,"Fatal");
+  }
+  bitflushr(bw,br,bp);
+  unsigned l = out_ - bp;                                                       if(op+l >= out_) goto ovr;
+  memmove(op, bp, l); op += l; ctou32(out) = op - out;                          goto end; ovr:memcpy(out,_in,_inlen); op = out_;
+  end:free(_stk);
+  return op - out;
+}
+
+LIBAPI size_t T2(anscdfvzdec16,FSUFFIX)(unsigned char *in, size_t _outlen, unsigned char *_out) {
+  unsigned char *ip    = in+4, *bp = in+ctou32(in);
+  uint16_t      *out   = (uint16_t *)_out;
+  size_t        outlen = (_outlen+sizeof(out[0])-1)/sizeof(out[0]);
+  bitddef(bw, br); bitdinir(bw,br,bp);
+
+  uint16_t      *op = out, *out_ = out+outlen, cx = 0;
+  unsigned      oplen;
+  unsigned     blksize = min(ANSBLKSIZE,outlen);
+  anscdfini(0);
+
+  for(;out < out_; out += oplen) {
+    STATEDEF(st);
+    CDF16DEC0(cdf0);
+	CDF16DEC0(cdf1);
+    CDF16DEF;
+    oplen = out_ - out;  oplen = min(oplen, blksize);
+    mnfill(st, ip);
+    for(; op < out+oplen;op++) {
+	  uint16_t r;
+	  cdfdec7(cdf0,cdf1, st, ip, r);
+	  bitvrget(bw,br,bp, 2, 0, r);
+	  op[0] = (cx+= zigzagdec16(r));
+	}
+  }
+  return ctou32(in)+4;
+}
+
+LIBAPI size_t T2(anscdfvenc32,FSUFFIX)(unsigned char *_in, size_t _inlen, unsigned char *out) {
+  unsigned char *op = out+4, *out_ = out+_inlen, *bp = out_;
+  uint32_t      *in = (uint32_t *)_in;
+  size_t        inlen = (_inlen+sizeof(in[0])-1)/sizeof(in[0]);
+
+  uint32_t    *ip = in, *in_ = in+inlen, iplen;
+  unsigned     blksize = min(ANSBLKSIZE,inlen);
+  mbu *_stk = malloc(blksize*4*sizeof(_stk[0])+64),*stk = _stk; if(!_stk) die("malloc error %d ", blksize); // 2 x stk[0] per nibble
+  anscdfini(0);
+  bitddef(bw, br); biteinir(bw,br,bp);
+
+  for(; in < in_; in += iplen) {
+    CDF16DEC0(cdf0);
+	CDF16DEC0(cdf1);
+    CDF16DEF;
+    iplen = in_-in; iplen = min(iplen, blksize);
+    for(; ip < in + iplen; ip++) {
+	  unsigned x = ip[0];
+	  bitvrput(bw,br,bp, 2, 0, x);
+	  cdfenc7(cdf0, cdf1, x, stk);
+	}
+    mnflush(op,(bp-8),_stk,stk);                                                AS(op <= bp,"Fatal");
+  }
+  bitflushr(bw,br,bp);
+  unsigned l = out_-bp;                                                         if(op+l >= out_) goto ovr;
+  memmove(op, bp, l); op += l; ctou32(out) = op - out;                          goto end; ovr:memcpy(out,_in,_inlen); op = out_;
+  end:free(_stk);
+  return op - out;
+}
+
+LIBAPI size_t T2(anscdfvdec32,FSUFFIX)(unsigned char *in, size_t _outlen, unsigned char *_out) {
+  unsigned char *ip    = in+4, *bp = in+ctou32(in);
+  uint32_t      *out   = (uint32_t *)_out;
+  size_t        outlen = (_outlen+sizeof(out[0])-1)/sizeof(out[0]);
+  bitddef(bw, br); bitdinir(bw,br,bp);
+
+  uint32_t *op = out, *out_ = out+outlen;
+  size_t   oplen,i;
+  unsigned     blksize = min(ANSBLKSIZE,outlen);
+  anscdfini(0);
+
+  for(;out < out_; out += oplen) {
+    STATEDEF(st);
+    CDF16DEC0(cdf0);
+	CDF16DEC0(cdf1);
+    CDF16DEF;
+    oplen = out_ - out;  oplen = min(oplen, blksize);
+    mnfill(st, ip);
+    for(; op < out+oplen;op++) {
+	  unsigned r;
+	  cdfdec7(cdf0,cdf1, st, ip, r);
+	  bitvrget(bw,br,bp, 2, 0, r);
+	  op[0] = r;
+	}
+  }
+  return ctou32(in)+4;
+}
+
+LIBAPI size_t T2(anscdfvzenc32,FSUFFIX)(unsigned char *_in, size_t _inlen, unsigned char *out) {
+  unsigned char *op = out+4, *out_ = out+_inlen, *bp = out_;
+  uint32_t      *in = (uint32_t *)_in;
+  size_t        inlen = (_inlen+sizeof(in[0])-1)/sizeof(in[0]);
+
+  uint32_t    *ip = in, *in_ = in+inlen, iplen, cx = 0;
+  unsigned     blksize = min(ANSBLKSIZE,inlen);
+  mbu *_stk = malloc(blksize*4*sizeof(_stk[0])+64),*stk = _stk; if(!_stk) die("malloc error %d ", blksize); // 2 x stk[0] per nibble
+  anscdfini(0);
+  bitddef(bw, br); biteinir(bw,br,bp);
+
+  for(; in < in_; in += iplen) {
+    CDF16DEC0(cdf0);
+	CDF16DEC0(cdf1);
+    CDF16DEF;
+    iplen = in_-in; iplen = min(iplen, blksize);
+    for(; ip < in + iplen; ip++) {
+	  unsigned x = zigzagenc32(ip[0] - cx);
+	  bitvrput(bw,br,bp, 2, 0, x);
+	  cdfenc7(cdf0, cdf1, x, stk);
+      cx = ip[0];
+	}
+    mnflush(op,(bp-8),_stk,stk);                                                AS(op <= bp,"Fatal");
+  }
+  bitflushr(bw,br,bp);
+  unsigned l = out_ - bp;                                                       if(op+l >= out_) goto ovr;
+  memmove(op, bp, l); op += l; ctou32(out) = op - out;                          goto end; ovr:memcpy(out,_in,_inlen); op = out_;
+  end:free(_stk);
+  return op - out;
+}
+
+LIBAPI size_t T2(anscdfvzdec32,FSUFFIX)(unsigned char *in, size_t _outlen, unsigned char *_out) {
+  unsigned char *ip    = in+4, *bp = in+ctou32(in);
+  uint32_t      *out   = (uint32_t *)_out;
+  size_t        outlen = (_outlen+sizeof(out[0])-1)/sizeof(out[0]);
+  bitddef(bw, br); bitdinir(bw,br,bp);
+
+  uint32_t      *op = out, *out_ = out+outlen, cx = 0;
+  size_t        oplen,i;
+  unsigned      blksize = min(ANSBLKSIZE,outlen);
+  anscdfini(0);
+
+  for(;out < out_; out += oplen) {
+    STATEDEF(st);
+    CDF16DEC0(cdf0);
+	CDF16DEC0(cdf1);
+    CDF16DEF;
+    oplen = out_ - out;  oplen = min(oplen, blksize);
+    mnfill(st, ip);
+    for(; op < out+oplen;op++) {
+	  unsigned r;
+	  cdfdec7(cdf0,cdf1, st, ip, r);
+	  bitvrget(bw,br,bp, 2, 0, r);
+	  op[0] = (cx+= zigzagdec32(r));
+	}
+  }
+  return ctou32(in)+4;
+}
+
+#if !defined(__SSE3__) && !defined(__ARM_NEON)
+fanscdf4senc _anscdf4senc = anscdf4sencs; //set sse2
+fanscdf4sdec _anscdf4sdec = anscdf4sdecs;
+fanscdfenc   _anscdf4enc  = anscdf4encs;
+fanscdfdec   _anscdf4dec  = anscdf4decs;
+fanscdfenc   _anscdfenc   = anscdfencs;
+fanscdfdec   _anscdfdec   = anscdfdecs;
+fanscdfenc   _anscdf1enc  = anscdf1encs;
+fanscdfdec   _anscdf1dec  = anscdf1decs;
+
+fanscdfenc _anscdfuenc16  = anscdfuenc16s;
+fanscdfdec _anscdfudec16  = anscdfudec16s;
+fanscdfenc _anscdfuzenc16 = anscdfuzenc16s;
+fanscdfdec _anscdfuzdec16 = anscdfuzdec16s;
+
+fanscdfenc _anscdfvenc16  = anscdfvenc16s;
+fanscdfdec _anscdfvdec16  = anscdfvdec16s;
+fanscdfenc _anscdfvzenc16 = anscdfvzenc16s;
+fanscdfdec _anscdfvzdec16 = anscdfvzdec16s;
+
+fanscdfenc _anscdfvenc32  = anscdfvenc32s;
+fanscdfdec _anscdfvdec32  = anscdfvdec32s;
+fanscdfenc _anscdfvzenc32 = anscdfvzenc32s;
+fanscdfdec _anscdfvzdec32 = anscdfvzdec32s;
+
 static int anscdfset;
 
-void anscdfini(unsigned id) {  
+void anscdfini(unsigned id) {
   if(anscdfset && !id) return;
   div32init();
-  anscdfset = 1;     
-  id = id?id:cpuisa();          //printf("cpu=id=%d,%s\n", id, cpustr(id) );   
+  anscdfset = 1;
+  id = id?id:cpuisa();          //printf("cpu=id=%d,%s\n", id, cpustr(id) );
     #ifndef NAVX2
-  if(id >= 0x60) { _anscdfenc  = anscdfencx;  _anscdfdec  = anscdfdecx; 
-                   _anscdf4enc = anscdf4encx; _anscdf4dec = anscdf4decx;
-  }  else 
+  if(id >= 0x60) {
+    _anscdf4senc   = anscdf4sencx;   _anscdf4sdec   = anscdf4sdecx;
+    _anscdf4enc    = anscdf4encx;    _anscdf4dec    = anscdf4decx;
+    _anscdfenc     = anscdfencx;     _anscdfdec     = anscdfdecx;
+    _anscdf1enc    = anscdf1encx;    _anscdf1dec    = anscdf1decx;
+	_anscdfuenc16  = anscdfuenc16x;  _anscdfudec16  = anscdfudec16x;
+	_anscdfuzenc16 = anscdfuzenc16x; _anscdfuzdec16 = anscdfuzdec16x;
+	_anscdfvenc16  = anscdfvenc16x;  _anscdfvdec16  = anscdfvdec16x;
+	_anscdfvzenc16 = anscdfvzenc16x; _anscdfvzdec16 = anscdfvzdec16x;
+	_anscdfvenc32  = anscdfvenc32x;  _anscdfvdec32  = anscdfvdec32x;
+	_anscdfvzenc32 = anscdfvzenc32x; _anscdfvzdec32 = anscdfvzdec32x;
+  }  else
     #endif
     #ifndef NSSE
-  if(id >= 0x20) { 
-    _anscdfenc  = anscdfencs;  _anscdfdec  = anscdfdecs; 
-    _anscdf4enc = anscdf4encs; _anscdf4dec = anscdf4decs;
-  } else 
+  if(id >= 0x20) {
+    _anscdf4senc   = anscdf4sencs;   _anscdf4sdec   = anscdf4sdecs;
+    _anscdf4enc    = anscdf4encs;    _anscdf4dec    = anscdf4decs;
+    _anscdfenc     = anscdfencs;     _anscdfdec     = anscdfdecs;
+    _anscdf1enc    = anscdf1encs;    _anscdf1dec    = anscdf1decs;
+    _anscdfuenc16  = anscdfuenc16s;  _anscdfudec16  = anscdfudec16s;
+    _anscdfuzenc16 = anscdfuzenc16s; _anscdfuzdec16 = anscdfuzdec16s;
+    _anscdfvenc16  = anscdfvenc16s;  _anscdfvdec16  = anscdfvdec16s;
+    _anscdfvzenc16 = anscdfvzenc16s; _anscdfvzdec16 = anscdfvzdec16s;
+    _anscdfvenc32  = anscdfvenc32s;  _anscdfvdec32  = anscdfvdec32s;
+    _anscdfvzenc32 = anscdfvzenc32s; _anscdfvzdec32 = anscdfvzdec32s;
+ } else
     #endif
-  { 
-    _anscdfenc  = anscdfencs;  _anscdfdec  = anscdfdecs;   //TODO:replace to scalar for non SIMD systems
-    _anscdf4enc = anscdf4encs; _anscdf4dec = anscdf4decs; 
+  {
+    #ifndef NSCALAR
+    _anscdf4senc   = anscdf4sencs;   _anscdf4sdec   = anscdf4sdecs;
+    _anscdf4enc    = anscdf4encs;    _anscdf4dec    = anscdf4decs;
+    _anscdfenc     = anscdfencs;     _anscdfdec     = anscdfdecs;   //TODO:replace to scalar for non SIMD systems
+    _anscdf1enc    = anscdf1encs;    _anscdf1dec    = anscdf1decs;
+    _anscdfuenc16  = anscdfuenc16s;  _anscdfudec16  = anscdfudec16s;
+    _anscdfuzenc16 = anscdfuzenc16s; _anscdfuzdec16 = anscdfuzdec16s;
+    _anscdfvenc16  = anscdfvenc16s;  _anscdfvdec16  = anscdfvdec16s;
+    _anscdfvzenc16 = anscdfvzenc16s; _anscdfvzdec16 = anscdfvzdec16s;
+    _anscdfvenc32  = anscdfvenc32s;  _anscdfvdec32  = anscdfvdec32s;
+    _anscdfvzenc32 = anscdfvzenc32s; _anscdfvzdec32 = anscdfvzdec32s;
+	#endif
   }
 }
 
-LIBAPI unsigned anscdfenc( unsigned char *in, unsigned inlen,  unsigned char *out, unsigned blksize) { anscdfini(0); return _anscdfenc( in, inlen,  out, blksize); };
-LIBAPI unsigned anscdfdec( unsigned char *in, unsigned outlen, unsigned char *out, unsigned blksize) { anscdfini(0); return _anscdfdec( in, outlen, out, blksize); };
-LIBAPI unsigned anscdf4enc(unsigned char *in, unsigned inlen,  unsigned char *out, unsigned blksize) { anscdfini(0); return _anscdf4enc(in, inlen,  out, blksize); };
-LIBAPI unsigned anscdf4dec(unsigned char *in, unsigned outlen, unsigned char *out, unsigned blksize) { anscdfini(0); return _anscdf4dec(in, outlen, out, blksize); };
-  #endif    
+LIBAPI size_t anscdf4senc(   unsigned char *in, size_t inlen,  unsigned char *out, cdf_t *cdf) { anscdfini(0); return _anscdf4senc(   in, inlen,  out, cdf); };
+LIBAPI size_t anscdf4sdec(   unsigned char *in, size_t outlen, unsigned char *out, cdf_t *cdf) { anscdfini(0); return _anscdf4sdec(   in, outlen, out, cdf); };
+
+LIBAPI size_t anscdf4enc(    unsigned char *in, size_t inlen,  unsigned char *out) { anscdfini(0); return _anscdf4enc(   in, inlen,  out); };
+LIBAPI size_t anscdf4dec(    unsigned char *in, size_t outlen, unsigned char *out) { anscdfini(0); return _anscdf4dec(   in, outlen, out); };
+
+LIBAPI size_t anscdfenc(     unsigned char *in, size_t inlen,  unsigned char *out) { anscdfini(0); return _anscdfenc(    in, inlen,  out); };
+LIBAPI size_t anscdfdec(     unsigned char *in, size_t outlen, unsigned char *out) { anscdfini(0); return _anscdfdec(    in, outlen, out); };
+LIBAPI size_t anscdf1enc(    unsigned char *in, size_t inlen,  unsigned char *out) { anscdfini(0); return _anscdf1enc(   in, inlen,  out); };
+LIBAPI size_t anscdf1dec(    unsigned char *in, size_t outlen, unsigned char *out) { anscdfini(0); return _anscdf1dec(   in, outlen, out); };
+
+
+LIBAPI size_t anscdfuenc16(  unsigned char *in, size_t inlen,  unsigned char *out) { anscdfini(0); return _anscdfuenc16( in, inlen,  out); };
+LIBAPI size_t anscdfudec16(  unsigned char *in, size_t outlen, unsigned char *out) { anscdfini(0); return _anscdfudec16( in, outlen, out); };
+LIBAPI size_t anscdfuzenc16( unsigned char *in, size_t inlen,  unsigned char *out) { anscdfini(0); return _anscdfuzenc16(in, inlen,  out); };
+LIBAPI size_t anscdfuzdec16( unsigned char *in, size_t outlen, unsigned char *out) { anscdfini(0); return _anscdfuzdec16(in, outlen, out); };
+
+LIBAPI size_t anscdfvenc16(  unsigned char *in, size_t inlen,  unsigned char *out) { anscdfini(0); return _anscdfvenc16( in, inlen,  out); };
+LIBAPI size_t anscdfvdec16(  unsigned char *in, size_t outlen, unsigned char *out) { anscdfini(0); return _anscdfvdec16( in, outlen, out); };
+LIBAPI size_t anscdfvzenc16( unsigned char *in, size_t inlen,  unsigned char *out) { anscdfini(0); return _anscdfvzenc16(in, inlen,  out); };
+LIBAPI size_t anscdfvzdec16( unsigned char *in, size_t outlen, unsigned char *out) { anscdfini(0); return _anscdfvzdec16(in, outlen, out); };
+
+LIBAPI size_t anscdfvenc32(  unsigned char *in, size_t inlen,  unsigned char *out) { anscdfini(0); return _anscdfvenc32( in, inlen,  out); };
+LIBAPI size_t anscdfvdec32(  unsigned char *in, size_t outlen, unsigned char *out) { anscdfini(0); return _anscdfvdec32( in, outlen, out); };
+LIBAPI size_t anscdfvzenc32( unsigned char *in, size_t inlen,  unsigned char *out) { anscdfini(0); return _anscdfvzenc32(in, inlen,  out); };
+LIBAPI size_t anscdfvzdec32( unsigned char *in, size_t outlen, unsigned char *out) { anscdfini(0); return _anscdfvzdec32(in, outlen, out); };
+#endif
