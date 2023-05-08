@@ -10,12 +10,12 @@ BWT=1
 LIBSAIS16=1
 #V8
 #BWTSATAN=1
-#DELTA=1
 ANS=1
 #EXT=1
 #NOCOMP=1
 #AVX2=1
-
+#TURBORLE=1
+#TRANSPOSE=1
 #----------------------------------------------
 CC ?= gcc
 CXX ?= g++
@@ -134,7 +134,7 @@ ifeq ($(BWTX), 1)
 LIBBWT =../bwt/sssort.o ../bwt/bwtxinv.o ../bwt/divsufsort.o ../bwt/trsort.o
 CFLAGS+=-D_BWTX
 else
-CFLAGS+=-D_LIBSAIS 
+CFLAGS+=-D_LIBSAIS -Ilibsais/include
 LIBBWT+=$(B)libsais/src/libsais.o
 ifeq ($(LIBSAIS16), 1)
 CFLAGS+=-D_LIBSAIS16
@@ -149,10 +149,10 @@ all: turborc
 ifneq ($(NOCOMP), 1)
 LIB=rc_ss.o rc_s.o rccdf.o rcutil.o bec_b.o rccm_s.o rccm_ss.o rcqlfc_s.o rcqlfc_ss.o rcqlfc_sf.o 
 
-ifeq ($(DELTA), 1)
-CFLAGS+=-D_DELTA
-LIB+=transform.o
-endif
+#ifeq ($(DELTA), 1)
+#CFLAGS+=-D_DELTA
+#LIB+=transform.o
+#endif
 
 ifeq ($(ANS), 1)
 CFLAGS+=-D_ANS
@@ -166,6 +166,19 @@ $(L)anscdfs.o: $(L)anscdf.c $(L)anscdf_.h
 $(L)anscdfx.o: $(L)anscdf.c $(L)anscdf_.h
 	$(CC) -c -O3 $(CFLAGS) -march=haswell -falign-loops=32 $(L)anscdf.c -o $(L)anscdfx.o 
 LIB+=$(L)anscdfx.o $(L)anscdfs.o $(L)anscdf0.o
+endif
+
+ifeq ($(TURBORLE), 1)
+CFLAGS+=-D_TURBORLE
+LIB+=trlec.o trled.o
+endif
+
+ifeq ($(TRANSPOSE), 1)
+transpose_avx2.o: transpose.c
+	$(CC) -O3 -w -mavx2 $(OPT) -c transpose.c -o transpose_avx2.o
+
+CFLAGS+=-D_TRANSPOSE -D_NCPUISA
+LIB+=transpose.o transpose_.o transpose_avx2.o
 endif
 
 ifeq ($(V8), 1)
