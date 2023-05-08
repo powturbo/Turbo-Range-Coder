@@ -32,6 +32,7 @@
 #include "include_/conf.h"
 #define _DIVTDEF32
 #include "anscdf_.h"
+#include "rcutil_.h"
  
   #ifdef __AVX2__
 #define FSUFFIX x
@@ -213,7 +214,6 @@ LIBAPI size_t T2(anscdf4enc,FSUFFIX)(unsigned char *in, size_t inlen, unsigned c
 }
 
 //----- Turbo VLC
-#include "rcutil_.h"
 #include "include_/vlcbit.h"
 
 //---------------------------------- Turbo VLC with 6 bits exponent ---------------------------------------------
