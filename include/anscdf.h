@@ -24,8 +24,10 @@
 // TurboRANS Range Asymmetric Systems : include header 
 #define LIBAPI
 
-typedef LIBAPI unsigned *(*fanscdfenc)(unsigned char *in, unsigned inlen, unsigned char *out, unsigned blksize);
-typedef LIBAPI unsigned *(*fanscdfdec)(unsigned char *in, unsigned inlen, unsigned char *out, unsigned blksize);
+typedef LIBAPI size_t (*fanscdfenc)(  unsigned char *in, size_t inlen, unsigned char *out);
+typedef LIBAPI size_t (*fanscdfdec)(  unsigned char *in, size_t inlen, unsigned char *out);
+typedef LIBAPI size_t (*fanscdf4senc)(unsigned char *in, size_t inlen, unsigned char *out, cdf_t *cdf);
+typedef LIBAPI size_t (*fanscdf4sdec)(unsigned char *in, size_t inlen, unsigned char *out, cdf_t *cdf);
 
 extern fanscdfenc _anscdfenc;
 extern fanscdfdec _anscdfdec;
@@ -36,27 +38,107 @@ extern fanscdfdec _anscdf4dec;
 extern "C" {
 #endif
 void anscdfini(unsigned id);
-LIBAPI unsigned anscdfenc(  unsigned char *in, unsigned inlen,  unsigned char *out, unsigned blksize);
-LIBAPI unsigned anscdfdec(  unsigned char *in, unsigned outlen, unsigned char *out, unsigned blksize);
-LIBAPI unsigned anscdf4enc( unsigned char *in, unsigned inlen,  unsigned char *out, unsigned blksize);
-LIBAPI unsigned anscdf4dec( unsigned char *in, unsigned outlen, unsigned char *out, unsigned blksize);
+
+LIBAPI size_t anscdf4senc(   unsigned char *in, size_t inlen,  unsigned char *out, cdf_t *cdf);
+LIBAPI size_t anscdf4sdec(   unsigned char *in, size_t outlen, unsigned char *out, cdf_t *cdf);
+                             
+LIBAPI size_t anscdf4senc(   unsigned char *in, size_t inlen,  unsigned char *out, cdf_t *cdf);
+LIBAPI size_t anscdf4sdec(   unsigned char *in, size_t outlen, unsigned char *out, cdf_t *cdf);
+LIBAPI size_t anscdf4enc(    unsigned char *in, size_t inlen,  unsigned char *out);
+LIBAPI size_t anscdf4dec(    unsigned char *in, size_t outlen, unsigned char *out);
+LIBAPI size_t anscdfenc(     unsigned char *in, size_t inlen,  unsigned char *out);
+LIBAPI size_t anscdfdec(     unsigned char *in, size_t outlen, unsigned char *out);
+LIBAPI size_t anscdf1enc(    unsigned char *in, size_t inlen,  unsigned char *out); // o1
+LIBAPI size_t anscdf1dec(    unsigned char *in, size_t outlen, unsigned char *out);
+                             
+LIBAPI size_t anscdfuenc16(  unsigned char *in, size_t inlen,  unsigned char *out); // vlc6 16 bits
+LIBAPI size_t anscdfudec16(  unsigned char *in, size_t outlen, unsigned char *out);
+LIBAPI size_t anscdfuzenc16( unsigned char *in, size_t inlen,  unsigned char *out); // vlc6 16 bits zigzag
+LIBAPI size_t anscdfuzdec16( unsigned char *in, size_t outlen, unsigned char *out);
+                             
+LIBAPI size_t anscdfvenc16(  unsigned char *in, size_t inlen,  unsigned char *out); // vlc7 16 bits
+LIBAPI size_t anscdfvdec16(  unsigned char *in, size_t outlen, unsigned char *out);
+LIBAPI size_t anscdfvzenc16( unsigned char *in, size_t inlen,  unsigned char *out); // vlc7 16 bits zigzag
+LIBAPI size_t anscdfvzdec16( unsigned char *in, size_t outlen, unsigned char *out);
+                             
+LIBAPI size_t anscdfvenc32(  unsigned char *in, size_t inlen,  unsigned char *out); // vlc7 32 bits
+LIBAPI size_t anscdfvdec32(  unsigned char *in, size_t outlen, unsigned char *out);
+LIBAPI size_t anscdfvzenc32( unsigned char *in, size_t inlen,  unsigned char *out); // vlc7 32 bits zigzag
+LIBAPI size_t anscdfvzdec32( unsigned char *in, size_t outlen, unsigned char *out);
 
 //-------------- direct function calls --------------------------------------------------------
-LIBAPI unsigned anscdfenc0( unsigned char *in, unsigned inlen,  unsigned char *out, unsigned blksize);
-LIBAPI unsigned anscdfencs( unsigned char *in, unsigned inlen,  unsigned char *out, unsigned blksize);
-LIBAPI unsigned anscdfencx( unsigned char *in, unsigned inlen,  unsigned char *out, unsigned blksize);
-LIBAPI unsigned anscdfdec0( unsigned char *in, unsigned outlen, unsigned char *out, unsigned blksize);
-LIBAPI unsigned anscdfdecs( unsigned char *in, unsigned outlen, unsigned char *out, unsigned blksize);
-LIBAPI unsigned anscdfdecx( unsigned char *in, unsigned outlen, unsigned char *out, unsigned blksize);
+LIBAPI size_t anscdf4senc0(  unsigned char *in, size_t inlen,  unsigned char *out, cdf_t *cdf);
+LIBAPI size_t anscdf4sdec0(  unsigned char *in, size_t outlen, unsigned char *out, cdf_t *cdf);
+LIBAPI size_t anscdf4sencs(  unsigned char *in, size_t inlen,  unsigned char *out, cdf_t *cdf);
+LIBAPI size_t anscdf4sdecs(  unsigned char *in, size_t outlen, unsigned char *out, cdf_t *cdf);
+LIBAPI size_t anscdf4sencx(  unsigned char *in, size_t inlen,  unsigned char *out, cdf_t *cdf);
+LIBAPI size_t anscdf4sdecx(  unsigned char *in, size_t outlen, unsigned char *out, cdf_t *cdf);
+                             
+LIBAPI size_t anscdfenc0(    unsigned char *in, size_t inlen,  unsigned char *out);
+LIBAPI size_t anscdfencs(    unsigned char *in, size_t inlen,  unsigned char *out);
+LIBAPI size_t anscdfencx(    unsigned char *in, size_t inlen,  unsigned char *out);
+LIBAPI size_t anscdfdec0(    unsigned char *in, size_t outlen, unsigned char *out);
+LIBAPI size_t anscdfdecs(    unsigned char *in, size_t outlen, unsigned char *out);
+LIBAPI size_t anscdfdecx(    unsigned char *in, size_t outlen, unsigned char *out);
+                             
+LIBAPI size_t anscdf1enc0(   unsigned char *in, size_t inlen,  unsigned char *out);
+LIBAPI size_t anscdf1encs(   unsigned char *in, size_t inlen,  unsigned char *out);
+LIBAPI size_t anscdf1encx(   unsigned char *in, size_t inlen,  unsigned char *out);
+LIBAPI size_t anscdf1dec0(   unsigned char *in, size_t outlen, unsigned char *out);
+LIBAPI size_t anscdf1decs(   unsigned char *in, size_t outlen, unsigned char *out);
+LIBAPI size_t anscdf1decx(   unsigned char *in, size_t outlen, unsigned char *out);
+                             
+LIBAPI size_t anscdf4enc0(   unsigned char *in, size_t inlen,  unsigned char *out);
+LIBAPI size_t anscdf4encs(   unsigned char *in, size_t inlen,  unsigned char *out);
+LIBAPI size_t anscdf4encx(   unsigned char *in, size_t inlen,  unsigned char *out);
+LIBAPI size_t anscdf4dec0(   unsigned char *in, size_t outlen, unsigned char *out);
+LIBAPI size_t anscdf4decs(   unsigned char *in, size_t outlen, unsigned char *out);
+LIBAPI size_t anscdf4decx(   unsigned char *in, size_t outlen, unsigned char *out);
+                             
+LIBAPI size_t anscdfuenc160( unsigned char *in, size_t inlen,  unsigned char *out);
+LIBAPI size_t anscdfudec160( unsigned char *in, size_t outlen, unsigned char *out);
+LIBAPI size_t anscdfuenc16s( unsigned char *in, size_t inlen,  unsigned char *out);
+LIBAPI size_t anscdfudec16s( unsigned char *in, size_t outlen, unsigned char *out);
+LIBAPI size_t anscdfuenc16x( unsigned char *in, size_t inlen,  unsigned char *out);
+LIBAPI size_t anscdfudec16x( unsigned char *in, size_t outlen, unsigned char *out);
+                             
+LIBAPI size_t anscdfuzenc160(unsigned char *in, size_t inlen,  unsigned char *out);
+LIBAPI size_t anscdfuzdec160(unsigned char *in, size_t outlen, unsigned char *out);
+LIBAPI size_t anscdfuzenc16s(unsigned char *in, size_t inlen,  unsigned char *out);
+LIBAPI size_t anscdfuzdec16s(unsigned char *in, size_t outlen, unsigned char *out);
+LIBAPI size_t anscdfuzenc16x(unsigned char *in, size_t inlen,  unsigned char *out);
+LIBAPI size_t anscdfuzdec16x(unsigned char *in, size_t outlen, unsigned char *out);
+                             
+LIBAPI size_t anscdfvenc160( unsigned char *in, size_t inlen,  unsigned char *out); // vlc7 16 bits
+LIBAPI size_t anscdfvdec160( unsigned char *in, size_t outlen, unsigned char *out);
+LIBAPI size_t anscdfvenc16s( unsigned char *in, size_t inlen,  unsigned char *out);
+LIBAPI size_t anscdfvdec16s( unsigned char *in, size_t outlen, unsigned char *out);
+LIBAPI size_t anscdfvenc16x( unsigned char *in, size_t inlen,  unsigned char *out);
+LIBAPI size_t anscdfvdec16x( unsigned char *in, size_t outlen, unsigned char *out);
 
-LIBAPI unsigned anscdf4enc0(unsigned char *in, unsigned inlen,  unsigned char *out, unsigned blksize);
-LIBAPI unsigned anscdf4encs(unsigned char *in, unsigned inlen,  unsigned char *out, unsigned blksize);
-LIBAPI unsigned anscdf4encx(unsigned char *in, unsigned inlen,  unsigned char *out, unsigned blksize);
-LIBAPI unsigned anscdf4dec0(unsigned char *in, unsigned outlen, unsigned char *out, unsigned blksize);
-LIBAPI unsigned anscdf4decs(unsigned char *in, unsigned outlen, unsigned char *out, unsigned blksize);
-LIBAPI unsigned anscdf4decx(unsigned char *in, unsigned outlen, unsigned char *out, unsigned blksize);
-//extern LIBAPI unsigned ansbc(unsigned char *in, unsigned inlen, unsigned char *out, unsigned outsize, unsigned blksize);
-//extern LIBAPI unsigned ansbd(unsigned char *in, unsigned inlen, unsigned char *out, unsigned blksize);
+LIBAPI size_t anscdfvzenc160(unsigned char *in, size_t inlen,  unsigned char *out); // vlc7 16 bits zigzag
+LIBAPI size_t anscdfvzdec160(unsigned char *in, size_t outlen, unsigned char *out);
+LIBAPI size_t anscdfvzenc16s(unsigned char *in, size_t inlen,  unsigned char *out);
+LIBAPI size_t anscdfvzdec16s(unsigned char *in, size_t outlen, unsigned char *out);
+LIBAPI size_t anscdfvzenc16x(unsigned char *in, size_t inlen,  unsigned char *out);
+LIBAPI size_t anscdfvzdec16x(unsigned char *in, size_t outlen, unsigned char *out);
+
+LIBAPI size_t anscdfvenc320( unsigned char *in, size_t inlen,  unsigned char *out); // vlc7 32 bits
+LIBAPI size_t anscdfvdec320( unsigned char *in, size_t outlen, unsigned char *out);
+LIBAPI size_t anscdfvenc32s( unsigned char *in, size_t inlen,  unsigned char *out);
+LIBAPI size_t anscdfvdec32s( unsigned char *in, size_t outlen, unsigned char *out);
+LIBAPI size_t anscdfvenc32x( unsigned char *in, size_t inlen,  unsigned char *out);
+LIBAPI size_t anscdfvdec32x( unsigned char *in, size_t outlen, unsigned char *out);
+
+LIBAPI size_t anscdfvzenc320(unsigned char *in, size_t inlen,  unsigned char *out); // vlc7 32 bits zigzag
+LIBAPI size_t anscdfvzdec320(unsigned char *in, size_t outlen, unsigned char *out);
+LIBAPI size_t anscdfvzenc32s(unsigned char *in, size_t inlen,  unsigned char *out);
+LIBAPI size_t anscdfvzdec32s(unsigned char *in, size_t outlen, unsigned char *out);
+LIBAPI size_t anscdfvzenc32x(unsigned char *in, size_t inlen,  unsigned char *out);
+LIBAPI size_t anscdfvzdec32x(unsigned char *in, size_t outlen, unsigned char *out);
+
+//extern LIBAPI size_t ansbc(unsigned char *in, size_t inlen, unsigned char *out, unsigned outsize);
+//extern LIBAPI size_t ansbd(unsigned char *in, size_t inlen, unsigned char *out);
 #ifdef __cplusplus
 }
 #endif
