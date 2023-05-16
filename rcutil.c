@@ -655,34 +655,34 @@ void      delta8d24(uint8_t *in, size_t n, uint8_t *out) { uint8_t  u[3]={0},z; 
 #ifndef _NCPUISA
 static unsigned _cpuisa;
 //--------------------- CPU detection -------------------------------------------
-    #if defined(__i386__) || defined(__x86_64__)
-      #if _MSC_VER >=1300
+  #if defined(__i386__) || defined(__x86_64__) || defined(_M_X64) || defined(_M_IX86)
+    #if (_MSC_VER >=1300) && !defined(__clang__)
 #include <intrin.h>
-      #elif defined (__INTEL_COMPILER)
+    #elif defined (__INTEL_COMPILER)
 #include <x86intrin.h>
-      #endif
+    #endif
 
 static inline void cpuid(int reg[4], int id) {
-      #if defined (_MSC_VER) //|| defined (__INTEL_COMPILER)
+    #if defined (_MSC_VER) && !defined(__clang__) //|| defined (__INTEL_COMPILER)
   __cpuidex(reg, id, 0);
-      #elif defined(__i386__) || defined(__x86_64__)
-  __asm("cpuid" : "=a"(reg[0]),"=b"(reg[1]),"=c"(reg[2]),"=d"(reg[3]) : "a"(id),"c"(0) : );
-      #endif
+    #elif defined(__i386__) || defined(__x86_64__)
+  __asm("cpuid" : "=a"(reg[0]),"=b"(reg[1]),"=c"(reg[2]),"=d"(reg[3]) : "a"(id),"c"(0) : );//  __cpuid(0, reg[0], reg[1], reg[2], reg[3]);
+    #endif
 }
 
 static inline uint64_t xgetbv (int ctr) {
-      #if(defined _MSC_VER && (_MSC_FULL_VER >= 160040219) || defined __INTEL_COMPILER)
+    #if(defined _MSC_VER && (_MSC_FULL_VER >= 160040219) && !defined(__clang__) || defined __INTEL_COMPILER)
   return _xgetbv(ctr);
-      #elif defined(__i386__) || defined(__x86_64__)
+    #elif defined(__i386__) || defined(__x86_64__) || defined(_M_X64) || defined(_M_IX86)
   unsigned a, d;
   __asm("xgetbv" : "=a"(a),"=d"(d) : "c"(ctr) : );
   return (uint64_t)d << 32 | a;
-      #else
-  unsigned a=0, d=0;
+    #else
+  unsigned a = 0, d = 0;
   return (uint64_t)d << 32 | a;
-      #endif
-}
     #endif
+}
+  #endif
 
 #define AVX512F     0x001
 #define AVX512DQ    0x002
@@ -713,7 +713,7 @@ unsigned cpuisa(void) {
   int c[4] = {0};
   if(_cpuisa) return _cpuisa;
   _cpuisa++;
-    #if defined(__i386__) || defined(__x86_64__)
+    #if defined(__i386__) || defined(__x86_64__) || defined(_M_X64) || defined(_M_IX86)
   cpuid(c, 0);
   if(c[0]) {
     cpuid(c, 1);
@@ -766,7 +766,7 @@ unsigned cpuini(unsigned cpuisa) { if(cpuisa) _cpuisa = cpuisa; return _cpuisa; 
 
 char *cpustr(unsigned cpuisa) {
   if(!cpuisa) cpuisa = _cpuisa;
-    #if defined(__i386__) || defined(__x86_64__)
+    #if defined(__i386__) || defined(__x86_64__) || defined(_M_X64) || defined(_M_IX86)
   if(cpuisa >= IS_AVX512) {
     if(cpuisa & AVX512VBMI2) return "avx512vbmi2";
     if(cpuisa & AVX512VBMI)  return "avx512vbmi";
@@ -797,7 +797,7 @@ char *cpustr(unsigned cpuisa) {
   else if(cpuisa >= IS_SSE3)    return "sse3";
   else if(cpuisa >= IS_SSE2)    return "sse2";
   else if(cpuisa >= IS_SSE)     return "sse";
-     #elif defined(__powerpc64__)
+    #elif defined(__powerpc64__)
   if(cpuisa >= IS_POWER9)       return "power9";
     #elif defined(__ARM_NEON)
   if(cpuisa >= IS_NEON)         return "arm_neon";
