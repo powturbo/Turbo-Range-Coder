@@ -30,7 +30,10 @@
 #include "include/turborc.h" // cdf_t
 #include "include/anscdf.h"
 #include "include_/conf.h"
+
+#ifndef _NDIVTDEF32
 #define _DIVTDEF32
+#endif
 #include "anscdf_.h"
 #include "rcutil_.h"
  
