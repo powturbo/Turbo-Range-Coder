@@ -495,6 +495,8 @@ unsigned bench(unsigned char *in, unsigned n, unsigned char *out, unsigned char 
               if(m<16){TM("58:ans avx2 nibble                      ",l=anscdf4encx( in,n,out), n,l, l==n?memcpy(cpy,out,n):anscdf4decx( out,n,cpy));}
               else    {TM("58:ans avx2                             ",l=anscdfencx(  in,n,out), n,l, l==n?memcpy(cpy,out,n):anscdfdecx(  out,n,cpy));} 
             }  break;
+    //case 59:if(m<16){TM("57:ansx sse nibble                      ",l=anscdf4encs( in,n,out), n,l, l==n?memcpy(cpy,out,n):anscdf4decs( out,n,cpy));}
+    //        else    {TM("57:ansx sse                             ",l=anscdfxencx(  in,n,out), n,l, l==n?memcpy(cpy,out,n):anscdfxdecx(  out,n,cpy));} break;
     case 60:if(z==2){TM("60:anscdf-16 Turbo vlc6                 ",l=anscdfuenc16(in,n,out),   n,l, l==n?memcpy(cpy,out,n):anscdfudec16( out,n,cpy));  } break;
           //if(z==4){TM("60:anscdf-32 Turbo vlc6                 ",l=rccdfuenc32(in,n,out),   n,l, l==n?memcpy(cpy,out,n):rccdfudec32(out,n,cpy));} break;
     case 61:if(z==2){TM("61:anscdf-16 Turbo vlc6 zigzag          ",l=anscdfuzenc16(in,n,out),  n,l, l==n?memcpy(cpy,out,n):anscdfuzdec16(out,n,cpy)); } break; 
