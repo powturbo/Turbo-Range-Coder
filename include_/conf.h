@@ -261,7 +261,7 @@ struct _PACKED doubleu   { double             d; };
 #define BZHI32(_u_, _b_)                 ((_u_) & BZMASK32(_b_)) 
 #define BZHI16(_u_, _b_)                 BZHI32(_u_, _b_)
 #define BZHI8( _u_, _b_)                 BZHI32(_u_, _b_)
-#define BEXTR32(x,start,len)             (((x) >> (start)) & ((1u << (len)) - 1)) //Bit field extract (with register)
+#define BEXTR32(_x_,_start_,_len_)       BZHI32(((_x_) >> (_start_)), _len_) //Bit field extract (with register)
 
     #ifdef __AVX2__
       #if defined(_MSC_VER) && !defined(__INTEL_COMPILER)
