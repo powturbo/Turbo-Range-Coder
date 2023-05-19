@@ -41,16 +41,16 @@
 #include <emmintrin.h>
   #elif defined(__ARM_NEON)
 #include <arm_neon.h>
-#include "include/sse2neon.h"
   #endif
+#include "include_/sse_neon.h"
 #include "include_/conf.h"
 
-#define ANS_BITS 15
+#define ANS_BITS 15  // maximum = 15
 #define RC_BITS ANS_BITS
 #include "cdf_.h"
 
 #define IOBITS   16
-typedef unsigned state_t;
+typedef unsigned       state_t;
 typedef unsigned short io_t;
 #define ANS_LBITS                       (8*(sizeof(state_t) - sizeof(io_t)) - 1)
 #define ANS_LOW                         (1u << ANS_LBITS)
@@ -83,6 +83,7 @@ unsigned _y = _x_ << 16 | ctou16(_ip_); \
         _x_ = (_x_ < ANS_LOW) ? _y : _x_;\
 } while(0)
   #else
+//#define ecdnorm(_x_,_ip_) if(unlikely(_x_ < ANS_LOW)) _x_ = _x_ << 16 | ctou16(_ip_),_ip_+=2
 #define ecdnorm(_x_,_ip_)  do { unsigned _c = _x_ < ANS_LOW; _x_ = _x_ << (_c<<4) | ctou16(_ip_)&(-_c);  _ip_ += 2&(-_c); } while(0)
   #endif 
 
@@ -91,9 +92,8 @@ typedef unsigned short mbu;
 //--------------------------- Divison ------------------------------------------------
 #define RC_MULTISYMBOL
 #define RC_MACROS 
-#define RC_SIZE 32  //32 bit RC only for division free w/ reciprocal multiplication
-#define RC_BITS 15
-#define RC_IO   16
+#define RC_SIZE 32             //32 bit RC only for division free w/ reciprocal multiplication
+#define RC_IO   16             //#define RC_BITS 15
 #define DIV_BITS (32-RC_BITS)  //=17 include division free coder
 #include "turborc_.h"
 
@@ -106,39 +106,41 @@ typedef unsigned short mbu;
 }
 
 //------------------------------- Model --------------------------------------------
-#define ANSN           2 
-#define STATEDEF(_st_) state_t _st_[ANSN] = {ANS_LOW, ANS_LOW}
+#define STATEDEC(_st_, _ansn_) state_t _st_[_ansn_]
+#define STATEINI(_st_, _ansn_) { int _i; for(_i = 0; _i < _ansn_; _i++) _st_[_i] = ANS_LOW; }
+#define STATEDEF(_st_, _ansn_) STATEDEC(_st_, _ansn_); STATEINI(_st_, _ansn_)
 
 #define ansenc(_m_, _sti_, _ep_, _x_) { unsigned _bp = _m_[_x_], _cbp = _m_[(_x_)+1] - _bp; ece(_sti_, _cbp, _bp, _ep_); }
-#define ansflush(_st_, _ep_) for(int _i = 0; _i < ANSN; _i++) eceflush(_st_[_i], _ep_)
+#define ansflush(_st_, _ep_, _ansn_) for(int _i = 0; _i < _ansn_; _i++) eceflush(_st_[_i], _ep_)
 #define ansdec(_m_, _sti_, _ip_, _x_) do { cdf16sansdec(_m_, _sti_, _x_); ecdnorm(_sti_, _ip_); } while(0)
-	
-//-- encode
-#define mnenc4(_m_,_si_, _x_, _stk_) {\
-  unsigned _cp = _m_[_x_];                                                      /*AC(_stk_ + 2 <= _stk + blksize*4, "mnenc4:Fatal error");*/\
-  *_stk_++ = _si_<<15 | _cp;\
-  *_stk_++ = _m_[(_x_)+1] - _cp;\
-  cdf16upd(_m_,_x_);\
-}
 
-#define mnenc8(_mh_, _ml_, _x_,_stk_) {\
+//-- encode	
+#define mnenc4(_m_,_si_, _x_, _stk_)  { *_stk_++ = (unsigned)(_si_)<<(2*ANS_BITS) | _m_[_x_]<<ANS_BITS | (_m_[(_x_)+1] - _m_[_x_]); cdf16upd(_m_,_x_); } /*store probs in stack*/
+#define mnenc8(_mh_, _ml_, _x_,_stk_) { /*encode 1 byte / 2x interleaved*/\
   unsigned _x = _x_, _yh = _x>>4, _yl = _x & 0xf;\
   mnenc4(_mh_, 1, _yh, _stk_);\
   mbu *_m = _ml_[_yh];\
   mnenc4(_m, 0, _yl, _stk_);\
 }
 
-#define mnflush(_op_,_op__,__stk_,_stk_) {\
-  STATEDEF(_st);\
+#define mnenc8x2(_mh_, _ml_, _x0_,_x1_, _stk_) { /*encode 2 bytes / 4x interleaved*/\
+  unsigned _x = _x0_, _yh = _x>>4, _yl = _x & 0xf; mnenc4(_mh_, 3, _yh, _stk_);\
+  mbu *_m = _ml_[_yh];                             mnenc4(_m,   2, _yl, _stk_);\
+           _x = _x1_, _yh = _x>>4, _yl = _x & 0xf; mnenc4(_mh_, 1, _yh, _stk_);\
+      _m = _ml_[_yh];                              mnenc4(_m,   0, _yl, _stk_);\
+}
+
+#define mnflush(_op_,_op__,__stk_,_stk_, _ansn_) { /*process the stack, encode all probs*/\
+  STATEDEF(_st, _ansn_);\
   unsigned char *_ep = _op__,_i;\
   while(_stk_ != __stk_) {\
-    unsigned _pb = *--_stk_, _si = *--_stk_, _cpb = _si & 0x7fff;               if(_ep <= _op_+sizeof(io_t)+ANSN*sizeof(_st[0])) goto ovr;\
-    ece(_st[_si>>15], _pb, _cpb, _ep);\
-  }                                                                             \
-  for(_i = 0; _i < ANSN; _i++) eceflush(_st[_i], _ep);                          if(_ep <= _op_) goto ovr;\
+    unsigned _si = *--_stk_, _cpb = BEXTR32(_si,ANS_BITS,ANS_BITS), _pb = BZHI32(_si,ANS_BITS);  if(_ep <= _op_+sizeof(io_t)+(_ansn_)*sizeof(_st[0])) goto ovr;\
+    ece(_st[_si>>(2*ANS_BITS)], _pb, _cpb, _ep);\
+  }\
+  for(_i = 0; _i < _ansn_; _i++) eceflush(_st[_i], _ep);                        if(_ep <= _op_) goto ovr;\
   unsigned _l = _op__ - _ep;                                                    if(_op_ + _l >= _op__) goto ovr;\
   memmove(_op_, _ep, _l); _op_ += _l; \
-} 
+}
 
 //-- Decode
 #define mndec4(_m_, _st_, _ip_, _x_) do { cdf16ansdec(_m_, _st_, _x_); ecdnorm(_st_, _ip_); } while(0)
@@ -152,20 +154,23 @@ typedef unsigned short mbu;
   ecdnorm(_st_[1], _ip_);\
 }  
 
-#define mndec8x(_mh_, _ml_, _st_, _ip_, _x_) {\
+#define mndec8x2(_mh_, _ml_, _st_, _ip_, _x0_, _x1_) {\
   unsigned _yh,_yl;\
-  cdf16ansdec(_mh_, _st_[0], _yh);\
-  cdf16ansdec(_ml_[_yh], _st_[1], _yl);\
-  _x_ = _yh << 4| _yl;\
+                       cdf16ansdec(_mh_,_st_[0], _yh);\
+  mbu *_m = _ml_[_yh]; cdf16ansdec(_m,  _st_[1], _yl); _x0_ = _yh << 4| _yl;\
   ecdnorm(_st_[0], _ip_);\
   ecdnorm(_st_[1], _ip_);\
+                       cdf16ansdec(_mh_,_st_[2], _yh);\
+       _m = _ml_[_yh]; cdf16ansdec(_m,  _st_[3], _yl); _x1_ = _yh << 4| _yl;\
+  ecdnorm(_st_[2], _ip_);\
+  ecdnorm(_st_[3], _ip_);\
 }  
 
-#define mnfill(_st_, _ip_) {\
-  unsigned _i; for(_i = 0; _i < ANSN; _i++) { if(_st_[_i] != ANS_LOW) die("Fatal error: st=%X\n", _st_[_i]); ecdini(_st_[_i], _ip_); }\
+#define mnfill(_st_, _ip_, _ansn_) {\
+  unsigned _i; for(_i = 0; _i < _ansn_; _i++) { if(_st_[_i] != ANS_LOW) die("Fatal error: st=%X\n", _st_[_i]); ecdini(_st_[_i], _ip_); }\
 }  
 
-// Variable Length Coding: Integer 0-299
+//--------------------------- Variable Length Coding: Integer 0-299 ----------------------------------
 // 1:0-12   		   0-12
 // 2:13,14 xxxx        13,14...45(13+32)
 // 3:15	   xxxx+xxxx   46,47..299(255+13+32)
