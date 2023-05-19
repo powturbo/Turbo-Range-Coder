@@ -189,6 +189,7 @@ struct _div32 { unsigned m; unsigned char s; } _PACKED; //divisor RC_BITS=15 -> 
 
   #ifndef _DIVTDEF32
 DIVTDEF32(DIV_BITS);
+#define _DIVTDEF32
   #else
 extern struct _div32 _div32lut[];
   #endif 
