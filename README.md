@@ -87,6 +87,7 @@
 |  175.66 | 31121412| 31.12%|     81.25|49:cdfi-8 |  vnibble interleaved        |       
 |  111.49 | 24848864| 24.85%|    198.44|56:ans    |  rANS nibble interleaved    |                                    
 |  107.29 | 23068372| 23.07%|     68.12|64:ans o1 |  rANS nibble o1             |                                  
+|   50.07 | 23521656| 23.52%|     80.56|66:ansb   |  bitwise ANS                |                                  
 |16482.00 |100000012|100.00%|  16094.51|59:memcpy |                             |       
 
 61349658  61.35%      99.67   144.47 57:ans sse  
@@ -235,4 +236,4 @@ See examples in "turborc.c"
 * **References:**
   * <a name="a"></a>[Entropy Coder Benchmark](https://sites.google.com/site/powturbo/entropy-coder) 
 
-Last update: 19 MAY 2023
+Last update: 22 MAY 2023
