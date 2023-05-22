@@ -91,7 +91,6 @@
 |   50.07 | 23521656| 23.52%|     80.56|66:ansb   |  bitwise ANS                |                                  
 |16482.00 |100000012|100.00%|  16094.51|59:memcpy |                             |       
 
-61349658  61.35%      99.67   144.47 57:ans sse  
 ## BWT Benchmark: TurboRC vs the best BWT compressors (2023.04)
 - [bsc](https://github.com/IlyaGrebnov/libbsc)
 - [bzip3](https://github.com/kspalaiologos/bzip3)
