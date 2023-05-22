@@ -537,26 +537,6 @@ LIBAPI size_t T2(anscdfvzdec32,FSUFFIX)(unsigned char *in, size_t _outlen, unsig
 }
 
 #if 0 // 2x interleaved
-LIBAPI size_t T2(anscdfdec,FSUFFIX)(unsigned char *in, size_t outlen, unsigned char *out) {
-  unsigned char *op = out, *out_ = out+outlen, *ip  = in;
-  size_t        oplen,i;
-  unsigned      blksize = min(ANSBLKSIZE,outlen);
-  anscdfini(0);
-
-  for(;out < out_; out += oplen) {
-    STATEDEF(st,ANSN);
-    CDF16DEC0(mbh);
-    CDF16DEC1(mbl,16);
-    CDF16DEF;
-    oplen = out_ - out;  oplen = min(oplen, blksize); //	HLOAD(mbh);
-    mnfill(st, ip, ANSN);
-	#define STD(_i_) mndec8(mbh,mbl,st,ip,op[_i_])
-    for(; op < out+(oplen&~3); op += 4) { STD(0); STD(1); STD(2); STD(3); }
-    for(; op < out+oplen;op++) { STD(0); }
-  }
-  return outlen;
-}
-
 LIBAPI size_t T2(anscdfenc,FSUFFIX)(unsigned char *in, size_t inlen, unsigned char *out) {
   unsigned char *op = out,*ip = in,*in_ = in+inlen, *out_ = out+inlen;
   size_t        iplen;
@@ -577,28 +557,28 @@ LIBAPI size_t T2(anscdfenc,FSUFFIX)(unsigned char *in, size_t inlen, unsigned ch
   end:free(_stk);
   return op - out;
 }
-#else
-#define ANSNX 4 // 4x interleaved
+
 LIBAPI size_t T2(anscdfdec,FSUFFIX)(unsigned char *in, size_t outlen, unsigned char *out) {
   unsigned char *op = out, *out_ = out+outlen, *ip  = in;
   size_t        oplen,i;
   unsigned      blksize = min(ANSBLKSIZE,outlen);
   anscdfini(0);
+
   for(;out < out_; out += oplen) {
-    STATEDEF(st, ANSNX);   
+    STATEDEF(st,ANSN);
     CDF16DEC0(mbh);
     CDF16DEC1(mbl,16);
     CDF16DEF;
-    oplen = out_ - out;  oplen = min(oplen, blksize);
-    mnfill(st,ip,ANSNX);  
-	#define STD(_i_) mndec8x2(mbh,mbl,st,ip,op[_i_], op[_i_+1])
-    for(; op < out+(oplen&~3); op += 4) { STD(0); STD(2); }
-    if(op < out+(oplen&~1))  { STD(0); op +=2; }
-    if(op < out+oplen) { unsigned x; mndec8x2(mbh,mbl,st,ip,op[0], x); op++; }
+    oplen = out_ - out;  oplen = min(oplen, blksize); //	HLOAD(mbh);
+    mnfill(st, ip, ANSN);
+	#define STD(_i_) mndec8(mbh,mbl,st,ip,op[_i_])
+    for(; op < out+(oplen&~3); op += 4) { STD(0); STD(1); STD(2); STD(3); }
+    for(; op < out+oplen;op++) { STD(0); }
   }
   return outlen;
 }
-
+#else
+#define ANSNX 4  // 4x interleaved
 LIBAPI size_t T2(anscdfenc,FSUFFIX)(unsigned char *in, size_t inlen, unsigned char *out) {
   unsigned char *op = out,*ip = in,*in_ = in+inlen, *out_ = out+inlen;
   size_t        iplen;
@@ -620,9 +600,113 @@ LIBAPI size_t T2(anscdfenc,FSUFFIX)(unsigned char *in, size_t inlen, unsigned ch
   end:free(_stk);
   return op - out;
 }
+
+LIBAPI size_t T2(anscdfdec,FSUFFIX)(unsigned char *in, size_t outlen, unsigned char *out) {
+  unsigned char *op = out, *out_ = out+outlen, *ip  = in;
+  size_t        oplen,i;
+  unsigned      blksize = min(ANSBLKSIZE,outlen);
+  anscdfini(0);
+  for(;out < out_; out += oplen) {
+    STATEDEF(st, ANSNX); 
+    CDF16DEC0(mbh);
+    CDF16DEC1(mbl,16);
+    CDF16DEF;
+    oplen = out_ - out;  oplen = min(oplen, blksize);
+    mnfill(st,ip,ANSNX);  
+	#define STD(_i_) mndec8x2(mbh,mbl,st,ip,op[_i_], op[_i_+1])
+    for(; op < out+(oplen&~3); op += 4) { STD(0); STD(2); }
+    if(op < out+(oplen&~1))  { STD(0); op +=2; }
+	if(op < out+oplen) { unsigned x; mndec8x2(mbh,mbl,st,ip,op[0], x); op++; }
+  }
+  return outlen;
+}
 #endif
 
 #if !defined(__SSE3__) && !defined(__ARM_NEON)
+typedef unsigned short mbu; 
+#define mbu_q(_p_)          (_p_)
+#define mbu_probinit()      (1<<(ANS_BITS-1))
+#define mbu_init(__m, __p0) { *(__m) = __p0; }
+
+#define mbu_update1(_mb_, _mbp_)     (*(_mb_) = (_mbp_) + (((1u<<ANS_BITS) - (_mbp_)) >> 5))
+#define mbu_update0(_mb_, _mbp_)     (*(_mb_) = (_mbp_) - ((_mbp_) >> 5))
+#define mbu_update( _mb_, _mbp_,_b_) _b_?mbu_update1(_mb_,_mbp_):mbu_update0(_mb_,_mbp_)
+
+#define DIV(dividend, divisor) ((dividend)/(divisor))
+#define ecbe_(_st_, _p0, _b_, _out_) do { state_t l_s = _b_?_p0:((1u<<ANS_BITS) - _p0); ecenorm(_st_, l_s, _out_); _st_ += DIV(_st_, l_s)*((1u<<ANS_BITS) - l_s) + (_b_?0:_p0); } while(0)
+#define ecbe(_st_, _mbp_, _out_) { unsigned _b = (_mbp_)>>ANS_BITS, _mbp = BZHI32(_mbp_,ANS_BITS); ecbe_(_st_, _mbp, _b, _out_); } 
+ 
+#define ecbd(_st_, _mbp_, _act0_, _act1_, _mb_, _x_) do { \
+  unsigned _p0 = mbu_q(_mbp_);\
+  state_t  _r  = BZHI32(_st_,ANS_BITS), _rcx = (_st_ >> ANS_BITS) *_p0;\
+  if(_r <_p0) { _st_  = _rcx + _r;  _act1_(_mb_, _p0); _x_ += _x_+1; }\
+  else {        _st_ -= _rcx + _p0; _act0_(_mb_, _p0); _x_ += _x_; }\
+} while(0)
+
+#define ABSN  4
+#define BBITS 8
+#define BSIZE (1<<16)
+
+LIBAPI size_t ansbc(unsigned char *in,  size_t inlen, unsigned char *out) { 
+  mbu           ins[BSIZE], mb[1<<BBITS]; 
+  unsigned      osize = inlen;
+  unsigned char *op = out, *ip, *in_ = in+inlen;
+  int i; 
+  for(i = 0; i < (1<<BBITS); i++) 
+	mbu_init(&mb[i], 1u << (ANS_BITS-1));
+  for(ip = in; ip < in_; ) { 
+    unsigned char *eip = ip+BSIZE/8; if(eip > in_) eip = in_; 
+	mbu *inp = ins;
+    for(; ip < eip; ) { 
+	  unsigned cx = 1<<8 | (*ip++), q, b; 
+	  mbu *m;
+      m = &mb[cx>>8]; q = *m; b = (cx>>7)&1; *inp++ = b<<ANS_BITS|mbu_q(q); mbu_update(m,q,b); 
+      m = &mb[cx>>7]; q = *m; b = (cx>>6)&1; *inp++ = b<<ANS_BITS|mbu_q(q); mbu_update(m,q,b); 
+      m = &mb[cx>>6]; q = *m; b = (cx>>5)&1; *inp++ = b<<ANS_BITS|mbu_q(q); mbu_update(m,q,b); 
+      m = &mb[cx>>5]; q = *m; b = (cx>>4)&1; *inp++ = b<<ANS_BITS|mbu_q(q); mbu_update(m,q,b); 
+      m = &mb[cx>>4]; q = *m; b = (cx>>3)&1; *inp++ = b<<ANS_BITS|mbu_q(q); mbu_update(m,q,b); 
+      m = &mb[cx>>3]; q = *m; b = (cx>>2)&1; *inp++ = b<<ANS_BITS|mbu_q(q); mbu_update(m,q,b); 
+      m = &mb[cx>>2]; q = *m; b = (cx>>1)&1; *inp++ = b<<ANS_BITS|mbu_q(q); mbu_update(m,q,b);
+      m = &mb[cx>>1]; q = *m; b = (cx>>0)&1; *inp++ = b<<ANS_BITS|mbu_q(q); mbu_update(m,q,b);
+    }  
+	unsigned char *eop = out + osize; 
+	state_t st[ABSN]; 
+	for(i = 0; i < ABSN; i++) st[i] = ANS_LOW; 
+	
+    #define STE(x) { unsigned q = *--inp; ecbe(st[x], q, eop); }
+    while(inp != ins) { STE(0);STE(1);STE(2);STE(3); STE(0);STE(1);STE(2);STE(3); } 
+    for(i = 0; i < ABSN; i++) eceflush(st[i],eop); 
+	
+    int l = (out+osize) - eop;                                                  if(op+l > out+osize) die("overflow"); 
+	memcpy(op, eop, l); op += l;
+  }
+  return op - out;
+}
+ 
+LIBAPI size_t ansbd(unsigned char *in, size_t outlen, unsigned char *out) { 
+  unsigned      i;
+  mbu           mb[1<<BBITS]; 
+  state_t       st[ABSN];  
+  unsigned char *op, *out_ = out + outlen; 
+  for(i = 0; i < (1<<BBITS); i++) mbu_init(&mb[i], 1u << (ANS_BITS-1));
+  for(i = 0; i < ABSN;       i++) st[i] = ANS_LOW;
+  
+  for(op = out; op < out_; ) { 
+    unsigned char *eop = op + BSIZE/8; 
+	if(eop > out_) eop = out_;
+    for(i = 0; i < ABSN; i++) { if(st[i] != ANS_LOW) die(stderr, "Fatal error - data corrupted: st=%x\n", st); ecdini(st[i], in); }
+	
+    for(; op < eop;) { 
+	  unsigned cx = 1;
+      #define ST(c,_x_) { mbu *m = &mb[c]; ecdnorm(st[_x_], in); ecbd(st[_x_], *m, mbu_update0, mbu_update1, m, cx); }
+      ST(1, 0);ST(cx,1);ST(cx,2);ST(cx,3); 
+      ST(cx,0);ST(cx,1);ST(cx,2);ST(cx,3); 
+	  *op++= cx; 
+    }
+  }
+  return outlen;
+}
+
 fanscdf4senc _anscdf4senc = anscdf4sencs; //set sse2
 fanscdf4sdec _anscdf4sdec = anscdf4sdecs;
 fanscdfenc   _anscdf4enc  = anscdf4encs;
@@ -651,7 +735,9 @@ static int anscdfset;
 
 void anscdfini(unsigned id) {
   if(anscdfset && !id) return;
+    #ifdef _DIVLUT
   div32init();
+    #endif
   anscdfset = 1;
   id = id?id:cpuisa();          //printf("cpu=id=%d,%s\n", id, cpustr(id) );
     #ifndef NAVX2
