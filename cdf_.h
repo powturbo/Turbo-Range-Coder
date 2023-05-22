@@ -34,7 +34,7 @@
 #ifndef _CDF2
 #define IC   10 
 #define MIXD ( ((1u<<RC_BITS)-1) & ~((1<<5)-1) )
-#define STATEUPD(_mb_, _st_, _x_) _st_ = (state_t)((_mb_)[_x_] - (_mb_)[_x_-1]) * (_st_ >> ANS_BITS) + BZHI32(_st_, ANS_BITS) - (_mb_)[_x_-1]; _x_--
+#define STATEUPD(_mb_, _st_, _x_) (state_t)((_mb_)[_x_] - (_mb_)[--_x_]) * (_st_ >> ANS_BITS) + BZHI32(_st_, ANS_BITS) - (_mb_)[_x_]
 
 //---- CDF16 -----------------------------------------------------------------
 #define CDF16DEC0(_mb_)     CDFDEC0(_mb_,      16)
@@ -50,11 +50,11 @@
 }
 
 #define cdf16ansdec(_mb_, _st_, _x_) {\
-  __m256i _mv = _mm256_loadu_si256((const __m256i *)(_mb_)), \
-          _gv = _mm256_cmpgt_epi16(_mv, _mm256_set1_epi16(BZHI32(_st_, ANS_BITS))); \
-  _x_  = (ctz32(_mm256_movemask_epi8(_gv))>>1); \
-  STATEUPD((_mb_), _st_,_x_);\
-  _mv = _mm256_add_epi16(_mv,_mm256_srai_epi16(_mm256_add_epi16(_mm256_sub_epi16(_crv,_mv),_mm256_and_si256(_gv,_cmv)), CDFRATE)); \
+  __m256i _mv = _mm256_loadu_si256((const __m256i *)(_mb_)),\
+          _gv = _mm256_cmpgt_epi16(_mv, _mm256_set1_epi16(BZHI32(_st_, ANS_BITS)));\
+  _x_  = ctz32(_mm256_movemask_epi8(_gv))>>1;\
+  _st_ = STATEUPD((_mb_), _st_,_x_);\
+  _mv  = _mm256_add_epi16(_mv,_mm256_srai_epi16(_mm256_add_epi16(_mm256_sub_epi16(_crv,_mv),_mm256_and_si256(_gv,_cmv)), CDFRATE));\
   _mm256_storeu_si256((__m256i *)(_mb_), _mv);\
 }
 
@@ -62,7 +62,7 @@
   __m256i _mv = _mm256_loadu_si256((const __m256i *)(_mb_)), \
           _gv = _mm256_cmpgt_epi16(_mv, _mm256_set1_epi16(BZHI32(_st_, ANS_BITS))); \
   _x_  = (ctz32(_mm256_movemask_epi8(_gv))>>1); \
-  STATEUPD((_mb_), _st_,_x_);\
+  _st_ = STATEUPD((_mb_), _st_,_x_);\
 }
 
   #elif defined(__SSE2__) || defined(__powerpc64__) || defined(__ARM_NEON)
@@ -77,7 +77,7 @@
 		  _gv0 = _mm_cmpgt_epi16(_mv0, _sv),\
 		  _gv1 = _mm_cmpgt_epi16(_mv1, _sv);\
   _x_  = ctz16(_mm_movemask_epi8(_mm_packs_epi16(_gv0, _gv1))); \
-  STATEUPD(_mb_,_st_,_x_);\
+  _st_ = STATEUPD(_mb_,_st_,_x_);\
   _mv0 = _mm_add_epi16(_mv0,_mm_srai_epi16(_mm_add_epi16(_mm_sub_epi16(_crv0,_mv0),_mm_and_si128(_gv0,_cmv)), CDFRATE));\
   _mv1 = _mm_add_epi16(_mv1,_mm_srai_epi16(_mm_add_epi16(_mm_sub_epi16(_crv1,_mv1),_mm_and_si128(_gv1,_cmv)), CDFRATE));\
   _mm_storeu_si128((const __m128i *)(_mb_),   _mv0);\
@@ -103,7 +103,7 @@
 		  _gv0 = _mm_cmpgt_epi16(_mv0, _sv),\
 		  _gv1 = _mm_cmpgt_epi16(_mv1, _sv);\
   _x_  = ctz16(_mm_movemask_epi8(_mm_packs_epi16(_gv0, _gv1))); \
-  STATEUPD(_mb_,_st_,_x_);\
+  _st_ = STATEUPD(_mb_,_st_,_x_);\
 }
 
   #elif defined(__ARM_NEON) // TODO: custom arm functions
