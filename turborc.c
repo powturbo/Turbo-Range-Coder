@@ -505,8 +505,9 @@ unsigned bench(unsigned char *in, unsigned n, unsigned char *out, unsigned char 
             if(z==4){TM("62:anscdf-32 Turbo vlc7                 ",l=anscdfvenc32( in,n,out),  n,l, l==n?memcpy(cpy,out,n):anscdfvdec32( out,n,cpy)); } break;
     case 63:if(z==2){TM("63:anscdf-16 Turbo vlc7 zigzag          ",l=anscdfvzenc16(in,n,out),  n,l, l==n?memcpy(cpy,out,n):anscdfvzdec16(out,n,cpy)); break;}
             if(z==4){TM("63:anscdf-32 Turbo vlc7 zigzag          ",l=anscdfvzenc32(in,n,out),  n,l, l==n?memcpy(cpy,out,n):anscdfvzdec32(out,n,cpy));} break;
-    case 64:         TM("64:ans auto  o1                         ",l=anscdf1enc(   in,n,out),  n,l, l==n?memcpy(cpy,out,n):anscdf1dec(  out,n,cpy)); break;
-    case 65:if(m<16){TM("65:anscdf4s  nibble static              ",l=anscdf4senc(in,n,out,cdf),n,l, l==n?memcpy(cpy,out,n):anscdf4sdec(out,n,cpy,cdf)); } break; // static
+    case 64:         TM("64:ans auto  o1                         ",l=anscdf1enc(   in,n,out),  n,l, l==n?memcpy(cpy,out,n):anscdf1dec(   out,n,cpy)); break;
+    case 65:if(m<16){TM("65:anscdf4s  nibble static              ",l=anscdf4senc(in,n,out,cdf),n,l, l==n?memcpy(cpy,out,n):anscdf4sdec(  out,n,cpy,cdf)); } break; // static
+    case 66:         TM("66:ansb      bitwise ans                ",l=ansbc(        in,n,out),  n,l, l==n?memcpy(cpy,out,n):ansbd(        out,n,cpy)); break;
 
       #endif    
     #define ID_LAST   79
