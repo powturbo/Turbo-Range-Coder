@@ -49,14 +49,14 @@
 #define RC_BITS ANS_BITS
 #include "cdf_.h"
 
-#define IOBITS   16
+#define IOBITS         16
 typedef unsigned       state_t;
 typedef unsigned short io_t;
-#define ANS_LBITS                       (8*(sizeof(state_t) - sizeof(io_t)) - 1)
-#define ANS_LOW                         (1u << ANS_LBITS)
+#define ANS_LBITS                   (8*(sizeof(state_t) - sizeof(io_t)) - 1)
+#define ANS_LOW                     (1u << ANS_LBITS)
 
-#define _putc(_ch_, _out_)              _out_ -= sizeof(io_t),*(io_t *)_out_ = (_ch_)
-#define _getc(_in_)                     *(io_t *)_in_;_in_+=sizeof(io_t)
+#define _putc(_ch_, _out_)          _out_ -= sizeof(io_t),*(io_t *)_out_ = (_ch_)
+#define _getc(_in_)                 *(io_t *)_in_;_in_+=sizeof(io_t)
 //------------------------------- Entropy coder -----------------------
 #define eceflush(_x_, _op_)         { _op_ -= sizeof(state_t); *(state_t *)_op_ = _x_; }
 #define ecdini(  _x_, _ip_)         { _x_   = *(state_t *)_ip_; _ip_ += sizeof(state_t); }
@@ -90,13 +90,16 @@ unsigned _y = _x_ << 16 | ctou16(_ip_); \
 typedef unsigned short mbu;
 
 //--------------------------- Divison ------------------------------------------------
+  #ifdef _DIVLUT
 #define RC_MULTISYMBOL
 #define RC_MACROS 
 #define RC_SIZE 32             //32 bit RC only for division free w/ reciprocal multiplication
 #define RC_IO   16             //#define RC_BITS 15
 #define DIV_BITS (32-RC_BITS)  //=17 include division free coder
 #include "turborc_.h"
-
+  #else
+#define DIVTDIV32(_st_,_pb_) _st_/_pb_	  
+  #endif
 #endif // ANSN__H
 
 #define ece(_st_, _pb_, _cpb_, _out_) { \
@@ -146,31 +149,32 @@ typedef unsigned short mbu;
 #define mndec4(_m_, _st_, _ip_, _x_) do { cdf16ansdec(_m_, _st_, _x_); ecdnorm(_st_, _ip_); } while(0)
 #define mndec8(_mh_, _ml_, _st_, _ip_, _x_) {\
   unsigned _yh,_yl;\
-  cdf16ansdec(_mh_, _st_[0], _yh);\
+                       cdf16ansdec(_mh_, _st_[0], _yh);\
   mbu *_m = _ml_[_yh];\
-  cdf16ansdec(_m, _st_[1], _yl);\
+                       cdf16ansdec(_m,   _st_[1], _yl);\
   _x_ = _yh << 4| _yl;\
   ecdnorm(_st_[0], _ip_);\
   ecdnorm(_st_[1], _ip_);\
 }  
 
 #define mndec8x2(_mh_, _ml_, _st_, _ip_, _x0_, _x1_) {\
-  unsigned _yh,_yl;\
+  unsigned _yh,_yl; \
                        cdf16ansdec(_mh_,_st_[0], _yh);\
   mbu *_m = _ml_[_yh]; cdf16ansdec(_m,  _st_[1], _yl); _x0_ = _yh << 4| _yl;\
-  ecdnorm(_st_[0], _ip_);\
-  ecdnorm(_st_[1], _ip_);\
                        cdf16ansdec(_mh_,_st_[2], _yh);\
        _m = _ml_[_yh]; cdf16ansdec(_m,  _st_[3], _yl); _x1_ = _yh << 4| _yl;\
+  ecdnorm(_st_[0], _ip_);\
+  ecdnorm(_st_[1], _ip_);\
   ecdnorm(_st_[2], _ip_);\
   ecdnorm(_st_[3], _ip_);\
-}  
+}
 
 #define mnfill(_st_, _ip_, _ansn_) {\
   unsigned _i; for(_i = 0; _i < _ansn_; _i++) { if(_st_[_i] != ANS_LOW) die("Fatal error: st=%X\n", _st_[_i]); ecdini(_st_[_i], _ip_); }\
 }  
 
-//--------------------------- Variable Length Coding: Integer 0-299 ----------------------------------
+//--------------------------- Variable Length Coding ----------------------------------
+//-- Integer 0-299 (3 nibbles)
 // 1:0-12   		   0-12
 // 2:13,14 xxxx        13,14...45(13+32)
 // 3:15	   xxxx+xxxx   46,47..299(255+13+32)
@@ -191,7 +195,8 @@ typedef unsigned short mbu;
 	                             mndec4(_m2_, _st_[0], _ip_, _x_); _x_ = (_y<<4|_x_)+13+32; }\
   }\
 }
-// 7bits: 8+127
+
+//-- 7 bits: 8+127 (2 nibbles)
 //1: 0-8                            xxxx 
 //2: 9+3bits: 9,10,11, 12,13,14,15  1xxx xxxx 
 #define cdfenc7(_m0_, _m1_, _x_, _stk_) { unsigned _x = _x_;\
@@ -204,7 +209,9 @@ typedef unsigned short mbu;
                               mndec4(_m0_, _st_[0], _ip_, _x_);\
   if(_x_ >= 8) { unsigned _y; mndec4(_m1_, _st_[1], _ip_, _y); _x_ = ((_x_-8)<<4|_y)+8; }\
 }
-// 6 bits: 0-76
+
+
+//-- 6 bits: 0-76 (2 nibbles)
 // 1: 0-12 
 // 2: 13,14,15: bbxxxx 13 - 13+63 bits
 #define cdfenc6(_m0_, _m1_, _x_, _stk_) { unsigned _x = _x_;\
