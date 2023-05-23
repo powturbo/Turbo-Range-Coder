@@ -85,9 +85,8 @@ LIBAPI size_t T2(anscdf4sdec,FSUFFIX)(unsigned char *in, size_t outlen, unsigned
 
 //-- o1
 LIBAPI size_t T2(anscdf1dec,FSUFFIX)(unsigned char *in, size_t outlen, unsigned char *out) {
- unsigned char *op = out, *out_ = out+outlen, *ip  = in, cx = 0;
-  size_t       oplen,i; 
-  unsigned     blksize = min(ANSBLKSIZE,outlen);
+  unsigned char *op = out, *out_ = out+outlen, *ip  = in, cx = 0;
+  unsigned      oplen, blksize = min(ANSBLKSIZE,outlen);
   anscdfini(0);
 
   for(;out < out_; out += oplen) {
@@ -95,7 +94,7 @@ LIBAPI size_t T2(anscdf1dec,FSUFFIX)(unsigned char *in, size_t outlen, unsigned 
     CDF16DEC1(mbh, 0x100);
     CDF16DEC2(mbl, 0x100, 16);
     CDF16DEF;
-    oplen = out_ - out;  oplen = min(oplen, blksize);
+    oplen = min(out_ - out, blksize);
     mnfill(st, ip, ANSN);
     #define STD(_i_) { mbu *mh,*ml; mh = mbh[cx]; /*ml = mbl[cx];*/ mndec8(mh,mbl[cx],st,ip,op[_i_]); cx = op[_i_]; }
     for(; op < out+(oplen&~3); op += 4) { STD(0); STD(1); STD(2); STD(3); }
@@ -106,8 +105,7 @@ LIBAPI size_t T2(anscdf1dec,FSUFFIX)(unsigned char *in, size_t outlen, unsigned 
 
 LIBAPI size_t T2(anscdf1enc,FSUFFIX)(unsigned char *in, size_t inlen, unsigned char *out) {
   unsigned char *op = out,*ip = in,*in_ = in+inlen, *out_ = out+inlen, cx = 0;
-  size_t        iplen;
-  unsigned      blksize = min(ANSBLKSIZE,inlen),
+  unsigned      iplen, blksize = min(ANSBLKSIZE,inlen),
                 *_stk = malloc(blksize*2*sizeof(_stk[0])+64),*stk = _stk; if(!_stk) die("malloc error %d ", blksize); // 2 x stk[0] per nibble
   anscdfini(0);
 
@@ -115,7 +113,7 @@ LIBAPI size_t T2(anscdf1enc,FSUFFIX)(unsigned char *in, size_t inlen, unsigned c
     CDF16DEC1(mbh, 0x100);
     CDF16DEC2(mbl, 0x100, 16);
     CDF16DEF;
-    iplen = in_-in; iplen = min(iplen, blksize);
+    iplen = min(in_-in, blksize);
     #define STE(_i_) { mbu *mh,*ml; mh = mbh[cx]; /*ml = mbl[cx];*/ mnenc8(mh,mbl[cx],ip[_i_],stk); cx = ip[_i_]; }
     for(; ip < in + (iplen&~3); ip += 4) { STE(0); STE(1); STE(2); STE(3); }
     for(; ip < in + iplen; ip++) { STE(0); }
@@ -125,18 +123,16 @@ LIBAPI size_t T2(anscdf1enc,FSUFFIX)(unsigned char *in, size_t inlen, unsigned c
   return op - out;
 }
 
-
 LIBAPI size_t T2(anscdf4dec,FSUFFIX)(unsigned char *in, size_t outlen, unsigned char *out) {
   unsigned char *op = out, *out_ = out+outlen, *ip = in;
-  size_t      oplen,i;
-  unsigned     blksize = min(ANSBLKSIZE,outlen);
+  unsigned      oplen, blksize = min(ANSBLKSIZE,outlen);
   anscdfini(0);
 
   for(;out < out_; out += oplen) {
     STATEDEF(st, ANSN);
     CDF16DEC0(mb);
     CDF16DEF;
-    oplen = out_-out; oplen = min(oplen, blksize);//HLOAD(mb);
+    oplen = min(out_-out, blksize);
     mnfill(st,ip,ANSN);
     for(; op < out+(oplen&~3);op+=4) {
       mndec4(mb,st[0],ip,op[0]);
@@ -152,15 +148,14 @@ LIBAPI size_t T2(anscdf4dec,FSUFFIX)(unsigned char *in, size_t outlen, unsigned 
 
 LIBAPI size_t T2(anscdf4enc,FSUFFIX)(unsigned char *in, size_t inlen, unsigned char *out) {
   unsigned char *op = out,*ip = in,*in_ = in+inlen, *out_ = out+inlen;
-  size_t        iplen;
-  unsigned      blksize = min(ANSBLKSIZE,inlen),
+  unsigned      iplen, blksize = min(ANSBLKSIZE,inlen),
                 *_stk = malloc(blksize*2*sizeof(_stk[0])+64),*stk = _stk; if(!_stk) die("malloc error %d ", blksize);
   anscdfini(0);
 
   for(; in < in_; in += iplen) {
     CDF16DEC0(mb);
     CDF16DEF;
-    iplen = in_-in; iplen = min(iplen, blksize); stk = _stk;
+    iplen = min(in_-in, blksize); stk = _stk;
     for(; ip < in + (iplen&~3); ip += 4) {
       mnenc4(mb,1,ip[0],stk);
       mnenc4(mb,0,ip[1],stk);
@@ -186,22 +181,21 @@ LIBAPI size_t T2(anscdfuenc16,FSUFFIX)(unsigned char *_in, size_t _inlen, unsign
   size_t        inlen = (_inlen+sizeof(in[0])-1)/sizeof(in[0]);
 
   uint16_t      *ip = in, *in_ = in+inlen;
-  unsigned      iplen;
-  unsigned      blksize = min(ANSBLKSIZE,inlen),
+  unsigned      iplen, blksize = min(ANSBLKSIZE,inlen),
                 *_stk = malloc(blksize*2*sizeof(_stk[0])+64),*stk = _stk; if(!_stk) die("malloc error %d ", blksize); // 2 x stk[0] per nibble
   anscdfini(0);
   bitddef(bw, br); biteinir(bw,br,bp);
 
   for(; in < in_; in += iplen) {
     CDF16DEC0(cdf0);
-	CDF16DEC0(cdf1);
+    CDF16DEC0(cdf1);
     CDF16DEF;
-    iplen = in_-in; iplen = min(iplen, blksize);
+    iplen = min(in_-in, blksize);
     for(; ip < in + iplen; ip++) {
-	  unsigned x = ip[0];
-	  bitvrput(bw,br,bp, 1, 0, x);
-	  cdfenc6(cdf0, cdf1, x, stk);
-	}
+      unsigned x = ip[0];
+      bitvrput(bw,br,bp, 1, 0, x);
+      cdfenc6(cdf0, cdf1, x, stk);
+    }
     mnflush(op,(bp-8),_stk,stk, ANSN);                                                
   }
   bitflushr(bw,br,bp);
@@ -218,23 +212,22 @@ LIBAPI size_t T2(anscdfudec16,FSUFFIX)(unsigned char *in, size_t _outlen, unsign
   bitddef(bw, br); bitdinir(bw,br,bp);
 
   uint16_t      *op = out, *out_ = out+outlen;
-  unsigned      oplen;
-  unsigned     blksize = min(ANSBLKSIZE,outlen);
+  unsigned      oplen, blksize = min(ANSBLKSIZE,outlen);
   anscdfini(0);
 
   for(;out < out_; out += oplen) {
     STATEDEF(st, ANSN);
     CDF16DEC0(cdf0);
-	CDF16DEC0(cdf1);
+    CDF16DEC0(cdf1);
     CDF16DEF;
-    oplen = out_ - out;  oplen = min(oplen, blksize);
+    oplen = min(out_ - out, blksize);
     mnfill(st, ip, 2);
     for(; op < out+oplen;op++) {
-	  unsigned r;
-	  cdfdec6(cdf0,cdf1, st, ip, r);
-	  bitvrget(bw,br,bp, 1, 0, r);
-	  op[0] = r;
-	}
+      unsigned r;
+      cdfdec6(cdf0,cdf1, st, ip, r);
+      bitvrget(bw,br,bp, 1, 0, r);
+      op[0] = r;
+    }
   }
   return ctou32(in)+4;
 }
@@ -245,23 +238,22 @@ LIBAPI size_t T2(anscdfuzenc16,FSUFFIX)(unsigned char *_in, size_t _inlen, unsig
   size_t        inlen = (_inlen+sizeof(in[0])-1)/sizeof(in[0]);
 
   uint16_t      *ip = in, *in_ = in+inlen, cx = 0;
-  unsigned      iplen;
-  unsigned      blksize = min(ANSBLKSIZE,inlen),
+  unsigned      iplen, blksize = min(ANSBLKSIZE,inlen),
                 *_stk = malloc(blksize*4*sizeof(_stk[0])+64), *stk = _stk;     if(!_stk) die("malloc error %d ", blksize); // 2 x stk[0] per nibble
   anscdfini(0);
   bitddef(bw, br); biteinir(bw,br,bp);
 
   for(; in < in_; in += iplen) {
     CDF16DEC0(cdf0);
-	CDF16DEC0(cdf1);
+    CDF16DEC0(cdf1);
     CDF16DEF;
-    iplen = in_-in; iplen = min(iplen, blksize);
+    iplen = min(in_-in, blksize);
     for(; ip < in + iplen; ip++) {
-	  uint16_t x = zigzagenc16(ip[0] - cx);
-	  bitvrput(bw,br,bp, 1, 0, x);
-	  cdfenc6(cdf0, cdf1, x, stk);
+      uint16_t x = zigzagenc16(ip[0] - cx);
+      bitvrput(bw,br,bp, 1, 0, x);
+      cdfenc6(cdf0, cdf1, x, stk);
       cx = ip[0];
-	}
+    }
     mnflush(op,(bp-8),_stk,stk, ANSN);                                                //AC(op <= bp,"Fatal");
   }
   bitflushr(bw,br,bp);
@@ -278,23 +270,22 @@ LIBAPI size_t T2(anscdfuzdec16,FSUFFIX)(unsigned char *in, size_t _outlen, unsig
   bitddef(bw, br); bitdinir(bw,br,bp);
 
   uint16_t      *op = out, *out_ = out+outlen, cx = 0;
-  unsigned      oplen;
-  unsigned     blksize = min(ANSBLKSIZE,outlen);
+  unsigned      oplen, blksize = min(ANSBLKSIZE,outlen);
   anscdfini(0);
 
   for(;out < out_; out += oplen) {
     STATEDEF(st, ANSN);
     CDF16DEC0(cdf0);
-	CDF16DEC0(cdf1);
+    CDF16DEC0(cdf1);
     CDF16DEF;
-    oplen = out_ - out;  oplen = min(oplen, blksize);
+    oplen = min(out_ - out, blksize);
     mnfill(st, ip, 2);
-    for(; op < out+oplen;op++) {
-	  uint16_t r;
-	  cdfdec6(cdf0,cdf1, st, ip, r);
-	  bitvrget(bw,br,bp, 1, 0, r);
-	  op[0] = (cx+= zigzagdec16(r));
-	}
+    for(; op < out+oplen; op++) {
+      uint16_t r;
+      cdfdec6(cdf0,cdf1, st, ip, r);
+      bitvrget(bw,br,bp, 1, 0, r);
+      op[0] = (cx+= zigzagdec16(r));
+    }
   }
   return ctou32(in)+4;
 }
@@ -306,26 +297,25 @@ LIBAPI size_t T2(anscdfvenc16,FSUFFIX)(unsigned char *_in, size_t _inlen, unsign
   size_t        inlen = (_inlen+sizeof(in[0])-1)/sizeof(in[0]);
 
   uint16_t      *ip = in, *in_ = in+inlen;
-  unsigned      iplen;
-  unsigned      blksize = min(ANSBLKSIZE,inlen),
+  unsigned      iplen, blksize = min(ANSBLKSIZE,inlen),
                 *_stk = malloc(blksize*2*sizeof(_stk[0])+64), *stk = _stk;     if(!_stk) die("malloc error %d ", blksize); // 2 x stk[0] per nibble
   anscdfini(0);
   bitddef(bw, br); biteinir(bw,br,bp);
 
   for(; in < in_; in += iplen) {
     CDF16DEC0(cdf0);
-	CDF16DEC0(cdf1);
+    CDF16DEC0(cdf1);
     CDF16DEF;
-    iplen = in_-in; iplen = min(iplen, blksize);
+    iplen = min(in_-in, blksize);
     for(; ip < in + iplen; ip++) {
-	  uint16_t x = ip[0];
-	  bitvrput(bw,br,bp, 2, 0, x);
-	  cdfenc7(cdf0, cdf1, x, stk);
-	}
-	mnflush(op, (bp-8), _stk, stk, ANSN);                                             AS(op <= bp,"Fatal");
+      uint16_t x = ip[0];
+      bitvrput(bw,br,bp, 2, 0, x);
+      cdfenc7(cdf0, cdf1, x, stk);
+    }
+    mnflush(op, (bp-8), _stk, stk, ANSN);                                             AS(op <= bp,"Fatal");
   }
   bitflushr(bw,br,bp);
-  unsigned l = out_ - bp;                                                       if(op+l >= out_) { printf("&"); goto ovr; }
+  unsigned l = out_ - bp;                                                       if(op+l >= out_) goto ovr;
   memmove(op, bp, l); op += l; ctou32(out) = op - out;                          goto end; ovr:memcpy(out,_in,_inlen); op = out_;
   end:free(_stk);
   return op - out;
@@ -338,23 +328,22 @@ LIBAPI size_t T2(anscdfvdec16,FSUFFIX)(unsigned char *in, size_t _outlen, unsign
   bitddef(bw, br); bitdinir(bw,br,bp);
 
   uint16_t      *op = out, *out_ = out+outlen;
-  unsigned      oplen;
-  unsigned     blksize = min(ANSBLKSIZE,outlen);
+  unsigned      oplen, blksize = min(ANSBLKSIZE,outlen);
   anscdfini(0);
 
   for(;out < out_; out += oplen) {
     STATEDEF(st, ANSN);
     CDF16DEC0(cdf0);
-	CDF16DEC0(cdf1);
+    CDF16DEC0(cdf1);
     CDF16DEF;
-    oplen = out_ - out;  oplen = min(oplen, blksize);
+    oplen = min(out_ - out, blksize);
     mnfill(st, ip, 2);
-    for(; op < out+oplen;op++) {
-	  uint16_t r;
-	  cdfdec7(cdf0,cdf1, st, ip, r);
-	  bitvrget(bw,br,bp, 2, 0, r);
-	  op[0] = r;
-	}
+    for(; op < out+oplen; op++) {
+      uint16_t r;
+      cdfdec7(cdf0,cdf1, st, ip, r);
+      bitvrget(bw,br,bp, 2, 0, r);
+      op[0] = r;
+    }
   }
   return ctou32(in)+4;
 }
@@ -365,24 +354,23 @@ LIBAPI size_t T2(anscdfvzenc16,FSUFFIX)(unsigned char *_in, size_t _inlen, unsig
   size_t        inlen = (_inlen+sizeof(in[0])-1)/sizeof(in[0]);
 
   uint16_t      *ip = in, *in_ = in+inlen, cx = 0;
-  unsigned      iplen;
-  unsigned      blksize = min(ANSBLKSIZE,inlen),
+  unsigned      iplen, blksize = min(ANSBLKSIZE,inlen),
                 *_stk = malloc(blksize*2*sizeof(_stk[0])+64), *stk = _stk;      if(!_stk) die("malloc error %d ", blksize); // 2 x stk[0] per nibble
   anscdfini(0);
   bitddef(bw, br); biteinir(bw,br,bp);
 
   for(; in < in_; in += iplen) {
     CDF16DEC0(cdf0);
-	CDF16DEC0(cdf1);
+    CDF16DEC0(cdf1);
     CDF16DEF;
-    iplen = in_ - in; iplen = min(iplen, blksize);   //printf("%u,", iplen);
+    iplen = min(in_-in, blksize);   
     for(; ip < in + iplen; ip++) {
-	  uint16_t x = zigzagenc16(ip[0] - cx);
-	  bitvrput(bw,br,bp, 2, 0, x);
-	  cdfenc7(cdf0, cdf1, x, stk);
+      uint16_t x = zigzagenc16(ip[0] - cx);
+      bitvrput(bw,br,bp, 2, 0, x);
+      cdfenc7(cdf0, cdf1, x, stk);
       cx = ip[0];
-	}
-    mnflush(op,(bp-8),_stk,stk, ANSN);                                                AS(op <= bp,"Fatal");
+    }
+    mnflush(op,(bp-8),_stk,stk, ANSN);                                          AS(op <= bp,"Fatal");
   }
   bitflushr(bw,br,bp);
   unsigned l = out_ - bp;                                                       if(op+l >= out_) goto ovr;
@@ -398,23 +386,22 @@ LIBAPI size_t T2(anscdfvzdec16,FSUFFIX)(unsigned char *in, size_t _outlen, unsig
   bitddef(bw, br); bitdinir(bw,br,bp);
 
   uint16_t      *op = out, *out_ = out+outlen, cx = 0;
-  unsigned      oplen;
-  unsigned     blksize = min(ANSBLKSIZE,outlen);
+  unsigned      oplen, blksize = min(ANSBLKSIZE,outlen);
   anscdfini(0);
 
   for(;out < out_; out += oplen) {
     STATEDEF(st, ANSN);
     CDF16DEC0(cdf0);
-	CDF16DEC0(cdf1);
+    CDF16DEC0(cdf1);
     CDF16DEF;
-    oplen = out_ - out;  oplen = min(oplen, blksize);
+    oplen = min(out_ - out, blksize);
     mnfill(st, ip, 2);
-    for(; op < out+oplen;op++) {
-	  uint16_t r;
-	  cdfdec7(cdf0,cdf1, st, ip, r);
-	  bitvrget(bw,br,bp, 2, 0, r);
-	  op[0] = (cx+= zigzagdec16(r));
-	}
+    for(; op < out+oplen; op++) {
+      uint16_t r;
+      cdfdec7(cdf0,cdf1, st, ip, r);
+      bitvrget(bw,br,bp, 2, 0, r);
+      op[0] = (cx+= zigzagdec16(r));
+    }
   }
   return ctou32(in)+4;
 }
@@ -424,22 +411,22 @@ LIBAPI size_t T2(anscdfvenc32,FSUFFIX)(unsigned char *_in, size_t _inlen, unsign
   uint32_t      *in = (uint32_t *)_in;
   size_t        inlen = (_inlen+sizeof(in[0])-1)/sizeof(in[0]);
 
-  uint32_t      *ip = in, *in_ = in+inlen, iplen;
-  unsigned      blksize = min(ANSBLKSIZE,inlen),
+  uint32_t      *ip = in, *in_ = in+inlen;
+  unsigned      iplen, blksize = min(ANSBLKSIZE,inlen),
                 *_stk = malloc(blksize*2*sizeof(_stk[0])+64),*stk = _stk; if(!_stk) die("malloc error %d ", blksize); // 2 x stk[0] per nibble
   anscdfini(0);
   bitddef(bw, br); biteinir(bw,br,bp);
 
   for(; in < in_; in += iplen) {
     CDF16DEC0(cdf0);
-	CDF16DEC0(cdf1);
+    CDF16DEC0(cdf1);
     CDF16DEF;
-    iplen = in_-in; iplen = min(iplen, blksize);
+    iplen = min(in_-in, blksize);
     for(; ip < in + iplen; ip++) {
-	  unsigned x = ip[0];
-	  bitvrput(bw,br,bp, 2, 0, x);
-	  cdfenc7(cdf0, cdf1, x, stk);
-	}
+      unsigned x = ip[0];
+      bitvrput(bw,br,bp, 2, 0, x);
+      cdfenc7(cdf0, cdf1, x, stk);
+    }
     mnflush(op,(bp-8),_stk,stk, ANSN);                                                AS(op <= bp,"Fatal");
   }
   bitflushr(bw,br,bp);
@@ -456,23 +443,22 @@ LIBAPI size_t T2(anscdfvdec32,FSUFFIX)(unsigned char *in, size_t _outlen, unsign
   bitddef(bw, br); bitdinir(bw,br,bp);
 
   uint32_t *op = out, *out_ = out+outlen;
-  size_t   oplen,i;
-  unsigned     blksize = min(ANSBLKSIZE,outlen);
+  unsigned     oplen, blksize = min(ANSBLKSIZE,outlen);
   anscdfini(0);
 
   for(;out < out_; out += oplen) {
     STATEDEF(st, ANSN);
     CDF16DEC0(cdf0);
-	CDF16DEC0(cdf1);
+    CDF16DEC0(cdf1);
     CDF16DEF;
-    oplen = out_ - out;  oplen = min(oplen, blksize);
+    oplen = min(out_ - out, blksize);
     mnfill(st, ip, 2);
-    for(; op < out+oplen;op++) {
-	  unsigned r;
-	  cdfdec7(cdf0,cdf1, st, ip, r);
-	  bitvrget(bw,br,bp, 2, 0, r);
-	  op[0] = r;
-	}
+    for(; op < out+oplen; op++) {
+      unsigned r;
+      cdfdec7(cdf0,cdf1, st, ip, r);
+      bitvrget(bw,br,bp, 2, 0, r);
+      op[0] = r;
+    }
   }
   return ctou32(in)+4;
 }
@@ -482,23 +468,23 @@ LIBAPI size_t T2(anscdfvzenc32,FSUFFIX)(unsigned char *_in, size_t _inlen, unsig
   uint32_t      *in = (uint32_t *)_in;
   size_t        inlen = (_inlen+sizeof(in[0])-1)/sizeof(in[0]);
 
-  uint32_t      *ip = in, *in_ = in+inlen, iplen, cx = 0;
-  unsigned      blksize = min(ANSBLKSIZE,inlen),
+  uint32_t      *ip = in, *in_ = in+inlen, cx = 0;
+  unsigned      iplen, blksize = min(ANSBLKSIZE,inlen),
                 *_stk = malloc(blksize*2*sizeof(_stk[0])+64),*stk = _stk; if(!_stk) die("malloc error %d ", blksize); // 2 x stk[0] per nibble
   anscdfini(0);
   bitddef(bw, br); biteinir(bw,br,bp);
 
   for(; in < in_; in += iplen) {
     CDF16DEC0(cdf0);
-	CDF16DEC0(cdf1);
+    CDF16DEC0(cdf1);
     CDF16DEF;
-    iplen = in_-in; iplen = min(iplen, blksize);
+    iplen = min(in_-in, blksize);
     for(; ip < in + iplen; ip++) {
-	  unsigned x = zigzagenc32(ip[0] - cx);
-	  bitvrput(bw,br,bp, 2, 0, x);
-	  cdfenc7(cdf0, cdf1, x, stk);
+      unsigned x = zigzagenc32(ip[0] - cx);
+      bitvrput(bw,br,bp, 2, 0, x);
+      cdfenc7(cdf0, cdf1, x, stk);
       cx = ip[0];
-	}
+    }
     mnflush(op,(bp-8),_stk,stk, ANSN);                                                AS(op <= bp,"Fatal");
   }
   bitflushr(bw,br,bp);
@@ -515,23 +501,22 @@ LIBAPI size_t T2(anscdfvzdec32,FSUFFIX)(unsigned char *in, size_t _outlen, unsig
   bitddef(bw, br); bitdinir(bw,br,bp);
 
   uint32_t      *op = out, *out_ = out+outlen, cx = 0;
-  size_t        oplen,i;
-  unsigned      blksize = min(ANSBLKSIZE,outlen);
+  unsigned      oplen, blksize = min(ANSBLKSIZE,outlen);
   anscdfini(0);
 
   for(;out < out_; out += oplen) {
     STATEDEF(st, ANSN);
     CDF16DEC0(cdf0);
-	CDF16DEC0(cdf1);
+    CDF16DEC0(cdf1);
     CDF16DEF;
-    oplen = out_ - out;  oplen = min(oplen, blksize);
+    oplen = min(out_ - out, blksize);
     mnfill(st, ip, 2);
-    for(; op < out+oplen;op++) {
-	  unsigned r;
-	  cdfdec7(cdf0,cdf1, st, ip, r);
-	  bitvrget(bw,br,bp, 2, 0, r);
-	  op[0] = (cx+= zigzagdec32(r));
-	}
+    for(; op < out+oplen; op++) {
+      unsigned r;
+      cdfdec7(cdf0,cdf1, st, ip, r);
+      bitvrget(bw,br,bp, 2, 0, r);
+      op[0] = (cx+= zigzagdec32(r));
+    }
   }
   return ctou32(in)+4;
 }
@@ -539,8 +524,7 @@ LIBAPI size_t T2(anscdfvzdec32,FSUFFIX)(unsigned char *in, size_t _outlen, unsig
 #if 0 // 2x interleaved
 LIBAPI size_t T2(anscdfenc,FSUFFIX)(unsigned char *in, size_t inlen, unsigned char *out) {
   unsigned char *op = out,*ip = in,*in_ = in+inlen, *out_ = out+inlen;
-  size_t        iplen;
-  unsigned      blksize = min(ANSBLKSIZE,inlen),
+  unsigned      iplen, blksize = min(ANSBLKSIZE,inlen),
                 *_stk = malloc(blksize*2*sizeof(_stk[0])+64),*stk = _stk; if(!_stk) die("malloc error %d ", blksize); // 2 x stk[0] per nibble
   anscdfini(0);
 
@@ -548,8 +532,8 @@ LIBAPI size_t T2(anscdfenc,FSUFFIX)(unsigned char *in, size_t inlen, unsigned ch
     CDF16DEC0(mbh);
     CDF16DEC1(mbl,16);
     CDF16DEF;
-    iplen = in_-in; iplen = min(iplen, blksize);
-	#define STE(_i_) mnenc8(mbh,mbl,ip[_i_],stk);
+    iplen = min(in_-in, blksize);
+    #define STE(_i_) mnenc8(mbh,mbl,ip[_i_],stk);
     for(; ip < in + (iplen&~3); ip += 4) { STE(0); STE(1); STE(2); STE(3); }
     for(; ip < in + iplen; ip++) { STE(0); }
     mnflush(op,out_,_stk,stk, ANSN);
@@ -560,8 +544,7 @@ LIBAPI size_t T2(anscdfenc,FSUFFIX)(unsigned char *in, size_t inlen, unsigned ch
 
 LIBAPI size_t T2(anscdfdec,FSUFFIX)(unsigned char *in, size_t outlen, unsigned char *out) {
   unsigned char *op = out, *out_ = out+outlen, *ip  = in;
-  size_t        oplen,i;
-  unsigned      blksize = min(ANSBLKSIZE,outlen);
+  unsigne       oplen, blksize = min(ANSBLKSIZE,outlen);
   anscdfini(0);
 
   for(;out < out_; out += oplen) {
@@ -569,9 +552,9 @@ LIBAPI size_t T2(anscdfdec,FSUFFIX)(unsigned char *in, size_t outlen, unsigned c
     CDF16DEC0(mbh);
     CDF16DEC1(mbl,16);
     CDF16DEF;
-    oplen = out_ - out;  oplen = min(oplen, blksize); //	HLOAD(mbh);
+    oplen = min(out_ - out, blksize); 
     mnfill(st, ip, ANSN);
-	#define STD(_i_) mndec8(mbh,mbl,st,ip,op[_i_])
+    #define STD(_i_) mndec8(mbh,mbl,st,ip,op[_i_])
     for(; op < out+(oplen&~3); op += 4) { STD(0); STD(1); STD(2); STD(3); }
     for(; op < out+oplen;op++) { STD(0); }
   }
@@ -581,8 +564,7 @@ LIBAPI size_t T2(anscdfdec,FSUFFIX)(unsigned char *in, size_t outlen, unsigned c
 #define ANSNX 4  // 4x interleaved
 LIBAPI size_t T2(anscdfenc,FSUFFIX)(unsigned char *in, size_t inlen, unsigned char *out) {
   unsigned char *op = out,*ip = in,*in_ = in+inlen, *out_ = out+inlen;
-  size_t        iplen;
-  unsigned      blksize = min(ANSBLKSIZE,inlen),
+  unsigned      iplen, blksize = min(ANSBLKSIZE,inlen),
                 *_stk = malloc(blksize*2*sizeof(_stk[0])+64),*stk = _stk; if(!_stk) die("malloc error %d ", blksize); // 2 x stk[0] per nibble
   anscdfini(0);
 
@@ -590,11 +572,11 @@ LIBAPI size_t T2(anscdfenc,FSUFFIX)(unsigned char *in, size_t inlen, unsigned ch
     CDF16DEC0(mbh);
     CDF16DEC1(mbl,16);
     CDF16DEF;
-    iplen = in_-in; iplen = min(iplen, blksize);
-	#define STE(_i_) mnenc8x2(mbh,mbl,ip[_i_],ip[_i_+1],stk);
+    iplen = min(in_-in, blksize);
+    #define STE(_i_) mnenc8x2(mbh,mbl,ip[_i_],ip[_i_+1],stk);
     for(; ip < in + (iplen&~3); ip += 4) { STE(0); STE(2); }
     if(ip < in + (iplen&~1)) { STE(0); ip += 2; }
-	if(ip < in +  iplen)     { mnenc8x2(mbh,mbl,ip[0],0,stk); ip++; }
+    if(ip < in +  iplen)     { mnenc8x2(mbh,mbl,ip[0],0,stk); ip++; }
     mnflush(op,out_,_stk,stk, ANSNX);
   }                                                                             goto end; ovr:memcpy(out,in,inlen); op = out_; 
   end:free(_stk);
@@ -603,20 +585,19 @@ LIBAPI size_t T2(anscdfenc,FSUFFIX)(unsigned char *in, size_t inlen, unsigned ch
 
 LIBAPI size_t T2(anscdfdec,FSUFFIX)(unsigned char *in, size_t outlen, unsigned char *out) {
   unsigned char *op = out, *out_ = out+outlen, *ip  = in;
-  size_t        oplen,i;
-  unsigned      blksize = min(ANSBLKSIZE,outlen);
+  unsigned      oplen, blksize = min(ANSBLKSIZE,outlen);
   anscdfini(0);
   for(;out < out_; out += oplen) {
     STATEDEF(st, ANSNX); 
     CDF16DEC0(mbh);
     CDF16DEC1(mbl,16);
     CDF16DEF;
-    oplen = out_ - out;  oplen = min(oplen, blksize);
+    oplen = min(out_ - out, blksize);
     mnfill(st,ip,ANSNX);  
-	#define STD(_i_) mndec8x2(mbh,mbl,st,ip,op[_i_], op[_i_+1])
+    #define STD(_i_) mndec8x2(mbh,mbl,st,ip,op[_i_], op[_i_+1])
     for(; op < out+(oplen&~3); op += 4) { STD(0); STD(2); }
     if(op < out+(oplen&~1))  { STD(0); op +=2; }
-	if(op < out+oplen) { unsigned x; mndec8x2(mbh,mbl,st,ip,op[0], x); op++; }
+    if(op < out+oplen) { unsigned x; mndec8x2(mbh,mbl,st,ip,op[0], x); op++; }
   }
   return outlen;
 }
@@ -653,13 +634,13 @@ LIBAPI size_t ansbc(unsigned char *in,  size_t inlen, unsigned char *out) {
   unsigned char *op = out, *ip, *in_ = in+inlen;
   int i; 
   for(i = 0; i < (1<<BBITS); i++) 
-	mbu_init(&mb[i], 1u << (ANS_BITS-1));
+    mbu_init(&mb[i], 1u << (ANS_BITS-1));
   for(ip = in; ip < in_; ) { 
     unsigned char *eip = ip+BSIZE/8; if(eip > in_) eip = in_; 
-	mbu *inp = ins;
+    mbu *inp = ins;
     for(; ip < eip; ) { 
-	  unsigned cx = 1<<8 | (*ip++), q, b; 
-	  mbu *m;
+      unsigned cx = 1<<8 | (*ip++), q, b; 
+      mbu *m;
       m = &mb[cx>>8]; q = *m; b = (cx>>7)&1; *inp++ = b<<ANS_BITS|mbu_q(q); mbu_update(m,q,b); 
       m = &mb[cx>>7]; q = *m; b = (cx>>6)&1; *inp++ = b<<ANS_BITS|mbu_q(q); mbu_update(m,q,b); 
       m = &mb[cx>>6]; q = *m; b = (cx>>5)&1; *inp++ = b<<ANS_BITS|mbu_q(q); mbu_update(m,q,b); 
@@ -669,16 +650,16 @@ LIBAPI size_t ansbc(unsigned char *in,  size_t inlen, unsigned char *out) {
       m = &mb[cx>>2]; q = *m; b = (cx>>1)&1; *inp++ = b<<ANS_BITS|mbu_q(q); mbu_update(m,q,b);
       m = &mb[cx>>1]; q = *m; b = (cx>>0)&1; *inp++ = b<<ANS_BITS|mbu_q(q); mbu_update(m,q,b);
     }  
-	unsigned char *eop = out + osize; 
-	state_t st[ABSN]; 
-	for(i = 0; i < ABSN; i++) st[i] = ANS_LOW; 
-	
+    unsigned char *eop = out + osize; 
+    state_t st[ABSN]; 
+    for(i = 0; i < ABSN; i++) st[i] = ANS_LOW; 
+    
     #define STE(x) { unsigned q = *--inp; ecbe(st[x], q, eop); }
     while(inp != ins) { STE(0);STE(1);STE(2);STE(3); STE(0);STE(1);STE(2);STE(3); } 
     for(i = 0; i < ABSN; i++) eceflush(st[i],eop); 
-	
+    
     int l = (out+osize) - eop;                                                  if(op+l > out+osize) die("overflow"); 
-	memcpy(op, eop, l); op += l;
+    memcpy(op, eop, l); op += l;
   }
   return op - out;
 }
@@ -693,15 +674,15 @@ LIBAPI size_t ansbd(unsigned char *in, size_t outlen, unsigned char *out) {
   
   for(op = out; op < out_; ) { 
     unsigned char *eop = op + BSIZE/8; 
-	if(eop > out_) eop = out_;
+    if(eop > out_) eop = out_;
     for(i = 0; i < ABSN; i++) { if(st[i] != ANS_LOW) die(stderr, "Fatal error - data corrupted: st=%x\n", st); ecdini(st[i], in); }
-	
+    
     for(; op < eop;) { 
-	  unsigned cx = 1;
+      unsigned cx = 1;
       #define ST(c,_x_) { mbu *m = &mb[c]; ecdnorm(st[_x_], in); ecbd(st[_x_], *m, mbu_update0, mbu_update1, m, cx); }
       ST(1, 0);ST(cx,1);ST(cx,2);ST(cx,3); 
       ST(cx,0);ST(cx,1);ST(cx,2);ST(cx,3); 
-	  *op++= cx; 
+      *op++= cx; 
     }
   }
   return outlen;
@@ -746,12 +727,12 @@ void anscdfini(unsigned id) {
     _anscdf4enc    = anscdf4encx;    _anscdf4dec    = anscdf4decx;
     _anscdfenc     = anscdfencx;     _anscdfdec     = anscdfdecx;
     _anscdf1enc    = anscdf1encx;    _anscdf1dec    = anscdf1decx;
-	_anscdfuenc16  = anscdfuenc16x;  _anscdfudec16  = anscdfudec16x;
-	_anscdfuzenc16 = anscdfuzenc16x; _anscdfuzdec16 = anscdfuzdec16x;
-	_anscdfvenc16  = anscdfvenc16x;  _anscdfvdec16  = anscdfvdec16x;
-	_anscdfvzenc16 = anscdfvzenc16x; _anscdfvzdec16 = anscdfvzdec16x;
-	_anscdfvenc32  = anscdfvenc32x;  _anscdfvdec32  = anscdfvdec32x;
-	_anscdfvzenc32 = anscdfvzenc32x; _anscdfvzdec32 = anscdfvzdec32x;
+    _anscdfuenc16  = anscdfuenc16x;  _anscdfudec16  = anscdfudec16x;
+    _anscdfuzenc16 = anscdfuzenc16x; _anscdfuzdec16 = anscdfuzdec16x;
+    _anscdfvenc16  = anscdfvenc16x;  _anscdfvdec16  = anscdfvdec16x;
+    _anscdfvzenc16 = anscdfvzenc16x; _anscdfvzdec16 = anscdfvzdec16x;
+    _anscdfvenc32  = anscdfvenc32x;  _anscdfvdec32  = anscdfvdec32x;
+    _anscdfvzenc32 = anscdfvzenc32x; _anscdfvzdec32 = anscdfvzdec32x;
   }  else
     #endif
     #ifndef NSSE
@@ -780,7 +761,7 @@ void anscdfini(unsigned id) {
     _anscdfvzenc16 = anscdfvzenc16s; _anscdfvzdec16 = anscdfvzdec16s;
     _anscdfvenc32  = anscdfvenc32s;  _anscdfvdec32  = anscdfvdec32s;
     _anscdfvzenc32 = anscdfvzenc32s; _anscdfvzdec32 = anscdfvzdec32s;
-	#endif
+    #endif
   }
 }
 
