@@ -35,7 +35,7 @@
 #define IC   10 
 #define MIXD ( ((1u<<RC_BITS)-1) & ~((1<<5)-1) )
 #define STATEUPD(_mb_, _st_, _x_) (state_t)((_mb_)[_x_] - (_mb_)[--_x_]) * (_st_ >> ANS_BITS) + BZHI32(_st_, ANS_BITS) - (_mb_)[_x_]
-
+//#define mbcheck(_mb_) for(int i=0; i < 16; i++) AC(_mb_[i+1] > _mb_[i], "Fatal probs") 
 //---- CDF16 -----------------------------------------------------------------
 #define CDF16DEC0(_mb_)     CDFDEC0(_mb_,      16)
 #define CDF16DEC1(_mb_,_n_) CDFDEC1(_mb_, _n_, 16)
