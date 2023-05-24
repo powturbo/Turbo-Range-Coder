@@ -29,7 +29,7 @@
 // Encode with predictor
 #define mbu_e(  rcrange,rclow,  _mbp_, _mb_,_prm0_,_prm1_,_op_, _bit_)                                   rcbe(  rcrange,rclow,  _mbp_, mbu_update,_mb_,_prm0_,_prm1_,_op_, _bit_)
 // Encode with predictor + renorm																									  
-#define mbu_enc(rcrange,rclow,  _mb_,_prm0_,_prm1_,_op_, _bit_) do { unsigned _mbp = mbu_p(_mb_,_prm0_); rcbenc(rcrange,rclow,  _mbp,  mbu_update,_mb_,_prm0_,_prm1_,_op_, _bit_); } while(0)
+#define mbu_enc(rcrange,rclow,rcilow,  _mb_,_prm0_,_prm1_,_op_, _bit_) do { unsigned _mbp = mbu_p(_mb_,_prm0_); rcbenc(rcrange,rclow,rcilow,  _mbp,  mbu_update,_mb_,_prm0_,_prm1_,_op_, _bit_); } while(0)
 	
 // Decode with predictor
 #define mbu_d(  rcrange,rccode, _mbp_, _mb_,_prm0_,_prm1_, _x_)                                          rcbd(  rcrange,rccode, _mbp_, mbu_update, _mb_,_prm0_,_prm1_, _x_)
@@ -242,12 +242,12 @@ static void mbu_init1(mbu *mb, unsigned n) {
   mbu_updates((_sse2_+1), _sse2_[1], PRMS10,  PRMS11, _bit_);\
 }
 
-#define mbum_enc(rcrange,rclow,  _mb_,_prm0_,_prm1_,_op_, _bit_, _mb1_, _mb2_, _sse2_) do {\
+#define mbum_enc(rcrange,rclow,rcilow,  _mb_,_prm0_,_prm1_,_op_, _bit_, _mb1_, _mb2_, _sse2_) do {\
   unsigned _mbxp,\
            _mbp  = mbu_p(_mb_,_prm0_),\
 		   _mbp1  = mbu_p(_mb1_,_prm0_);\
   mbum_p(_mbp,_mbp1,0,_sse2_, _mbxp);\
-  rcbmenc(rcrange,rclow,  _mbxp, mbum_update,_mb_,_prm0_,_prm1_, _op_,_bit_, _mb1_,_mb2_, _sse2_);\
+  rcbmenc(rcrange,rclow,rcilow,  _mbxp, mbum_update,_mb_,_prm0_,_prm1_, _op_,_bit_, _mb1_,_mb2_, _sse2_);\
 } while(0)
 
 #define mbum_dec(rcrange,rccode, _mb_,_prm0_,_prm1_,_ip_, _x_, _mb1_, _mb2_, _sse2_) do {\
@@ -258,13 +258,13 @@ static void mbu_init1(mbu *mb, unsigned n) {
   rcbmdec(rcrange,rccode, _mbxp, mbum_update,_mb_,_prm0_,_prm1_, _ip_,  _x_, _mb1_,_mb2_,_sse2_);\
 } while(0)
 	
-#define mbum2_enc(rcrange,rclow, _mb_,_prm0_,_prm1_,_op_, _bit_, _mb1_, _mb2_, _sse2_) do {\
+#define mbum2_enc(rcrange,rclow,rcilow, _mb_,_prm0_,_prm1_,_op_, _bit_, _mb1_, _mb2_, _sse2_) do {\
   unsigned _mbxp,\
            _mbp  = mbu_p(_mb_,_prm0_),\
 		   _mbp1 = mbu_p(_mb1_,_prm0_),\
 		   _mbp2 = mbu_p(_mb2_,_prm0_);\
   mbum2_p(_mbp,_mbp1,_mbp2,_sse2_, _mbxp);\
-  rcbmenc(rcrange,rclow,  _mbxp,  mbum2_update,_mb_,_prm0_,_prm1_, _op_,_bit_, _mb1_,_mb2_, _sse2_);\
+  rcbmenc(rcrange,rclow,rcilow,  _mbxp,  mbum2_update,_mb_,_prm0_,_prm1_, _op_,_bit_, _mb1_,_mb2_, _sse2_);\
 } while(0)
 
 #define mbum2_dec(rcrange,rccode, _mb_,_prm0_,_prm1_,_ip_, _x_, _mb1_, _mb2_, _sse2_) do {\
@@ -318,13 +318,13 @@ static void mbu_init1(mbu *mb, unsigned n) {
   mbu_updates((_sse2_+1), _sse2_[1], PRRS10,  PRRS11, _bit_);\
 }
 
-#define mbur_enc(rcrange,rclow,  _mb_,_prm0_,_prm1_,_op_, _bit_, _mb1_, _mb2_, _sse2_) do {\
+#define mbur_enc(rcrange,rclow,rcilow,  _mb_,_prm0_,_prm1_,_op_, _bit_, _mb1_, _mb2_, _sse2_) do {\
   unsigned _mbxp,\
            _mbp  = mbu_p(_mb_, _prm0_),\
 		   _mbp1 = mbu_p(_mb1_,_prm0_),\
 		   _mbp2 = mbu_p(_mb2_,_prm0_);\
   mbur_p(_mbp,_mbp1,_mbp2,_sse2_, _mbxp);\
-  rcbmenc(rcrange,rclow,  _mbxp,  mbur_update,_mb_,_prm0_,_prm1_, _op_,_bit_, _mb1_,_mb2_, _sse2_);\
+  rcbmenc(rcrange,rclow,rcilow, _mbxp,  mbur_update,_mb_,_prm0_,_prm1_, _op_,_bit_, _mb1_,_mb2_, _sse2_);\
 } while(0)
 
 #define mbur_dec(rcrange,rccode, _mb_,_prm0_,_prm1_,_ip_, _x_, _mb1_, _mb2_, _sse2_) do {\
