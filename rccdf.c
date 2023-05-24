@@ -67,13 +67,13 @@ int cdfini(unsigned char *in, size_t inlen, cdf_t *cdf, unsigned cdfnum) {
 //------------------------------ Encode/Decode using static cdf ------------------------------------------------
 size_t rccdfsenc(unsigned char *in, size_t inlen, unsigned char *out, cdf_t *cdf, unsigned cdfnum) {
   unsigned char *op = out, *ip;
-  rcencdef(rcrange,rclow); rceinit(rcrange,rclow);
+  rcencdef(rcrange,rclow,rcilow); rceinit(rcrange,rclow,rcilow);
 
   for(ip = in; ip < in+inlen; ip++) {
     unsigned ch = *ip;
-    cdfenc(rcrange,rclow, cdf, ch, op);                  						OVERFLOW(in,inlen,out, op, goto e); 
+    cdfenc(rcrange,rclow,rcilow, cdf, ch, op);                  						OVERFLOW(in,inlen,out, op, goto e); 
   }
-  rceflush(rcrange,rclow, op);
+  rceflush(rcrange,rclow,rcilow, op);
   e:return op - out;
 }
 
@@ -119,19 +119,19 @@ size_t rccdfsvldec(unsigned char *in, size_t outlen, unsigned char *out, cdf_t *
 //------------------------------ Encode/Decode: interleaved RC using static cdf for 16 symbols ------------------------------------------------
 size_t rccdfs2enc(unsigned char *in, size_t inlen, unsigned char *out, cdf_t *cdf, unsigned cdfnum) { // interleaved  
   unsigned char *_op0 = out+4,*op0 = _op0, *_op1 = out+4+((inlen-4)*37/64), *op1=_op1, *ip = in;
-  rcencdef(rcrange0,rclow0); rceinit(rcrange0,rclow0);
-  rcencdef(rcrange1,rclow1); rceinit(rcrange1,rclow1);
+  rcencdef(rcrange0,rclow0,rcilow0); rceinit(rcrange0,rclow0,rcilow0);
+  rcencdef(rcrange1,rclow1,rcilow1); rceinit(rcrange1,rclow1,rcilow1);
 
   for(; ip < in+(inlen&~(2-1)); ip+=2) {
     unsigned char x0 = ip[0], x1 = ip[1];
-    cdfenc(rcrange0,rclow0, cdf, x0, op0);
-    cdfenc(rcrange1,rclow1, cdf, x1, op1);           							PREFETCH(ip+256,0); OVERFLOWI(in, inlen, op1, op0, _op1);
+    cdfenc(rcrange0,rclow0,rcilow0, cdf, x0, op0);
+    cdfenc(rcrange1,rclow1,rcilow1, cdf, x1, op1);           							PREFETCH(ip+256,0); OVERFLOWI(in, inlen, op1, op0, _op1);
   }
   for(       ; ip < in+inlen; ip++) 
-    cdfenc(rcrange0,rclow0, cdf, ip[0], op0);
+    cdfenc(rcrange0,rclow0,rcilow0, cdf, ip[0], op0);
 
-  rceflush(rcrange0,rclow0, op0);
-  rceflush(rcrange1,rclow1, op1); 									
+  rceflush(rcrange0,rclow0,rcilow0, op0);
+  rceflush(rcrange1,rclow1,rcilow1, op1); 									
   ctou32(out) = op0-_op0; memcpy(op0,_op1,op1-_op1); op0 += op1-_op1; // copy buffer op1 to end of buffer op0
 																				OVERFLOW(in,inlen,out, op0, goto e); 
   e:return op0 - out;
@@ -195,11 +195,11 @@ size_t rccdfenc(unsigned char *in, size_t inlen, unsigned char *out) {
   CDF16DEC0(cdf); CDF16DEC1(cdf1,16);      			                      
   unsigned char *op = out,*ip=in; 
   CDF16DEF; 
-  rcencdef(rcrange,rclow); rceinit(rcrange,rclow);
+  rcencdef(rcrange,rclow,rcilow); rceinit(rcrange,rclow,rcilow);
   for(ip = in; ip < in+inlen;ip++) {
-	cdf8e(rcrange,rclow,cdf,cdf1,ip[0],op);										OVERFLOW(in,inlen,out, op, goto e); 
+	cdf8e(rcrange,rclow,rcilow,cdf,cdf1,ip[0],op);										OVERFLOW(in,inlen,out, op, goto e); 
   }
-  rceflush(rcrange,rclow, op);
+  rceflush(rcrange,rclow,rcilow, op);
   e:return op - out;   
 }       
 
@@ -223,20 +223,20 @@ size_t rccdfidec(unsigned char *in, size_t outlen, unsigned char *out) {
 size_t rccdfienc(unsigned char *in, size_t inlen, unsigned char *out) { 
   CDF16DEC0(cdf); CDF16DEC1(cdf1,16);      			                      
   unsigned char *_op0 = out+4,*op0 = _op0, *_op1 = out+4+(inlen/2), *op1=_op1, *ip;
-  rcencdef(rcrange0,rclow0); rceinit(rcrange0,rclow0);
-  rcencdef(rcrange1,rclow1); rceinit(rcrange1,rclow1);
+  rcencdef(rcrange0,rclow0,rcilow0); rceinit(rcrange0,rclow0,rcilow0);
+  rcencdef(rcrange1,rclow1,rcilow1); rceinit(rcrange1,rclow1,rcilow1);
   CDF16DEF; 
   for(ip = in; ip < in+(inlen&~(4-1));ip+=4) {						PREFETCH(ip+384,0); 
-	cdf8e2(rcrange0,rclow0,rcrange1,rclow1,cdf,cdf1,ip[0],op0,op1);
-	cdf8e2(rcrange0,rclow0,rcrange1,rclow1,cdf,cdf1,ip[1],op0,op1);
-	cdf8e2(rcrange0,rclow0,rcrange1,rclow1,cdf,cdf1,ip[2],op0,op1);
-	cdf8e2(rcrange0,rclow0,rcrange1,rclow1,cdf,cdf1,ip[3],op0,op1); 
+	cdf8e2(rcrange0,rclow0,rcilow0,rcrange1,rclow1,rcilow1,cdf,cdf1,ip[0],op0,op1);
+	cdf8e2(rcrange0,rclow0,rcilow0,rcrange1,rclow1,rcilow1,cdf,cdf1,ip[1],op0,op1);
+	cdf8e2(rcrange0,rclow0,rcilow0,rcrange1,rclow1,rcilow1,cdf,cdf1,ip[2],op0,op1);
+	cdf8e2(rcrange0,rclow0,rcilow0,rcrange1,rclow1,rcilow1,cdf,cdf1,ip[3],op0,op1); 
     OVERFLOWI(in, inlen, op1, op0, _op1);										
   }
   for(; ip < in+inlen;ip++) 
-	cdf8e2(rcrange0,rclow0,rcrange1,rclow1,cdf,cdf1,ip[0],op0,op1);
-  rceflush(rcrange0,rclow0, op0);
-  rceflush(rcrange1,rclow1, op1);
+	cdf8e2(rcrange0,rclow0,rcilow0,rcrange1,rclow1,rcilow1,cdf,cdf1,ip[0],op0,op1);
+  rceflush(rcrange0,rclow0,rcilow0, op0);
+  rceflush(rcrange1,rclow1,rcilow1, op1);
   ctou32(out) = op0-_op0; memcpy(op0,_op1,op1-_op1); op0+=op1-_op1;  			OVERFLOW(in,inlen,out, op0, goto e);  
   e:return op0 - out;
 }
@@ -260,11 +260,11 @@ size_t rccdf4enc(unsigned char *in, size_t inlen, unsigned char *out) {
   CDF16DEC0(cdf);   			                      
   unsigned char *op = out,*ip=in; 
   CDF16DEF;  
-  rcencdef(rcrange,rclow); rceinit(rcrange,rclow);
+  rcencdef(rcrange,rclow,rcilow); rceinit(rcrange,rclow,rcilow);
   for(ip = in; ip < in+inlen;ip++) {
-    cdf4e(rcrange,rclow, cdf, ip[0], op); 										OVERFLOW(in,inlen,out, op, goto e); 
+    cdf4e(rcrange,rclow,rcilow, cdf, ip[0], op); 										OVERFLOW(in,inlen,out, op, goto e); 
   }
-  rceflush(rcrange,rclow, op);
+  rceflush(rcrange,rclow,rcilow, op);
   e:return op - out;    
 }  
 
@@ -296,21 +296,21 @@ size_t rccdf4idec(unsigned char *in, size_t outlen, unsigned char *out) {
 size_t rccdf4ienc(unsigned char *in, size_t inlen, unsigned char *out) { 		
   CDF16DEC0(cdf); CDF16DEF; 
   unsigned char *_op0 = out+4,*op0 = _op0, *_op1 = out+4+(inlen/2), *op1=_op1, *ip;
-  rcencdef(rcrange0,rclow0); rceinit(rcrange0,rclow0);
-  rcencdef(rcrange1,rclow1); rceinit(rcrange1,rclow1);
+  rcencdef(rcrange0,rclow0,rcilow0); rceinit(rcrange0,rclow0,rcilow0);
+  rcencdef(rcrange1,rclow1,rcilow1); rceinit(rcrange1,rclow1,rcilow1);
 
   for(ip = in; ip != in+(inlen&~(2-1)); ip+=2) {
     unsigned x0 = ip[0], x1 = ip[1];
-    cdfenc(rcrange0,rclow0, cdf, x0, op0); 
-    cdfenc(rcrange1,rclow1, cdf, x1, op1); 
+    cdfenc(rcrange0,rclow0,rcilow0, cdf, x0, op0); 
+    cdfenc(rcrange1,rclow1,rcilow1, cdf, x1, op1); 
     cdf16upd(cdf,x0); 
     cdf16upd(cdf,x1); 															PREFETCH(ip+512,0); OVERFLOW(in,inlen,out, op1, goto e);
   }
   for(       ; ip != in+inlen; ip++) 
-    cdf4e(rcrange0,rclow0,cdf,ip[0],op0); 
+    cdf4e(rcrange0,rclow0,rcilow0,cdf,ip[0],op0); 
 
-  rceflush(rcrange0,rclow0, op0);
-  rceflush(rcrange1,rclow1, op1);
+  rceflush(rcrange0,rclow0,rcilow0, op0);
+  rceflush(rcrange1,rclow1,rcilow1, op1);
   ctou32(out) = op0-_op0; memcpy(op0,_op1,op1-_op1); op0+=op1-_op1;  			OVERFLOW(in,inlen,out, op0, goto e); 
   e:return op0 - out;      
 }
@@ -335,11 +335,11 @@ size_t rccdfenc8(unsigned char *in, size_t inlen, unsigned char *out) {
   CDF16DEC0(cdf0); CDF16DEC0(cdf1); CDF16DEC0(cdf2); 
   unsigned char *op = out,*ip=in; 
   CDF16DEF; 
-  rcencdef(rcrange,rclow); rceinit(rcrange,rclow);
+  rcencdef(rcrange,rclow,rcilow); rceinit(rcrange,rclow,rcilow);
   for(ip = in; ip < in+inlen;ip++) {
-	cdfe8(rcrange,rclow,rcrange,rclow,cdf0,cdf1,cdf2,ip[0],op,op);				OVERFLOW(in,inlen,out, op, goto e); 
+	cdfe8(rcrange,rclow,rcilow,rcrange,rclow,rcilow,cdf0,cdf1,cdf2,ip[0],op,op);				OVERFLOW(in,inlen,out, op, goto e); 
   }
-  rceflush(rcrange,rclow, op);
+  rceflush(rcrange,rclow,rcilow, op);
   e:return op - out;   
 } 
 
@@ -364,19 +364,19 @@ size_t rccdfidec8(unsigned char *in, size_t outlen, unsigned char *out) {
 size_t rccdfienc8(unsigned char *in, size_t inlen, unsigned char *out) { 
   CDF16DEC0(cdf0); CDF16DEC0(cdf1); CDF16DEC0(cdf2); 
   unsigned char *_op0 = out+4,*op0 = _op0, *_op1 = out+4+(inlen*37/64), *op1=_op1, *ip=in;
-  rcencdef(rcrange0,rclow0); rceinit(rcrange0,rclow0);
-  rcencdef(rcrange1,rclow1); rceinit(rcrange1,rclow1);
+  rcencdef(rcrange0,rclow0,rcilow0); rceinit(rcrange0,rclow0,rcilow0);
+  rcencdef(rcrange1,rclow1,rcilow1); rceinit(rcrange1,rclow1,rcilow1);
   CDF16DEF; 
   for(; ip < in+(inlen&~(4-1)); ip+= 4) {
-	cdfe8(rcrange0,rclow0,rcrange1,rclow1,cdf0,cdf1,cdf2,ip[0],op0,op1);
-	cdfe8(rcrange0,rclow0,rcrange1,rclow1,cdf0,cdf1,cdf2,ip[1],op0,op1);
-	cdfe8(rcrange0,rclow0,rcrange1,rclow1,cdf0,cdf1,cdf2,ip[2],op0,op1);
-	cdfe8(rcrange0,rclow0,rcrange1,rclow1,cdf0,cdf1,cdf2,ip[3],op0,op1);	    OVERFLOWI(in, inlen, op1, op0, _op1);				
+	cdfe8(rcrange0,rclow0,rcilow0,rcrange1,rclow1,rcilow1,cdf0,cdf1,cdf2,ip[0],op0,op1);
+	cdfe8(rcrange0,rclow0,rcilow0,rcrange1,rclow1,rcilow1,cdf0,cdf1,cdf2,ip[1],op0,op1);
+	cdfe8(rcrange0,rclow0,rcilow0,rcrange1,rclow1,rcilow1,cdf0,cdf1,cdf2,ip[2],op0,op1);
+	cdfe8(rcrange0,rclow0,rcilow0,rcrange1,rclow1,rcilow1,cdf0,cdf1,cdf2,ip[3],op0,op1);	    OVERFLOWI(in, inlen, op1, op0, _op1);				
   }
   for(; ip < in+inlen; ip++)
-	cdfe8(rcrange0,rclow0,rcrange1,rclow1,cdf0,cdf1,cdf2,ip[0],op0,op1);
-  rceflush(rcrange0,rclow0, op0);
-  rceflush(rcrange1,rclow1, op1);          				
+	cdfe8(rcrange0,rclow0,rcilow0,rcrange1,rclow1,rcilow1,cdf0,cdf1,cdf2,ip[0],op0,op1);
+  rceflush(rcrange0,rclow0,rcilow0, op0);
+  rceflush(rcrange1,rclow1,rcilow1, op1);          				
   ctou32(out) = op0-_op0; memcpy(op0,_op1,op1-_op1); op0+=op1-_op1; 			OVERFLOW(in,inlen,out, op0, goto e);  
   e:return op0 - out;
 }
@@ -389,16 +389,16 @@ size_t rccdfvenc16(unsigned char *_in, size_t _inlen, unsigned char *out) {
 
   CDF16DEC0(cdf0); CDF16DEC0(cdf1); 
   CDF16DEF; 
-  rcencdef(rcrange,rclow); rceinit(rcrange,rclow);
+  rcencdef(rcrange,rclow,rcilow); rceinit(rcrange,rclow,rcilow);
   bitedef(bw,br); biteinir(bw,br,op_);
 
   for(ip = in; ip < in+inlen; ip++) {
 	unsigned x = ip[0];
 	bitvrput(bw,br,op_, 2, 0, x);
-	cdfe7(rcrange,rclow,rcrange,rclow, cdf0,cdf1,     x,op,op);
+	cdfe7(rcrange,rclow,rcilow,rcrange,rclow,rcilow, cdf0,cdf1,     x,op,op);
 	if(op+8 >= op_) { memcpy(out, _in, _inlen); op = out_; goto e; }
   }
-  rceflush(rcrange,rclow, op);
+  rceflush(rcrange,rclow,rcilow, op);
   bitflushr(bw,br,op_); unsigned l = out_-op_; memmove(op, op_, l); op += l; ctou32(out) = op-out;   OVERFLOW(_in,_inlen,out, op, goto e); 
   e:return op - out;   
 }       
@@ -429,17 +429,17 @@ size_t rccdfvzenc16(unsigned char *_in, size_t _inlen, unsigned char *out) {
 
   CDF16DEC0(cdf0); CDF16DEC0(cdf1); 
   CDF16DEF; 
-  rcencdef(rcrange,rclow); rceinit(rcrange,rclow);
+  rcencdef(rcrange,rclow,rcilow); rceinit(rcrange,rclow,rcilow);
   bitedef(bw,br); biteinir(bw,br,op_);
 
   for(ip = in; ip < in+inlen; ip++) {
 	unsigned x = zigzagenc16(ip[0] - cx);
 	bitvrput(bw,br,op_, 2, 0, x);
-	cdfe7(rcrange,rclow,rcrange,rclow, cdf0,cdf1,     x,op,op);
+	cdfe7(rcrange,rclow,rcilow,rcrange,rclow,rcilow, cdf0,cdf1,     x,op,op);
 	if(op+8 >= op_) { memcpy(out, _in, _inlen); op = out_; goto e; }
 	cx = ip[0];
   }
-  rceflush(rcrange,rclow, op);
+  rceflush(rcrange,rclow,rcilow, op);
   bitflushr(bw,br,op_); unsigned l = out_-op_; memmove(op, op_, l); op += l; ctou32(out) = op-out;   OVERFLOW(_in,_inlen,out, op, goto e); 
   e:return op - out;   
 }       
@@ -471,16 +471,16 @@ size_t rccdfvenc32(unsigned char *_in, size_t _inlen, unsigned char *out) {
   CDF16DEC0(cdf0); 
   CDF16DEC0(cdf1); 
   CDF16DEF; 
-  rcencdef(rcrange,rclow); rceinit(rcrange,rclow);
+  rcencdef(rcrange,rclow,rcilow); rceinit(rcrange,rclow,rcilow);
   bitedef(bw,br); biteinir(bw,br,op_);
 
   for(ip = in; ip < in+inlen; ip++) {
 	unsigned x = ip[0];
 	bitvrput(bw,br,op_, 2, 0, x);								
-	cdfe7(rcrange,rclow,rcrange,rclow, cdf0,cdf1, x,op,op);
+	cdfe7(rcrange,rclow,rcilow,rcrange,rclow,rcilow, cdf0,cdf1, x,op,op);
 	if(op+8 >= op_) { memcpy(out, _in, _inlen); op = out_; goto e; }
   }
-  rceflush(rcrange,rclow, op);
+  rceflush(rcrange,rclow,rcilow, op);
   bitflushr(bw,br,op_); unsigned l = out_-op_; memmove(op, op_, l); op += l; ctou32(out) = op-out; 	OVERFLOW(_in,_inlen,out, op, goto e); 
   e:return op - out;   
 }       
@@ -512,17 +512,17 @@ size_t rccdfvzenc32(unsigned char *_in, size_t _inlen, unsigned char *out) {
 
   CDF16DEC0(cdf0); CDF16DEC0(cdf1); //CDF16DEC0(cdf2);
   CDF16DEF; 
-  rcencdef(rcrange,rclow); rceinit(rcrange,rclow);
+  rcencdef(rcrange,rclow,rcilow); rceinit(rcrange,rclow,rcilow);
   bitedef(bw,br); biteinir(bw,br,op_);
 
   for(ip = in; ip < in+inlen; ip++) {
 	unsigned x = zigzagenc32(ip[0] - cx);
 	bitvrput(bw,br,op_, 2, 0, x);								
-	cdfe7(rcrange,rclow,rcrange,rclow, cdf0,cdf1, x,op,op);
+	cdfe7(rcrange,rclow,rcilow,rcrange,rclow,rcilow, cdf0,cdf1, x,op,op);
 	cx = ip[0];
 	if(op+8 >= op_) { memcpy(out, _in, _inlen); op = out_; goto e; }
   }
-  rceflush(rcrange,rclow, op);
+  rceflush(rcrange,rclow,rcilow, op);
   bitflushr(bw,br,op_); unsigned l = out_-op_; memmove(op, op_, l); op += l; ctou32(out) = op-out; OVERFLOW(_in,_inlen,out, op, goto e); 
   e:return op - out;   
 }       
@@ -552,16 +552,16 @@ size_t rccdfuenc16(unsigned char *_in, size_t _inlen, unsigned char *out) {
 
   CDF16DEC0(cdf0); CDF16DEC0(cdf1); 
   CDF16DEF; 
-  rcencdef(rcrange,rclow); rceinit(rcrange,rclow);
+  rcencdef(rcrange,rclow,rcilow); rceinit(rcrange,rclow,rcilow);
   bitedef(bw,br); biteinir(bw,br,op_);
   for(ip = in; ip < in+inlen; ip++) {
 	unsigned x = ip[0];
 	bitvrput(bw,br,op_, 1, 0, x);
-	cdfe6(rcrange,rclow,rcrange,rclow, cdf0,cdf1,     x,op,op);
+	cdfe6(rcrange,rclow,rcilow,rcrange,rclow,rcilow, cdf0,cdf1,     x,op,op);
 	if(op+8 >= op_) { memcpy(out, _in, _inlen); op = out_; goto e; }
   }
 
-  rceflush(rcrange,rclow, op);
+  rceflush(rcrange,rclow,rcilow, op);
   bitflushr(bw,br,op_); unsigned l = out_-op_; memmove(op, op_, l); op += l; ctou32(out) = op-out;   OVERFLOW(_in,_inlen,out, op, goto e); 
   e:return op - out;   
 }       
@@ -592,16 +592,16 @@ size_t rccdfuenc32(unsigned char *_in, size_t _inlen, unsigned char *out) {
 
   CDF16DEC0(cdf0); CDF16DEC0(cdf1); 
   CDF16DEF; 
-  rcencdef(rcrange,rclow); rceinit(rcrange,rclow);
+  rcencdef(rcrange,rclow,rcilow); rceinit(rcrange,rclow,rcilow);
   bitedef(bw,br); biteinir(bw,br,op_);
 
   for(ip = in; ip < in+inlen; ip++) {
 	unsigned x = ip[0];
 	bitvrput(bw,br,op_, 1, 0, x);
-	cdfe6(rcrange,rclow,rcrange,rclow, cdf0,cdf1,     x,op,op);
+	cdfe6(rcrange,rclow,rcilow,rcrange,rclow,rcilow, cdf0,cdf1,     x,op,op);
 	if(op+8 >= op_) { memcpy(out, _in, _inlen); op = out_; goto e; }
   }
-  rceflush(rcrange,rclow, op);
+  rceflush(rcrange,rclow,rcilow, op);
   bitflushr(bw,br,op_); unsigned l = out_-op_; memmove(op, op_, l); op += l; ctou32(out) = op-out;  OVERFLOW(_in,_inlen,out, op, goto e);  
   e:return op - out;   
 }       
@@ -648,13 +648,13 @@ size_t rccdfudec32(unsigned char *in, size_t _outlen, unsigned char *_out) {
 //--- Encode using cdf ------------------------------
 size_t rccdfsmenc(unsigned char *in, size_t inlen, unsigned char *out, cdf_t *cdf, unsigned cdfnum) {
   unsigned char *op = out, *ip;
-  rcencdef(rcrange,rclow); rceinit(rcrange,rclow);
+  rcencdef(rcrange,rclow,rcilow); rceinit(rcrange,rclow,rcilow);
 
   for(ip = in; ip < in+inlen; ip++) {
     unsigned ch = *ip;
-    cdfenc(rcrange,rclow, cdf, ch, op);											OVERFLOW(in,inlen,out, op, goto e); 
+    cdfenc(rcrange,rclow,rcilow, cdf, ch, op);											OVERFLOW(in,inlen,out, op, goto e); 
   }
-  rceflush(rcrange,rclow, op);
+  rceflush(rcrange,rclow,rcilow, op);
   e:return op - out;
 }
 
