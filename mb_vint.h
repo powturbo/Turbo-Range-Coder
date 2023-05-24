@@ -53,10 +53,10 @@
 #define MBG_DEC2(_mg0_, _g0b_, _mgu_, _g1b_, _mgb_, _gbb_, _gau_, _gab_) MBG_DEF2( _mg0_, _g0b_, _mgu_, _g1b_, _mgb_, _gbb_, _gau_, _gab_); MBG_INI2(_mg0_, _g0b_, _mgu_, _g1b_, _mgb_, _gbb_, _gau_, _gab_)
 
 // unary
-#define _mbgue(_rcrange_,_rclow_, _mg_,_prm0_,_prm1_, _op_, _gb_) do { mbu *_mg = _mg_,*_mgp;\
+#define _mbgue(_rcrange_,_rclow_,_rcilow_, _mg_,_prm0_,_prm1_, _op_, _gb_) do { mbu *_mg = _mg_,*_mgp;\
   for(_mgp = _mg; _mgp < _mg+(_gb_); _mgp++)\
-    mbu_enc(_rcrange_,_rclow_, _mgp,_prm0_,_prm1_,_op_, 0);\
-  mbu_enc(  _rcrange_,_rclow_, _mgp,_prm0_,_prm1_,_op_, 1);\
+    mbu_enc(_rcrange_,_rclow_,_rcilow_, _mgp,_prm0_,_prm1_,_op_, 0);\
+  mbu_enc(  _rcrange_,_rclow_,_rcilow_, _mgp,_prm0_,_prm1_,_op_, 1);\
 } while(0)
 
 #define _mbgud(_rcrange_,_rccode_, _mgu_, _prm0_,_prm1_, _ip_, _ub_) do {\
@@ -68,11 +68,11 @@
 } while(0)
 
 // binary
-#define _mbgbe(_rcrange_,_rclow_, _mg_,_prm0_,_prm1_, _op_, _x_, _gb_) do {\
+#define _mbgbe(_rcrange_,_rclow_,_rcilow_, _mg_,_prm0_,_prm1_, _op_, _x_, _gb_) do {\
   int _gi; mbu *_mga = _mg_;\
   for(_gi = (_gb_)-1; _gi >= 0; --_gi) {\
     mbu *_mg = _mga + _gi;\
-    mbu_enc(_rcrange_,_rclow_, _mg,_prm0_,_prm1_,_op_, RCB((_x_),_gi));\
+    mbu_enc(_rcrange_,_rclow_,_rcilow_, _mg,_prm0_,_prm1_,_op_, RCB((_x_),_gi));\
   }\
 } while(0)
 
@@ -82,14 +82,14 @@
 }  while(0)
 
 // Gamma Coding: 0..0xfffffffe 
-#define mbgenc(_rcrange_,_rclow_, _mg0_,_mgu_,_mgb_,_prm0_,_prm1_,_op_, _x_) do {\
+#define mbgenc(_rcrange_,_rclow_,_rcilow_, _mg0_,_mgu_,_mgb_,_prm0_,_prm1_,_op_, _x_) do {\
   unsigned _x = (_x_)+1;    										 			    AS(_x != 0, "mbgenc: can't encode 0xffffffffu in gamma");\
   mbu *_mg0 = _mg0_;\
-  if(_x == 1) mbu_enc(_rcrange_,_rclow_, _mg0,_prm0_,_prm1_,_op_, 1);           	/*value 1*/\
-  else {      mbu_enc(_rcrange_,_rclow_, _mg0,_prm0_,_prm1_,_op_, 0);\
+  if(_x == 1) mbu_enc(_rcrange_,_rclow_,_rcilow_, _mg0,_prm0_,_prm1_,_op_, 1);           	/*value 1*/\
+  else {      mbu_enc(_rcrange_,_rclow_,_rcilow_, _mg0,_prm0_,_prm1_,_op_, 0);\
     unsigned _gb = __bsr32(_x);\
-	_mbgue(_rcrange_,_rclow_, _mgu_,         _prm0_,_prm1_,_op_,    _gb-1);     	/*encode the length in unary */\
-	_mbgbe(_rcrange_,_rclow_, (_mgb_)[_gb-1],_prm0_,_prm1_,_op_,_x, _gb);  			/* encode the value in binary with lengt gb as context*/\
+	_mbgue(_rcrange_,_rclow_,_rcilow_, _mgu_,         _prm0_,_prm1_,_op_,    _gb-1);     	/*encode the length in unary */\
+	_mbgbe(_rcrange_,_rclow_,_rcilow_, (_mgb_)[_gb-1],_prm0_,_prm1_,_op_,_x, _gb);  			/* encode the value in binary with lengt gb as context*/\
   }\
 } while(0)
 
@@ -106,15 +106,15 @@
 #define mbgdec(_rcrange_,_rccode_, _mg0_,_mgu_,_mgb_,_prm0_,_prm1_,_ip_, _x_) _mbgdec(_rcrange_,_rccode_, _mg0_,_mgu_,_mgb_,_prm0_,_prm1_,_ip_, _x_, ;, ;)
 
 //---Gamma coding lower 5 bits values encoded in context ---------------------- 
-#define mbgxenc(_rcrange_,_rclow_, _mg0_,_mgu_,_mgb_,_prm0_,_prm1_,_op_, _x_) do {\
+#define mbgxenc(_rcrange_,_rclow_,_rcilow_, _mg0_,_mgu_,_mgb_,_prm0_,_prm1_,_op_, _x_) do {\
   unsigned _x = (_x_)+1;    										 					AS(_x != 0, "mbgenc: can't encode 0xffffffffu in gamma");\
   mbu *_mg0 = _mg0_;\
-  if(_x == 1) mbu_enc(_rcrange_,_rclow_, _mg0,_prm0_,_prm1_,_op_, 1); 					/*value 1*/\
-  else {      mbu_enc(_rcrange_,_rclow_, _mg0,_prm0_,_prm1_,_op_, 0);\
+  if(_x == 1) mbu_enc(_rcrange_,_rclow_,_rcilow_, _mg0,_prm0_,_prm1_,_op_, 1); 					/*value 1*/\
+  else {      mbu_enc(_rcrange_,_rclow_,_rcilow_, _mg0,_prm0_,_prm1_,_op_, 0);\
     unsigned _gb = __bsr32(_x);\
-	_mbgue(_rcrange_,_rclow_, _mgu_,_prm0_,_prm1_, _op_, _gb-1); 						 /*encode the length in unary */\
-	if(_gb < 6) mbnenc(_rcrange_,_rclow_, (_mgb_)[_gb-1], _prm0_,_prm1_, _op_, _x, _gb); /*encode the value (context = gb) as integer */\
-	else        _mbgbe(_rcrange_,_rclow_, (_mgb_)[_gb-1], _prm0_,_prm1_, _op_, _x, _gb); /*encode the value (context = gb) in binary */\
+	_mbgue(_rcrange_,_rclow_,_rcilow_, _mgu_,_prm0_,_prm1_, _op_, _gb-1); 						 /*encode the length in unary */\
+	if(_gb < 6) mbnenc(_rcrange_,_rclow_,_rcilow_, (_mgb_)[_gb-1], _prm0_,_prm1_, _op_, _x, _gb); /*encode the value (context = gb) as integer */\
+	else        _mbgbe(_rcrange_,_rclow_,_rcilow_, (_mgb_)[_gb-1], _prm0_,_prm1_, _op_, _x, _gb); /*encode the value (context = gb) in binary */\
   }\
 } while(0)
 	
@@ -135,15 +135,15 @@
 #define mbgxdec(_rcrange_,_rccode_, _mg0_,_mgu_,_mgb_,_prm0_,_prm1_,_ip_, _x_) _mbgxdec(_rcrange_,_rccode_, _mg0_,_mgu_,_mgb_,_prm0_,_prm1_,_ip_, _x_, ;, ;)
 
 //**** Limited length Gamma Coding. Full 32 bit range 0..UINT_MAX + 64 bits (expect last 64 bits value) ****----------------------------
-#define mbgenc32(_rcrange_, _rclow_, _mgu_, _mgb_,_prm0_,_prm1_,_op_, _x_, _qmax_) do {\
+#define mbgenc32(_rcrange_,_rclow_,_rcilow_, _mgu_, _mgb_,_prm0_,_prm1_,_op_, _x_, _qmax_) do {\
   uint64_t _x = (uint64_t)(_x_)+1, \
            _q = __bsr64(_x), _log2m_ = _q; 												/*_x >> _log2m_;*/\
   if(_q > _qmax_) {											           					/* quotient greater than limit _qmax_*/\
     unsigned _qx = _q - _qmax_, _qb = __bsr32(_qx)+1; 		           					/* (_q - _qmax_) size in bits*/\
-    _mbgue(_rcrange_,_rclow_, _mgu_,     _prm0_,_prm1_, _op_,      _qmax_+_qb); 		/* encode (_qmax_+_qb) in unary coding*/\
-	_mbgbe(_rcrange_,_rclow_, (_mgb_)[0],_prm0_,_prm1_, _op_, _qx, _qb-1);  		    /* encode _qb-1 lsb bits (without the msb bit)*/\
-  } else _mbgue(_rcrange_,_rclow_, _mgu_,_prm0_,_prm1_, _op_,      _q);      	        /* _q in unary coding*/\
-    _mbgbe(_rcrange_,_rclow_, _mgb_[__bsr32(_q+1)+1],_prm0_,_prm1_, _op_,_x, _log2m_);  /* _log2m_ lsb bits of the remainder*/\
+    _mbgue(_rcrange_,_rclow_,_rcilow_, _mgu_,     _prm0_,_prm1_, _op_,      _qmax_+_qb); 		/* encode (_qmax_+_qb) in unary coding*/\
+	_mbgbe(_rcrange_,_rclow_,_rcilow_, (_mgb_)[0],_prm0_,_prm1_, _op_, _qx, _qb-1);  		    /* encode _qb-1 lsb bits (without the msb bit)*/\
+  } else _mbgue(_rcrange_,_rclow_,_rcilow_, _mgu_,_prm0_,_prm1_, _op_,      _q);      	        /* _q in unary coding*/\
+    _mbgbe(_rcrange_,_rclow_,_rcilow_, _mgb_[__bsr32(_q+1)+1],_prm0_,_prm1_, _op_,_x, _log2m_);  /* _log2m_ lsb bits of the remainder*/\
 } while(0)
 
 #define mbgdec32(_rcrange_,_rccode_, _mgu_,_mgb_,_prm0_,_prm1_, _ip_, _x_, _qmax_) do {\
@@ -161,14 +161,14 @@
 } while(0)	
 
 //-- Golomb Rice Coding : _qmax_ length limited rice coding with rice parameter _log2m_ -----------------------------------------------
-#define mbrenc32(_rcrange_, _rclow_, _mgu_,_mgb_,_prm0_,_prm1_, _op_, _x_, _qmax_, _log2m_) {\
+#define mbrenc32(_rcrange_,_rclow_,_rcilow_, _mgu_,_mgb_,_prm0_,_prm1_, _op_, _x_, _qmax_, _log2m_) {\
   unsigned      _x = _x_, _q = _x >> _log2m_;\
   if(_q > _qmax_) {											           		            /* quotient greater than limit _qmax_ */\
     unsigned _qx = _q - _qmax_; int _qb = __bsr32(_qx)+1; 	   				            /*AS(_qmax_+_qb+1 < 46,"mbrenc32: Fatal %d\n", _qmax_+_qb+1);*/	/* (_q - _qmax_) size in bits */\
-    _mbgue(_rcrange_,_rclow_, _mgu_,      _prm0_,_prm1_, _op_, _qmax_+_qb); 		    /* encode (_qmax_+_qb) in unary coding */\
-	_mbgbe(_rcrange_,_rclow_, &(_mgb_)[0],_prm0_,_prm1_, _op_, _qx, _qb-1); \
-  } else _mbgue(_rcrange_,_rclow_, _mgu_, _prm0_,_prm1_, _op_, _q); 		            /* _q in unary coding*/\
-  _mbgbe(_rcrange_,_rclow_, &(_mgb_)[__bsr32(_q+1)+1],_prm0_,_prm1_, _op_, _x, _log2m_);/* _log2m_ lsb bits of the remainder*/\
+    _mbgue(_rcrange_,_rclow_,_rcilow_, _mgu_,      _prm0_,_prm1_, _op_, _qmax_+_qb); 		    /* encode (_qmax_+_qb) in unary coding */\
+	_mbgbe(_rcrange_,_rclow_,_rcilow_, &(_mgb_)[0],_prm0_,_prm1_, _op_, _qx, _qb-1); \
+  } else _mbgue(_rcrange_,_rclow_,_rcilow_, _mgu_, _prm0_,_prm1_, _op_, _q); 		            /* _q in unary coding*/\
+  _mbgbe(_rcrange_,_rclow_,_rcilow_, &(_mgb_)[__bsr32(_q+1)+1],_prm0_,_prm1_, _op_, _x, _log2m_);/* _log2m_ lsb bits of the remainder*/\
 }
 
 #define mbrdec32(_rcrange_, _rccode_, _mgu_,_mgb_,_prm0_,_prm1_, _ip_, _x_, _qmax_, _log2m_) {\
@@ -191,19 +191,19 @@
 #define VB_OFS1 (VB_BA2 - (1<<VB_B2))
 #define VB_OFS2 (VB_OFS1 + (1 << (8+VB_B2)))
 
-#define mbvenc24(_rcrange_,_rclow_,_mb0_,_mb1_,_mb2_, _prm0_,_prm1_, _op_,_x_) { unsigned _x = _x_;\
-  if(likely((_x_) < VB_OFS1)){   mb8enc(_rcrange_,_rclow_, _mb0_,_prm0_,_prm1_, _op_, _x); }\
+#define mbvenc24(_rcrange_,_rclow_,_rcilow_,_mb0_,_mb1_,_mb2_, _prm0_,_prm1_, _op_,_x_) { unsigned _x = _x_;\
+  if(likely((_x_) < VB_OFS1)){   mb8enc(_rcrange_,_rclow_,_rcilow_, _mb0_,_prm0_,_prm1_, _op_, _x); }\
   else if  ((_x_) < VB_OFS2) { uint16_t _y = (VB_OFS1<<8) + (_x-VB_OFS1);\
-    _x = _y>>8;                  mb8enc(_rcrange_,_rclow_, _mb0_,_prm0_,_prm1_, _op_, _x);\
-    _x = (unsigned char)_x;      mb8enc(_rcrange_,_rclow_, _mb1_,_prm0_,_prm1_, _op_, _x);\
+    _x = _y>>8;                  mb8enc(_rcrange_,_rclow_,_rcilow_, _mb0_,_prm0_,_prm1_, _op_, _x);\
+    _x = (unsigned char)_x;      mb8enc(_rcrange_,_rclow_,_rcilow_, _mb1_,_prm0_,_prm1_, _op_, _x);\
   } else { unsigned _y = VB_BA2 + ((_x -= VB_OFS2) >> 16);\
-                                 mb8enc(_rcrange_,_rclow_, _mb0_,_prm0_,_prm1_, _op_, _y);\
-    _y = (unsigned char)_x;      mb8enc(_rcrange_,_rclow_, _mb1_,_prm0_,_prm1_, _op_, _y);\
-    _y = (unsigned char)(_x>>8); mb8enc(_rcrange_,_rclow_, _mb2_,_prm0_,_prm1_, _op_, _y);\
+                                 mb8enc(_rcrange_,_rclow_,_rcilow_, _mb0_,_prm0_,_prm1_, _op_, _y);\
+    _y = (unsigned char)_x;      mb8enc(_rcrange_,_rclow_,_rcilow_, _mb1_,_prm0_,_prm1_, _op_, _y);\
+    _y = (unsigned char)(_x>>8); mb8enc(_rcrange_,_rclow_,_rcilow_, _mb2_,_prm0_,_prm1_, _op_, _y);\
   }\
 }
 
-#define mbvenc24(_rcrange_,_rclow_,_mb0_,_mb1_,_mb2_, _prm0_,_prm1_, _ip_,_x_) do { \
+#define mbvenc24(_rcrange_,_rclow_,_rcilow_,_mb0_,_mb1_,_mb2_, _prm0_,_prm1_, _ip_,_x_) do { \
   _x_ = *_ip_++;\
        if(likely(_x_ < VB_OFS1));\
   else if(likely(_x_ < VB_BA2))  { _x_ = ((_x_<<8) + (*_ip_)) + (VB_OFS1 - (VB_OFS1 <<  8)); _ip_++;} \
@@ -211,13 +211,13 @@
 } while(0)
 
 //------------------------------- Turbo VLC with exponent coded in gamma range coder and mantissa in bitio --------------------------------------------------------
-#define mbvenc(_rcrange_,_rclow_, _mg0_,_mgu_,_mgb_,_prm0_,_prm1_,_op_, _x_, _bw_, _br_,_vn_, _vb_) do { unsigned _vx = _x_;\
+#define mbvenc(_rcrange_,_rclow_,_rcilow_, _mg0_,_mgu_,_mgb_,_prm0_,_prm1_,_op_, _x_, _bw_, _br_,_vn_, _vb_) do { unsigned _vx = _x_;\
   if(_vx >= vlcfirst(_vn_)+_vb_) { \
     unsigned _expo, _ma, _mb;\
     vlcenc(_vx-_vb_, _vn_, _expo, _mb, _ma); \
 	_vx = _expo+(_vb_); bitput(_bw_,_br_, _mb, _ma);\
   }\
-  mbgenc(_rcrange_,_rclow_, _mg0_,_mgu_,_mgb_,_prm0_,_prm1_,_op_, _vx);\
+  mbgenc(_rcrange_,_rclow_,_rcilow_, _mg0_,_mgu_,_mgb_,_prm0_,_prm1_,_op_, _vx);\
 } while(0)
 	
 #define mbvdec(_rcrange_,_rccode_, _mg0_,_mgu_,_mgb_,_prm0_,_prm1_,_ip_, _x_, _bw_, _br_, _vn_, _vb_) {\
@@ -263,16 +263,16 @@
                                                                           MBU3_INI1(_mbf_, _mb0_,_nb0_, _mb1_,_nb1_, _mb2_,_nb2_, _cxb_);
 
 
-#define mbu3enc(_rcrange_,_rclow_, _mbf_,_mb0_,_nb0_, _mb1_,_nb1_, _mb2_,_nb2_, _prm0_,_prm1_,_op_, _x_) do { unsigned _xx = _x_;\
-  if(!_xx) {                                      mbu_enc(_rcrange_,_rclow_, &_mbf_[0],_prm0_,_prm1_,_op_, 1); /*  1*/}\
-  else {        _xx -= 1;                         mbu_enc(_rcrange_,_rclow_, &_mbf_[0],_prm0_,_prm1_,_op_, 0);\
-    if(         _xx < (1 << _nb0_)) {             mbu_enc(    _rcrange_,_rclow_, &_mbf_[1],_prm0_,_prm1_,_op_, 1); /* 01*/\
-      T3(mb,_nb0_,enc)(_rcrange_,_rclow_, _mb0_,_prm0_,_prm1_,_op_, _xx);\
-    } else {   _xx -= (1 << _nb0_);               mbu_enc(    _rcrange_,_rclow_, &_mbf_[1],_prm0_,_prm1_,_op_, 0); \
-      if(      _xx <  (1 << _nb1_)) {             mbu_enc(    _rcrange_,_rclow_, &_mbf_[2],_prm0_,_prm1_,_op_, 0); /*000*/\
-        T3(mb,_nb1_,enc)(_rcrange_,_rclow_, _mb1_,_prm0_,_prm1_,_op_, _xx);  \
-      } else { _xx -= (1 << _nb1_);               mbu_enc(    _rcrange_,_rclow_, &_mbf_[2],_prm0_,_prm1_,_op_, 1);\
-        T3(mb,_nb2_,enc)(_rcrange_,_rclow_, _mb2_,_prm0_,_prm1_,_op_, _xx);                                 /*001*/\
+#define mbu3enc(_rcrange_,_rclow_,_rcilow_, _mbf_,_mb0_,_nb0_, _mb1_,_nb1_, _mb2_,_nb2_, _prm0_,_prm1_,_op_, _x_) do { unsigned _xx = _x_;\
+  if(!_xx) {                                      mbu_enc(_rcrange_,_rclow_,_rcilow_, &_mbf_[0],_prm0_,_prm1_,_op_, 1); /*  1*/}\
+  else {        _xx -= 1;                         mbu_enc(_rcrange_,_rclow_,_rcilow_, &_mbf_[0],_prm0_,_prm1_,_op_, 0);\
+    if(         _xx < (1 << _nb0_)) {             mbu_enc(    _rcrange_,_rclow_,_rcilow_, &_mbf_[1],_prm0_,_prm1_,_op_, 1); /* 01*/\
+      T3(mb,_nb0_,enc)(_rcrange_,_rclow_,_rcilow_, _mb0_,_prm0_,_prm1_,_op_, _xx);\
+    } else {   _xx -= (1 << _nb0_);               mbu_enc(    _rcrange_,_rclow_,_rcilow_, &_mbf_[1],_prm0_,_prm1_,_op_, 0); \
+      if(      _xx <  (1 << _nb1_)) {             mbu_enc(    _rcrange_,_rclow_,_rcilow_, &_mbf_[2],_prm0_,_prm1_,_op_, 0); /*000*/\
+        T3(mb,_nb1_,enc)(_rcrange_,_rclow_,_rcilow_, _mb1_,_prm0_,_prm1_,_op_, _xx);  \
+      } else { _xx -= (1 << _nb1_);               mbu_enc(    _rcrange_,_rclow_,_rcilow_, &_mbf_[2],_prm0_,_prm1_,_op_, 1);\
+        T3(mb,_nb2_,enc)(_rcrange_,_rclow_,_rcilow_, _mb2_,_prm0_,_prm1_,_op_, _xx);                                 /*001*/\
       }\
     }\
   }\
