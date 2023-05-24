@@ -33,7 +33,7 @@
 size_t T3(rcmr,RC_PRD,enc)(unsigned char *in, size_t inlen, unsigned char *out RCPRM) { 
   unsigned char *op = out, *ip; 
   unsigned      cx1 = 0, cx2 = 0, run = 0;
-  rcencdec(rcrange,rclow);                        // range coder
+  rcencdec(rcrange,rclow,rcilow);                        // range coder
   MBU_DEC1(mb0,  1<<8);							  // predictor
   MBU_DEC2(mb1,  1<<8, 1<<8);             		   
   unsigned short sse[1<<(1+8)][17]; ssebinit(sse);
@@ -45,13 +45,13 @@ size_t T3(rcmr,RC_PRD,enc)(unsigned char *in, size_t inlen, unsigned char *out R
     for(i = 8-1; i >= 0; --i) {
 	  unsigned x = y>>(i+1); 
 	  mbu *m0 = &mb0[x], *m1 = &m1x[x], *m2 = &m2x[x]; mbus *msse = &sse[RUNPARM x];
-	  mbur_enc(rcrange,rclow, m0, RCPRM0,RCPRM1,op, RCB(y,i), m1, m2, msse);
+	  mbur_enc(rcrange,rclow,rcilow, m0, RCPRM0,RCPRM1,op, RCB(y,i), m1, m2, msse);
     }																			OVERFLOW(in,inlen,out, op, goto e);
 	cx2 = cx1;
 	cx1 = (unsigned char)y;                     
 	run = cx1==cx2?0x100:0;         //  r   = cx1 == cx2?r+1:0; run = r > 2?0x100:0; //      
   } 
-  rceflush(rcrange,rclow, op);
+  rceflush(rcrange,rclow,rcilow, op);
   e:return op - out;
 }
 
@@ -80,7 +80,7 @@ size_t T3(rcmr,RC_PRD,dec)(unsigned char *in, size_t outlen, unsigned char *out 
 size_t T3(rcmrr,RC_PRD,enc)(unsigned char *in, size_t inlen, unsigned char *out RCPRM) { 
   unsigned char *op = out, *ip; 
   unsigned      cx1 = 0, cx2 = 0, run = 0, r = 0;
-  rcencdec(rcrange,rclow);                        // range coder
+  rcencdec(rcrange,rclow,rcilow);                        // range coder
   MBU_DEC1(mb0,  1<<8);							  // predictor
   MBU_DEC2(mb1,  1<<8, 1<<8);             		   
   unsigned short sse[1<<(1+8)][17]; ssebinit(sse);
@@ -92,13 +92,13 @@ size_t T3(rcmrr,RC_PRD,enc)(unsigned char *in, size_t inlen, unsigned char *out 
     for(i = 8-1; i >= 0; --i) {
 	  unsigned x = y>>(i+1); 
 	  mbu *m0 = &mb0[x], *m1 = &m1x[x], *m2 = &m2x[x]; mbus *msse = &sse[RUNPARM x];
-	  mbur_enc(rcrange,rclow, m0, RCPRM0,RCPRM1,op, RCB(y,i), m1, m2, msse);
+	  mbur_enc(rcrange,rclow,rcilow, m0, RCPRM0,RCPRM1,op, RCB(y,i), m1, m2, msse);
     }																			OVERFLOW(in,inlen,out, op, goto e);
 	cx2 = cx1;
 	cx1 = (unsigned char)y;                     
 	r   = cx1 == cx2?r+1:0; run = r > 2?0x100:0; //run = cx1==cx2?0x100:0;//        
   } 
-  rceflush(rcrange,rclow, op);
+  rceflush(rcrange,rclow,rcilow, op);
   e:return op - out;
 }
 
@@ -128,7 +128,7 @@ size_t T3(rcmrr,RC_PRD,dec)(unsigned char *in, size_t outlen, unsigned char *out
 size_t T3(rcm,RC_PRD,enc)(unsigned char *in, size_t inlen, unsigned char *out RCPRM) { 
   unsigned char *op = out, *ip; 
   unsigned      cx = 0, run = 0;
-  rcencdec(rcrange,rclow);                         
+  rcencdec(rcrange,rclow,rcilow);                         
   MBU_DEC1(mb0,  1<<8);
   MBU_DEC2(mb1,  1<<8,  1<<8);             		  
   unsigned short sse[1<<8][17]; sseinit(sse);
@@ -140,11 +140,11 @@ size_t T3(rcm,RC_PRD,enc)(unsigned char *in, size_t inlen, unsigned char *out RC
     for(i = 8-1; i >= 0; --i) {
 	  unsigned y = x>>(i+1); 
 	  mbu *m0 = &mb0[y], *m1 = &m1x[y]; mbus *msse2 = &sse[y];
-	  mbum_enc(rcrange,rclow, m0, RCPRM0,RCPRM1,op, RCB(x,i), m1, 0, msse2);
+	  mbum_enc(rcrange,rclow,rcilow, m0, RCPRM0,RCPRM1,op, RCB(x,i), m1, 0, msse2);
     }
 	cx = ip[0];																	OVERFLOW(in,inlen,out, op, goto e);  
   } 
-  rceflush(rcrange,rclow, op);
+  rceflush(rcrange,rclow,rcilow, op);
   e:return op - out;
 }
 
@@ -172,7 +172,7 @@ size_t T3(rcm,RC_PRD,dec)(unsigned char *in, size_t outlen, unsigned char *out R
 size_t T3(rcm2,RC_PRD,enc)(unsigned char *in, size_t inlen, unsigned char *out RCPRM) { 
   unsigned char *op = out, *ip; 
   unsigned      cx = 0, run = 0;
-  rcencdec(rcrange,rclow);                         
+  rcencdec(rcrange,rclow,rcilow);                         
   MBU_DEC1( mb0,  1<<8);
   MBU_DEC2( mb1,  1<<8,  1<<8);             		  
   MBU_NEWI2(mb2,  1<<16, 1<<8);  //MBU_DEC2(mb2,  1<<16, 1<<8);             		
@@ -185,11 +185,11 @@ size_t T3(rcm2,RC_PRD,enc)(unsigned char *in, size_t inlen, unsigned char *out R
     for(i = 8-1; i >= 0; --i) {
 	  unsigned y = x>>(i+1); 
 	  mbu *m0 = &mb0[y], *m1 = &m1x[y], *m2 = &m2x[y]; mbus *msse = &sse[y];
-	  mbum2_enc(rcrange,rclow, m0, RCPRM0,RCPRM1,op, RCB(x,i), m1, m2, msse);
+	  mbum2_enc(rcrange,rclow,rcilow, m0, RCPRM0,RCPRM1,op, RCB(x,i), m1, m2, msse);
     }
 	cx  = cx << 8 | ip[0];														OVERFLOW(in,inlen,out, op, goto e);     
   } 
-  rceflush(rcrange,rclow, op);
+  rceflush(rcrange,rclow,rcilow, op);
   e: free(mb2);
   return op - out;
 }
