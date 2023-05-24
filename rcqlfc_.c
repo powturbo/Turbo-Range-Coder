@@ -60,20 +60,20 @@ size_t T3(rcqlfc,RC_PRD,enc)(uint8_t *in, size_t inlen, unsigned char *out RCPRM
   MBG_DEC( mbg0a,         mbgua,        mbgba,        33, 33);       			//initial mtf r2c 
   MBG_DEC2(mbg0c, 1<<KU0, mbguc, 1<<KU, mbgbc, 1<<KB, 33, 33);  				//rank
   MBG_DEC2(mbg0r, 1<<RU0, mbgur, 1<<RU, mbgbr, 1<<RB, 33, 33);  				//run length
-  rcencdec(rcrange, rclow); 							                     	//range coder
+  rcencdec(rcrange,rclow,rcilow); 							                     	//range coder
   
   uint8_t   K[1<<8], R[1<<8] = {1}; 
   unsigned cx;
   rk = rcqlfc(in, inlen, _rk, r2cr);                                                       
-  for(cx = 0; cx < (1<<8); cx++) { mbgenc(rcrange,rclow, &mbg0a, mbgua, mbgba, RCPRM0,RCPRM1,op, r2cr[cx]); K[cx] = r2cr[cx]; }
+  for(cx = 0; cx < (1<<8); cx++) { mbgenc(rcrange,rclow,rcilow, &mbg0a, mbgua, mbgba, RCPRM0,RCPRM1,op, r2cr[cx]); K[cx] = r2cr[cx]; }
   for(ip = in, in_ = in+inlen; ip < in_;) {
     unsigned k = *--rk,r;                   
 	uint8_t  u = *ip++, *p = ip; while(ip < in_ && *ip == u) ip++; r = ip - p;  // run length encoding  //uint8_t  u = *ip; r = memrun8(ip, in_); ip += r--; 
-	CXK; mbgxenc(rcrange,rclow, &mbg0c[       cxk], mbguc[           cxk], mbgbc[cxk], RCPRM0K,RCPRM1K,op, k); K[u] = PREDEMAK(K[u],k);
-	CXR; mbgxenc(rcrange,rclow, &mbg0r[ku<<11|cxr], mbgur[(ku>0)<<11|cxr], mbgbr[u  ], RCPRM0R,RCPRM1R,op, r); R[u] = PREDEMAR(R[u],r);		
+	CXK; mbgxenc(rcrange,rclow,rcilow, &mbg0c[       cxk], mbguc[           cxk], mbgbc[cxk], RCPRM0K,RCPRM1K,op, k); K[u] = PREDEMAK(K[u],k);
+	CXR; mbgxenc(rcrange,rclow,rcilow, &mbg0r[ku<<11|cxr], mbgur[(ku>0)<<11|cxr], mbgbr[u  ], RCPRM0R,RCPRM1R,op, r); R[u] = PREDEMAR(R[u],r);		
 																				OVERFLOW(in,inlen, out, op, goto e);
   }
-  rceflush(rcrange,rclow, op);													OVERFLOW(in,inlen, out,op,;);
+  rceflush(rcrange,rclow,rcilow, op);													OVERFLOW(in,inlen, out,op,;);
   e:vfree(_rk); 																																				    
   return op - out;
 }
@@ -86,7 +86,7 @@ size_t T3(rcqlfc,RC_PRD,dec)(uint8_t *in, size_t outlen, uint8_t *out RCPRM) {
   MBG_DEC( mbg0a,         mbgua,        mbgba,        33, 33);        
   MBG_DEC2(mbg0c, 1<<KU0, mbguc, 1<<KU, mbgbc, 1<<KB, 33, 33);
   MBG_DEC2(mbg0r, 1<<RU0, mbgur, 1<<RU, mbgbr, 1<<RB, 33, 33); 
-  rcencdef(rcrange,rccode); rcdinit(rcrange, rccode, ip);         
+  rcdecdec(rcrange,rccode, ip);         
   
   for(i = 0; i < (1<<8); i++) { unsigned x; mbgdec(rcrange,rccode, &mbg0a, mbgua, mbgba, RCPRM0,RCPRM1,ip, x); r2c[O+i] = x; K[i] = x; }   
   for(op = out; op < out+outlen;) { 	
