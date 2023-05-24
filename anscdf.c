@@ -658,7 +658,7 @@ LIBAPI size_t ansbc(unsigned char *in,  size_t inlen, unsigned char *out) {
     while(inp != ins) { STE(0);STE(1);STE(2);STE(3); STE(0);STE(1);STE(2);STE(3); } 
     for(i = 0; i < ABSN; i++) eceflush(st[i],eop); 
     
-    int l = (out+osize) - eop;                                                  if(op+l > out+osize) die("overflow"); 
+    int l = (out+osize) - eop;                                                  if(op+l > out+osize) { memcpy(out, in, inlen); return inlen; } 
     memcpy(op, eop, l); op += l;
   }
   return op - out;
