@@ -133,6 +133,13 @@ typedef unsigned short mbu;
       _m = _ml_[_yh];                              mnenc4(_m,   0, _yl, _stk_);\
 }
 
+#define mnenc8x2x(_mh_, _ml_, _x0_,_x1_, _stk_, cx) { mbu *_mh; /*encode 2 bytes / 4x interleaved*/\
+  unsigned _x = _x0_, _yh = _x>>4, _yl = _x & 0xf; _mh = _mh_[cx]; mnenc4(_mh, 3, _yh, _stk_);  \
+  mbu *_m = _ml_[cx][_yh];                                         mnenc4(_m,   2, _yl, _stk_); cx = _x0_;\
+           _x = _x1_, _yh = _x>>4, _yl = _x & 0xf; _mh = _mh_[cx]; mnenc4(_mh, 1, _yh, _stk_);  \
+       _m = _ml_[cx][_yh];                         _mh = _mh_[cx]; mnenc4(_m,   0, _yl, _stk_); cx = _x1_;\
+}
+
 #define mnflush(_op_,_op__,__stk_,_stk_, _ansn_) { /*process the stack, encode all probs*/\
   STATEDEF(_st, _ansn_);\
   unsigned char *_ep = _op__,_i;\
@@ -156,13 +163,25 @@ typedef unsigned short mbu;
   ecdnorm(_st_[0], _ip_);\
   ecdnorm(_st_[1], _ip_);\
 }  
-
+ 
 #define mndec8x2(_mh_, _ml_, _st_, _ip_, _x0_, _x1_) {\
   unsigned _yh,_yl; \
                        cdf16ansdec(_mh_,_st_[0], _yh);\
   mbu *_m = _ml_[_yh]; cdf16ansdec(_m,  _st_[1], _yl); _x0_ = _yh << 4| _yl;\
                        cdf16ansdec(_mh_,_st_[2], _yh);\
        _m = _ml_[_yh]; cdf16ansdec(_m,  _st_[3], _yl); _x1_ = _yh << 4| _yl;\
+  ecdnorm(_st_[0], _ip_);\
+  ecdnorm(_st_[1], _ip_);\
+  ecdnorm(_st_[2], _ip_);\
+  ecdnorm(_st_[3], _ip_);\
+}
+
+#define mndec8x2x(_mh_, _ml_, _st_, _ip_, _x0_, _x1_, cx) { mbu *_mh;\
+  unsigned _yh,_yl; \
+                       _mh = _mh_[cx]; cdf16ansdec(_mh,_st_[0], _yh);                       \
+  mbu *_m = _ml_[cx][_yh];             cdf16ansdec(_m, _st_[1], _yl); _x0_ = _yh << 4| _yl; cx = _x0_;\
+                       _mh = _mh_[cx]; cdf16ansdec(_mh,_st_[2], _yh);                       \
+       _m = _ml_[cx][_yh];             cdf16ansdec(_m, _st_[3], _yl); _x1_ = _yh << 4| _yl; cx = _x1_;\
   ecdnorm(_st_[0], _ip_);\
   ecdnorm(_st_[1], _ip_);\
   ecdnorm(_st_[2], _ip_);\
