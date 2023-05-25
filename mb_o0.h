@@ -1,5 +1,5 @@
 /**
-    Copyright (C) powturbo 2013-2022
+    Copyright (C) powturbo 2013-2023
     GPL v3 License
 
     This program is free software; you can redistribute it and/or modify
@@ -29,7 +29,7 @@
 #define _RCDNORM1(_rcrange_,_rccode_,_ip_) 
   #else
 #define _RCENORM1(_rcrange_,_rclow_,_rcilow_,_op_) _rcenorm_(_rcrange_,_rclow_,_rcilow_, _op_)
-#define _RCDNORM1(_rcrange_,_rccode_,_ip_) _rcdnorm_(_rcrange_,_rccode_,_ip_)
+#define _RCDNORM1(_rcrange_,_rccode_,_ip_)         _rcdnorm_(_rcrange_,_rccode_,_ip_)
   #endif 
 
   #if (RC_SIZE - RC_IO)/4 >= RC_BITS
@@ -37,10 +37,9 @@
 #define _RCDNORM2(_rcrange_,_rccode_,_ip_) 
   #else
 #define _RCENORM2(_rcrange_,_rclow_,_rcilow_,_op_) _rcenorm_(_rcrange_,_rclow_,_rcilow_, _op_)
-#define _RCDNORM2(_rcrange_,_rccode_,_ip_) _rcdnorm_(_rcrange_,_rccode_,_ip_)
+#define _RCDNORM2(_rcrange_,_rccode_,_ip_)         _rcdnorm_(_rcrange_,_rccode_,_ip_)
   #endif
   
- 
 // encode n bits
 #define mbnenc(_rcrange_,_rclow_,_rcilow_, _mb_,_prm0_,_prm1_,_op_, _x_, _n_) do {\
   mbu *_mbn = _mb_; unsigned _xn = 1<<(_n_) | (_x_); int _in;\
