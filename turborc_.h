@@ -91,8 +91,6 @@
 #define rcout_t T3(uint,RC_IO,_t)
 #define RCPUT(_x_,_op_) { T2(ctou, RC_IO)(_op_) = _RC_BSWAP(_x_); _op_ += (RC_IO/8); }
 #define RCGET(_ip_) ((rcout_t)_RC_BSWAP(T2(ctou, RC_IO)(_ip_))), _ip_ += (RC_IO/8)
-//#define RCGETX(_ip_) ((rcout_t)_RC_BSWAP(T2(ctou, RC_IO)(_ip_)))&(-_c), _ip_ += (RC_IO/8)&(-_c)
-
 //--------------------------- Renormalization -----------------------------------------------------
   #if RC_IO == 8
 #define _LOOP while
@@ -110,14 +108,7 @@
 	RCPUT((rcout_t)(_rclow_ >> RC_S(_rcrange_)),_op_); _rclow_ <<= RC_IO; _rcrange_ <<= RC_IO; _rcilow_ = _rclow_;\
   }
 
-#define _rcdnorm_(_rcrange_, rccode,_ip_) _LOOP(_rcrange_ < ((rcrange_t)1<<RC_S(_rcrange_)))  { rccode <<= RC_IO; rccode |= RCGET(_ip_); _rcrange_ <<= RC_IO; }
-/*#define _rcdnorm_(_rcrange_, rccode,_ip_) {\
-  unsigned _c = _rcrange_ < ((rcrange_t)1<<RC_S(_rcrange_)); \
-    rccode <<= RC_IO&(-_c); \
-    rccode |= RCGETX(_ip_); \
-    _rcrange_ <<= RC_IO&(-_c); \
-}*/
-
+#define _rcdnorm_(_rcrange_, rccode,_ip_) _LOOP(_rcrange_ < ((rcrange_t)1<<RC_S(_rcrange_)))  { _rcrange_ <<= RC_IO; rccode <<= RC_IO; rccode |= RCGET(_ip_);  }
 //------------------------- Initialization encode ----------------------------------------------------
 #define rcencdef(_rcrange_,_rclow_,_rcilow_) RC_BG; rcrange_t _rcrange_,_rclow_,_rcilow_
 #define rceinit( _rcrange_,_rclow_,_rcilow_) { _rclow_ = _rcilow_ = 0; _rcrange_ = (rcrange_t)-1; RC_LOGINI; }
@@ -220,7 +211,7 @@ static void div32init(void) { if(!_div32ini) { DIVTINI32(_div32lut, DIV_BITS); _
   _rcdnorm_(_rcrange_,rccode,_ip_);\
 }
 
-//#################################### cdf multisymbol range coder (see usage example in turborccdf.c) ##################################
+//#################################### cdf multisymbol range coder (see usage example in rccdf.c) ##################################
 //########## Encode 
 #define _rccdfenc_(_rcrange_,_rclow_, _cdf0_, _cdf1_,_op_) { _rclow_ += (_rcrange_ >>= RC_BITS)*(_cdf0_); _rcrange_ *= (_cdf1_ - _cdf0_); }
 //########## Decode
@@ -454,7 +445,7 @@ static void div32init(void) { if(!_div32ini) { DIVTINI32(_div32lut, DIV_BITS); _
 } while(0)
 
 //--------------------------------- decode bit (branchless) ------------------------------------------------
-#define rcbd_(_rcrange_, rccode, _mbp_, _bit_) { /* https://godbolt.org/z/MorrdMfTs */\
+#define rcbd_(_rcrange_, rccode, _mbp_, _bit_) { /* https://godbolt.org/z/nxxeqEh1z */\
   rcrange_t _rcx = (_rcrange_ >> RC_BITS) * (_mbp_);\
   _rcrange_ -= _rcx;\
   _bit_    = rccode < _rcx?_rcrange_=_rcx, 1:0;\
@@ -487,3 +478,4 @@ static void div32init(void) { if(!_div32ini) { DIVTINI32(_div32lut, DIV_BITS); _
   _rcdnorm_(_rcrange_,rccode,_ip_); \
   rcbmd(_rcrange_,rccode, _mbp_, _mbupd_,_mb_,_prm0_,_prm1_, _x_, _mb1_,_mb2_,_sse2_);\
 } while(0)
+
