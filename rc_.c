@@ -34,6 +34,15 @@
 #include "rcutil_.h"
 
 //---- order 0 byte (8 bits) adaptive - bitwise encode/decode -------------------------------
+size_t T3(rc,RC_PRD,dec)(unsigned char *in, size_t outlen, unsigned char *out RCPRM) {
+  unsigned char *ip = in, *op; 
+  rcdecdec(rcrange,rccode, ip);                
+  MBU_DEC1(mb,1<<8);             			
+  
+  for(op = out; op < out+outlen; op++) 
+    mb8dec(rcrange,rccode, mb,RCPRM0,RCPRM1,ip, *op);
+} 
+
 size_t T3(rc,RC_PRD,enc)(unsigned char *in, size_t inlen, unsigned char *out RCPRM) {
   unsigned char *op = out, *ip; 
   rcencdec(rcrange,rclow,rcilow);                  // range coder
@@ -47,14 +56,6 @@ size_t T3(rc,RC_PRD,enc)(unsigned char *in, size_t inlen, unsigned char *out RCP
   e:return op - out;
 }
 
-size_t T3(rc,RC_PRD,dec)(unsigned char *in, size_t outlen, unsigned char *out RCPRM) {
-  unsigned char *ip = in, *op; 
-  rcdecdec(rcrange,rccode, ip);                
-  MBU_DEC1(mb,1<<8);             			
-  
-  for(op = out; op < out+outlen; op++) 
-    mb8dec(rcrange,rccode, mb,RCPRM0,RCPRM1,ip, *op);
-} 
 
 //--- order0 : 16 bits -----------------------
 size_t T3(rc,RC_PRD,enc16)(unsigned char *_in, size_t _inlen, unsigned char *out RCPRM) {
