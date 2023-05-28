@@ -103,4 +103,5 @@ unsigned T2(BECDEC,USIZE)(unsigned char *__restrict in, unsigned _outlen, uint_t
   bec_t t; 	t.lo = t._lo; t.hi = t._hi; 										stm_t *s = &t.s; stmdini(s, in, 0); STMSAVE(s); // read the symbol table
   for(i = 0; n; n -= stab[i++].n) { 											stmget_(n, n, n, stab[i].n); stmgetx_(USIZE,  stab[i].c); } STMREST(s); 
   T2(BECDEC_,USIZE)(&t, out, outlen, pow2next(outlen) >> 1, stab);              // Decode
+  return _outlen;
 }
