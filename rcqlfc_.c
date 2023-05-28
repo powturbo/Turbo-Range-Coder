@@ -56,7 +56,7 @@ enum { KU0=11, KU=11, KB=11,
        RU0=13, RU=12, RB= 8 };                                                                         
   #ifndef NCOMP																	
 size_t T3(rcqlfc,RC_PRD,enc)(uint8_t *in, size_t inlen, unsigned char *out RCPRM) {
-  uint8_t _r2cr[(1<<8)+32], *r2cr = &_r2cr[32], *ip = in, *in_,*op = out, *_rk = vmalloc((inlen+1)*sizeof(in[0])), *rk; if(!_rk) die("malloc failed. size=%u\n", inlen);   
+  uint8_t _r2cr[(1<<8)+32], *r2cr = &_r2cr[32], *ip = in, *in_,*op = out, *_rk = vmalloc((inlen+1)*sizeof(in[0])), *rk; if(!_rk) die("malloc failed. size=%zu\n", inlen);   
   MBG_DEC( mbg0a,         mbgua,        mbgba,        33, 33);       			//initial mtf r2c 
   MBG_DEC2(mbg0c, 1<<KU0, mbguc, 1<<KU, mbgbc, 1<<KB, 33, 33);  				//rank
   MBG_DEC2(mbg0r, 1<<RU0, mbgur, 1<<RU, mbgbr, 1<<RB, 33, 33);  				//run length
