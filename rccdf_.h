@@ -125,7 +125,7 @@
 #define cdfe7(rcrange0,rclow0,rcilow0,rcrange1,rclow1,rcilow1, _m0_, _m1_, _x_, _op0_, _op1_) { unsigned _x = _x_;\
   if(likely(_x < 8))    {                  cdf4e(rcrange0,rclow0,rcilow0,_m0_, _x, _op0_); }\
   else { _x -= 8; unsigned _y = (_x>>4)+8; cdf4e(rcrange0,rclow0,rcilow0,_m0_, _y, _op0_); \
-                           _y = _x&0xf;    cdf4e(rcrange1,rclow1,rcilow1,_m1_, _y, _op1_); }\					   
+                           _y = _x&0xf;    cdf4e(rcrange1,rclow1,rcilow1,_m1_, _y, _op1_); }\
 }
 
 #define cdfd7(rcrange0,rccode0,rcrange1,rccode1, _m0_, _m1_, _x_, _ip0_, _ip1_) {\
@@ -138,7 +138,7 @@
 #define cdfe6(rcrange0,rclow0,rcilow0,rcrange1,rclow1,rcilow1, _m0_, _m1_, _x_, _op0_, _op1_) { unsigned _x = _x_;\
   if(likely(_x < 12))    {                   cdf4e(rcrange0,rclow0,rcilow0,_m0_, _x, _op0_); }\
   else { _x -= 12; unsigned _y = (_x>>4)+12; cdf4e(rcrange0,rclow0,rcilow0,_m0_, _y, _op0_); \
-                            _y = _x&0xf;     cdf4e(rcrange1,rclow1,rcilow1,_m1_, _y, _op1_); }\					   
+                            _y = _x&0xf;     cdf4e(rcrange1,rclow1,rcilow1,_m1_, _y, _op1_); }\
 }
 
 #define cdfd6(rcrange0,rccode0,rcrange1,rccode1, _m0_, _m1_, _x_, _ip0_, _ip1_) {\
