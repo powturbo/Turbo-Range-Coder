@@ -36,16 +36,22 @@
 #include <windows.h>
 static SIZE_T largePageSize = 0, vinit_ = 0;
 
-static void vinit() { if(vinit_) return; vinit_++;
+static void vinit(int enable) { 
+  if(vinit_) return; vinit_++;
   HANDLE hToken = 0;
-  if(OpenProcessToken(GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES, &hToken)) {
-    LUID luid;
-    if(LookupPrivilegeValue(NULL, TEXT("SeLockMemoryPrivilege"), &luid)) {
-      TOKEN_PRIVILEGES tp;
-      tp.PrivilegeCount = 1;
-      tp.Privileges[0].Luid = luid;
-      tp.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
-      AdjustTokenPrivileges(hToken, FALSE, &tp, sizeof(tp), 0, 0); //unsigned rc; if(rc = GetLastError()) printf("AdjustTokenPrivileges.rc=%d ", rc);
+  if(OpenProcessToken(GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY, &hToken)) {
+    TOKEN_PRIVILEGES tp = {0};
+    if(LookupPrivilegeValue(NULL, SE_LOCK_MEMORY_NAME, &tp.Privileges[0].Luid)) {
+      tp.PrivilegeCount           = 1;
+      tp.Privileges[0].Attributes = enable?SE_PRIVILEGE_ENABLED:0;
+      if(AdjustTokenPrivileges(hToken, FALSE, &tp, 0, NULL, 0)) {
+		  #ifndef NDEBUG
+	    unsigned rc = GetLastError();
+		if(rc == ERROR_SUCCESS)
+		  largePageSize = GetLargePageMinimum();
+	    else printf("AdjustTokenPrivileges.rc=%d ", rc);
+		  #endif
+	  }
     }
     CloseHandle(hToken);
   }
@@ -55,21 +61,21 @@ static void vinit() { if(vinit_) return; vinit_++;
     typedef SIZE_T (WINAPI * GetLargePageMinimumProcT)();
 
     GetLargePageMinimumProcT largePageMinimumProc = (GetLargePageMinimumProcT)GetProcAddress(hKernel, "GetLargePageMinimum");
-    if (largePageMinimumProc != NULL) {
+    if(largePageMinimumProc) {
       largePageSize = largePageMinimumProc();
       if ((largePageSize & (largePageSize - 1)) != 0) largePageSize = 0;
     }
-  }														  //printf("page=%d \n", g_LargePageSize);	
+  }														  //printf("LP=%d ", (int)largePageSize);	
 } 
   #endif
 
 void *vmalloc(size_t size) {
     #ifdef _WIN32
-  vinit();
-  if(largePageSize /*&& largePageSize <= (1 << 30)*/ && size >= (1 << 18)) {
+  vinit(1);
+  if(largePageSize /*&& largePageSize <= (1 << 30)*/ && size >= (size_t)(1 << 18)) { 
     void *rc = VirtualAlloc(0, (size + largePageSize - 1) & (~(largePageSize - 1)), MEM_COMMIT | MEM_LARGE_PAGES, PAGE_READWRITE);
-    //if(!rc) printf("VAlloc failed rc=%d ", GetLastError()); else printf("LP=%d/%d ", largePageSize, size); 
-	if(rc) return rc; 
+    //if(!rc) printf("VAlloc failed rc=%d ", (int)GetLastError()); else printf("LP=%lld/%zd ", largePageSize, size); 
+	if(rc) return rc; //printf("LP=%d rc=%d ", (int)largePageSize, (int)rc);	
   }
   return VirtualAlloc(0, size, MEM_COMMIT, PAGE_READWRITE);
     #else
@@ -186,7 +192,7 @@ uint8_t *rcqlfc(uint8_t *__restrict in, size_t n, uint8_t *__restrict out, uint8
       c0 = p[3]; p[3] = c1; if(c0 == c) { p += 3; break; }
     } 
       #else	  
-	uint8_t *pb,*q; p = r2c; // search
+	uint8_t *pb=NULL,*q=NULL; p = r2c; // search
         #ifdef __AVX2__
 	for(;;) { unsigned m = _mm256_movemask_epi8(_mm256_cmpeq_epi8(_mm256_loadu_si256((__m256i*)p), cv)); if(m) { p += ctz32(m); break; } p += 32;}
         #elif defined(__SSE__)
@@ -318,7 +324,7 @@ size_t utf8enc(unsigned char *__restrict in, size_t inlen, unsigned char *__rest
   
     #ifdef NOHASH
   #define HBITS 24    // 16*2 = 32MB
-  unsigned short *stabh = calloc(1<<HBITS, sizeof(stabh[0])); if(!stabh) die("utf8enc: calloc failed size=%z\n", 1<<HBITS);
+  unsigned short *stabh = calloc((size_t)(1<<HBITS), sizeof(stabh[0])); if(!stabh) die("utf8enc: calloc failed size=%z\n", 1<<HBITS);
 	#else
   #define HBITS (SYMBITS+1)
   #define HMASK ((1<<HBITS)-1)
@@ -375,7 +381,7 @@ size_t utf8enc(unsigned char *__restrict in, size_t inlen, unsigned char *__rest
   if(hdlen & 1) *op++ = 0; 														// offset to data must be even for 16 bits bwt
   
   if(itmax>1 || !xprep8) { 							                            if(verbose) { printf("'16 bits output' "); fflush(stdout); } 
-    if((op - out) + cnt*2 >= (inlen*255)/256-8) { op = out+inlen; goto e;}; 		// check overflow in case of 16 bits
+    if(op + cnt*2 >= out+(inlen*255)/256-8) { op = out+inlen; goto e;}; 		// check overflow in case of 16 bits
 	for(ip = in; ip < in+inlen;) {                    							// fixed length encoding: 16-bits
 	  unsigned c, l, ci; 
 	  UCGET(ip, c, l); 															
@@ -389,7 +395,7 @@ size_t utf8enc(unsigned char *__restrict in, size_t inlen, unsigned char *__rest
 	  CGET(stab, stabh,HBITS,HMASK, c, ci); 
 	  vsput20(op, ci); 															OVERFLOW(in,inlen,out, op, goto e);  
 	}
-  }	ctou32(out) = op - out;														if(verbose) { printf("len='%u' ", op-out);fflush(stdout); }																				
+  }	ctou32(out) = op - out;														if(verbose) { printf("len='%u' ", (unsigned)(op-out));fflush(stdout); }																				
   e: 
     #ifdef NOHASH
   if(stabh) free(stabh);
@@ -433,7 +439,7 @@ unsigned symsget(unsigned *sym, unsigned char **_in, unsigned *flag) {
 }
 
 size_t utf8dec(unsigned char *__restrict in, size_t outlen, unsigned char *__restrict out) {
-  unsigned char *op = out, *ip = in+4, len[1<<16]; 
+    unsigned char* op = out, * ip = in + 4, len[1 << 16] = { 0 };
   unsigned i,flag, sym[1<<16], inlen = ctou32(in),stabn = symsget(sym, &ip, &flag); 
 
   for(i = 0; i < stabn; i++) { 
@@ -519,7 +525,7 @@ typedef unsigned cnt_t;
 #define N64 64
 unsigned histcalc8(unsigned char *__restrict in, unsigned inlen, unsigned *__restrict cnt) {
   #define IC 4
-  cnt_t c[8][CSIZE] = {0}, i; 
+  cnt_t c[8][CSIZE] = {0}; 
   unsigned char *ip = in; 
   
   if(inlen >= UZ+N64) {
@@ -543,8 +549,8 @@ unsigned histcalc8(unsigned char *__restrict in, unsigned inlen, unsigned *__res
 
 unsigned histrcalc8(unsigned char *__restrict in, unsigned inlen, unsigned *__restrict cnt) {
   #define IC 4
-  cnt_t c[8][CSIZE] = {0},i; 
-  unsigned char *ip = in,*in_; 
+  cnt_t c[8][CSIZE] = {0}; 
+  unsigned char *ip = in; 
   
   if(inlen >= UZ+N64) {
     uint64_t u0 = ctou64(ip), v0 = ctou64(ip+8);
@@ -560,7 +566,7 @@ unsigned histrcalc8(unsigned char *__restrict in, unsigned inlen, unsigned *__re
 }
 
 void memrev(unsigned char a[], unsigned n) { 
-  size_t i, j;
+  size_t i=0, j;
     #if defined(__AVX2__)
 	__m256i cv = _mm256_set_epi8( 0, 1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12,13,14,15,  0, 1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12,13,14,15	);
   for(j = i; j < n >> (1+5); ++j,i += 32) {
