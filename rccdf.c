@@ -60,8 +60,9 @@ int cdfini(unsigned char *in, size_t inlen, cdf_t *cdf, unsigned cdfnum) {
   for(cdf[0] = i = 0; i < cdfnum; i++) cdf[i+1] = cdf[i]+cnt[i];
 
   for(i = 0; i < cdfnum; i++)
-    if(cdf[i] >= cdf[i+1]) die("Fatal cdf %d:%d,%d\n", i, cdf[i], cdf[i+1]);
+    if(cdf[i] >= cdf[i+1]) die("Fatal cdf %zd:%d,%d\n", i, cdf[i], cdf[i+1]);
   if(cdf[cdfnum] != (1<<(RC_BITS))) die("Fatal: CDF overflow\n");
+  return inlen;
 }
 
 //------------------------------ Encode/Decode using static cdf ------------------------------------------------
@@ -91,7 +92,8 @@ size_t rccdfsbdec(unsigned char *in, size_t outlen, unsigned char *out, cdf_t *c
   unsigned char *ip = in, *op = out; 
   rcdecdef(rcrange, rccode); rcdinit(rcrange, rccode, ip);             
   for(; op < out+outlen;op++) cdfbget(rcrange,rccode, cdf, cdfnum, op[0], ip);
-} 
+  return outlen;
+}
 
 size_t rccdfsvbdec(unsigned char *in, size_t outlen, unsigned char *out, cdf_t *cdf, unsigned cdfnum) { // binary search+division
   unsigned char *ip = in, *op; 
@@ -114,6 +116,7 @@ size_t rccdfsvldec(unsigned char *in, size_t outlen, unsigned char *out, cdf_t *
     cdfvlget(rcrange,rccode, cdf, cdfnum, ch, ip);
     *op = ch;
   }
+  return outlen;
 }
 
 //------------------------------ Encode/Decode: interleaved RC using static cdf for 16 symbols ------------------------------------------------
@@ -155,7 +158,8 @@ size_t rccdfsl2dec(unsigned char *in, size_t outlen, unsigned char *out, cdf_t *
   }
   for(; op != out+outlen; op++)
     cdfbget(rcrange0,rccode0, cdf, cdfnum, op[0], ip0);
-} 
+  return outlen;
+}
 
 size_t rccdfsb2dec(unsigned char *in, size_t outlen, unsigned char *out, cdf_t *cdf, unsigned cdfnum) { // interleaved - linear search
   unsigned char *ip0 = in+4, *ip1 = (in+4)+ctou32(in), *op = out;
@@ -174,7 +178,8 @@ size_t rccdfsb2dec(unsigned char *in, size_t outlen, unsigned char *out, cdf_t *
   }
   for(; op != out+outlen; op++)
     cdfbget(rcrange0,rccode0, cdf, cdfnum, op[0], ip0);
-} 
+  return outlen;
+}
 
 //------------------------------ Encode/Decode using adaptive cdf ------------------------------------------------ 
 size_t rccdfdec(unsigned char *in, size_t outlen, unsigned char *out) {
