@@ -25,7 +25,7 @@
 
 #include <stdio.h>             
 #include "include_/conf.h"   
-#include "turborc.h"   
+#include "include/turborc.h"   
 
 #define RC_MACROS
 #define RC_BITS 15      	// RC_SIZE=64 + RC_IO=32 : set in turborc_.h
