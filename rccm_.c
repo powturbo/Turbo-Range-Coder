@@ -75,6 +75,7 @@ size_t T3(rcmr,RC_PRD,dec)(unsigned char *in, size_t outlen, unsigned char *out 
     op[0] = cx1 = (unsigned char)x;
     run = cx1==cx2?0x100:0;                                  
   }
+  return outlen;
 }
 
 size_t T3(rcmrr,RC_PRD,enc)(unsigned char *in, size_t inlen, unsigned char *out RCPRM) { 
@@ -122,6 +123,7 @@ size_t T3(rcmrr,RC_PRD,dec)(unsigned char *in, size_t outlen, unsigned char *out
     op[0] = cx1 = (unsigned char)x;
     r     = cx1 == cx2?r+1:0; run = r > 2?0x100:0;//run = cx1==cx2?0x100:0;//                                       
   }
+  return outlen;
 }
 
 //-------------- Order 1-0 context mixing -------------------------------------
@@ -166,6 +168,7 @@ size_t T3(rcm,RC_PRD,dec)(unsigned char *in, size_t outlen, unsigned char *out R
     }
     op[0] = cx = (unsigned char)x;
   }
+  return outlen;
 }
 
 //-------------- Order 2-1-0 context mixing -------------------------------------
@@ -214,4 +217,5 @@ size_t T3(rcm2,RC_PRD,dec)(unsigned char *in, size_t outlen, unsigned char *out 
     op[0] = cx = cx << 8 | (unsigned char)x;
   }
   free(mb2);
+  return outlen;
 }
