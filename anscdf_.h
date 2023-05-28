@@ -221,7 +221,7 @@ typedef unsigned short mbu;
 #define cdfenc7(_m0_, _m1_, _x_, _stk_) { unsigned _x = _x_;\
   if(likely(_x < 8))    {                  mnenc4(_m0_, 1, _x, _stk_); }\
   else { _x -= 8; unsigned _y = (_x>>4)+8; mnenc4(_m0_, 1, _y, _stk_); \
-                           _y = _x&0xf;    mnenc4(_m1_, 0, _y, _stk_); }\					   
+                           _y = _x&0xf;    mnenc4(_m1_, 0, _y, _stk_); }\
 }
 
 #define cdfdec7(_m0_, _m1_, _st_, _ip_, _x_) {\
