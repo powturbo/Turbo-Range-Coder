@@ -1,7 +1,7 @@
 # Copyright (C) powturbo 2015-2022
 # nmake "NCODEC1=1" "NCODEC2=1" /f makefile.msc
 # or
-# nmake "AVX2=1" /f makefile.msc
+# nmake /f makefile.msc
 
 .SUFFIXES: .c .obj .dllobj
 
