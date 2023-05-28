@@ -55,7 +55,7 @@ typedef struct { bitedec(bw,br); unsigned char *_p,*p; } stm_t; // bitio
 #define STMREST(_s_) (_s_)->bw = bw; (_s_)->br = br; (_s_)->p = p
 
 static size_t stmetell(stm_t *s) { return s->p - s->_p; }
-static size_t stmseek(stm_t *s, unsigned o, unsigned x) { s->p+=x; }
+static size_t stmseek(stm_t* s, unsigned o, unsigned x) { s->p += x; return 0; }
 
 //------ Stream encode ---
 #define MSBREV(_cl_,_l_) { unsigned _msb = (_l_ | (1u << _cl_)) <= _n; _l_ = _l_ << _msb | _l_ >> _cl_; _cl_ += _msb; _l_ = bzhi32(_l_,_cl_); } //#define MSBREV(_cl,_l) cl++
