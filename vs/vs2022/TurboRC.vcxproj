@@ -19,8 +19,32 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\turborcs.c" />
-    <ClCompile Include="..\..\turborcss.c" />
+    <ClCompile Include="..\..\anscdf.c">
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">_CRT_SECURE_NO_WARNINGS=;_CONSOLE;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <EnableEnhancedInstructionSet Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NoExtensions</EnableEnhancedInstructionSet>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">_CRT_SECURE_NO_WARNINGS=;_CONSOLE;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <EnableEnhancedInstructionSet Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NoExtensions</EnableEnhancedInstructionSet>
+    </ClCompile>
+    <ClCompile Include="..\..\bec_b.c" />
+    <ClCompile Include="..\..\rcbwt.c" />
+    <ClCompile Include="..\..\rccdf.c" />
+    <ClCompile Include="..\..\rccm_s.c" />
+    <ClCompile Include="..\..\rccm_sf.c" />
+    <ClCompile Include="..\..\rccm_ss.c" />
+    <ClCompile Include="..\..\rcqlfc_s.c" />
+    <ClCompile Include="..\..\rcqlfc_sf.c" />
+    <ClCompile Include="..\..\rcqlfc_ss.c" />
+    <ClCompile Include="..\..\rcutil.c" />
+    <ClCompile Include="..\..\rc_s.c" />
+    <ClCompile Include="..\..\rc_sf.c" />
+    <ClCompile Include="..\..\rc_ss.c" />
+    <ClCompile Include="..\anscdf_avx2.c">
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">__SSE__;__SSE2__;__SSE3__;__SSSE3__;__SSE4_1__;__SSE4_2__;__AVX2__;_CRT_SECURE_NO_WARNINGS=;_CONSOLE;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <EnableEnhancedInstructionSet Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
+    </ClCompile>
+    <ClCompile Include="..\anscdf_sse.c">
+      <EnableEnhancedInstructionSet Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
+    </ClCompile>
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>
