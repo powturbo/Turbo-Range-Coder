@@ -41,7 +41,8 @@ size_t T3(rc,RC_PRD,dec)(unsigned char *in, size_t outlen, unsigned char *out RC
   
   for(op = out; op < out+outlen; op++) 
     mb8dec(rcrange,rccode, mb,RCPRM0,RCPRM1,ip, *op);
-} 
+  return outlen;
+}
 
 size_t T3(rc,RC_PRD,enc)(unsigned char *in, size_t inlen, unsigned char *out RCPRM) {
   unsigned char *op = out, *ip; 
@@ -89,6 +90,7 @@ size_t T3(rc,RC_PRD,dec16)(unsigned char *in, size_t _outlen, unsigned char *_ou
 	mb8dec(rcrange,rccode, mb0[ch],RCPRM0,RCPRM1, ip, cx); 	
     *op = ch << 8 | cx;  									
   }
+  return _outlen;
 }
 
 //---Order0 : 32 bits -----------------------
@@ -132,6 +134,7 @@ size_t T3(rc,RC_PRD,dec32)(unsigned char *in, size_t _outlen, unsigned char *_ou
 		 mb = mb0[BZHI32(r,XN1)]; mb8dec(rcrange,rccode, mb, RCPRM0,RCPRM1, ip,cx); 
     *op = cx = r << 8 | cx; 													
   }
+  return _outlen;
 }
 
 //---- Order 0 Nibble (4 bits) adaptive : encode/decode low nibble ---------------------------
@@ -154,7 +157,8 @@ size_t T3(rc4,RC_PRD,dec)(unsigned char *in, size_t outlen, unsigned char *out R
   
   for(op = out; op < out+outlen; op++)
     mb4dec(rcrange,rccode, mb,RCPRM0,RCPRM1, ip, *op); 
-} 
+  return outlen;
+}
 
 // Order 0 Nibble (4 bits) --------------------------------------------------------------------
 size_t T3(rc4c,RC_PRD,enc)(unsigned char *in, size_t inlen, unsigned char *out RCPRM) {
@@ -176,7 +180,8 @@ size_t T3(rc4c,RC_PRD,dec)(unsigned char *in, size_t outlen, unsigned char *out 
   
   for(op = out; op < out+outlen; op++)
     mb4sdec(rcrange,rccode, mb,RCPRM0,RCPRM1, ip, *op); 
-} 
+  return outlen;
+}
 
 //-- Order1 : 8 bits -------------------------------------------------------------------------
 size_t T3(rcc,RC_PRD,enc)(unsigned char *in, size_t inlen, unsigned char *out RCPRM) {
@@ -200,6 +205,7 @@ size_t T3(rcc,RC_PRD,dec)(unsigned char *in, size_t outlen, unsigned char *out R
 
   for(op = out; op < out+outlen; op++)
     mb8dec(rcrange,rccode, mb[cx],RCPRM0,RCPRM1, ip, cx = *op);
+  return outlen;
 }
 
 //---Order1 : 16 bits -----------------------
@@ -236,6 +242,7 @@ size_t T3(rcc,RC_PRD,dec16)(unsigned char *in, size_t _outlen, unsigned char *_o
     *op = ch << 8 | cx;  cx = ch; 						
   }
   free(mb0);
+  return _outlen;
 }
 
 //---Order 7bs  : 32 bits integer, 32 bits floating point -----------------------
@@ -283,6 +290,7 @@ size_t T3(rcc,RC_PRD,dec32)(unsigned char *in, size_t _outlen, unsigned char *_o
 		 mb = mb0[BZHI32(r,XN1)]; mb8dec(rcrange,rccode, mb,RCPRM0,RCPRM1, ip,cx); 
     *op = cx = r << 8 | cx; 													
   }
+  return _outlen;
 }
 
 //---Order Nb : 32 bits integer + 32 bits floating point -----------------------
@@ -329,6 +337,7 @@ size_t T3(rcc2,RC_PRD,dec32)(unsigned char *in, size_t _outlen, unsigned char *_
     *op = cx = r << 8 | cx; 													
   }
   free(mb1);free(mb0);
+  return _outlen;
 }
 
 //-- Order 2 --------------------------------------------------------------------------
@@ -357,6 +366,7 @@ size_t T3(rcc2,RC_PRD,dec)(unsigned char *in, size_t outlen, unsigned char *out 
 	cx  = (uint16_t)(cx<<8 | op[0]);	
   }
   free(mb);
+  return outlen;
 }
 
 //-- order N bits with sliding context ---------------------------------------------------------
@@ -386,6 +396,7 @@ size_t T3(rcx,RC_PRD,dec)(unsigned char *in, size_t outlen, unsigned char *out R
     mbcdec(rcrange,rccode, cx, MBC_C, mbc,RCPRM0,RCPRM1,ip);
     *op = cx; 
   }
+  return outlen;
 }
 
 #define MBC_C2 15
@@ -419,6 +430,7 @@ size_t T3(rcx2,RC_PRD,dec)(unsigned char *in, size_t outlen, unsigned char *out 
     mbcdec(rcrange,rccode, cx, mbc_c, mbc,RCPRM0,RCPRM1,ip);
     *op = cx; 
   }
+  return outlen;
 }
 
 //*************************************** Variable Length Coding : Gamma, Rice, Turbo VLC **************************************************
@@ -446,7 +458,8 @@ size_t T3(rcu3,RC_PRD,dec)(unsigned char *in, size_t outlen, unsigned char *out 
   
   for(op = out; op < out+outlen; op++)
 	mbu3dec(rcrange,rccode, mbf,mb0,IN0,mb1,IN1,mb2,IN2,RCPRM0,RCPRM1, ip, op[0]);
-} 
+  return outlen;
+}
 
 //------------------------------ Gamma coding for 8, 16 and 32 bits integers --------------------------------------
 // usage: Run length in RLE and BWT(MTF, QLFC), match/literal length in lz77, integer arrays with small values, large alphabet
@@ -469,7 +482,8 @@ size_t T3(rcg,RC_PRD,dec8)(unsigned char *in, size_t outlen, unsigned char *out 
   
   for(op = out; op < out+outlen; op++)
     mbgdec(rcrange,rccode, &mbg0c,mbguc,mbgbc,RCPRM0,RCPRM1,ip, op[0]);
-} 
+  return outlen;
+}
 
 size_t T3(rcg,RC_PRD,enc16)(unsigned char *_in, size_t _inlen, unsigned char *out RCPRM) {
   unsigned char *op = out;
@@ -494,6 +508,7 @@ size_t T3(rcg,RC_PRD,dec16)(unsigned char *in, size_t _outlen, unsigned char *_o
  
   for(op = out; op < out+outlen; op++)
     mbgdec(rcrange,rccode, &mbg0c,mbguc,mbgbc,RCPRM0,RCPRM1,ip, op[0]);
+  return _outlen;
 }
 
 #define GQMAX32 12   // Length limited gamma coding
@@ -520,6 +535,7 @@ size_t T3(rcg,RC_PRD,dec32)(unsigned char *in, size_t _outlen, unsigned char *_o
 
   for(op = out; op < out+outlen; op++)  
     mbgdec32(rcrange,rccode, mbguc,mbgbc,RCPRM0,RCPRM1,ip, op[0], GQMAX32);
+  return _outlen;
 }
 
 //----- Gamma Coding + Zigzag Delta ---------------------------------
@@ -547,7 +563,8 @@ size_t T3(rcgz,RC_PRD,dec8)(unsigned char *in, size_t outlen, unsigned char *out
     mbgdec(rcrange,rccode, &mbg0c,mbguc,mbgbc,RCPRM0,RCPRM1,ip, x);
     *op = cx += zigzagdec8(x);
   }
-} 
+  return outlen;
+}
 
 size_t T3(rcgz,RC_PRD,enc16)(unsigned char *_in, size_t _inlen, unsigned char *out RCPRM) {
   unsigned char *op = out;
@@ -576,6 +593,7 @@ size_t T3(rcgz,RC_PRD,dec16)(unsigned char *in, size_t _outlen, unsigned char *_
     mbgdec(rcrange,rccode, &mbg0c,mbguc,mbgbc,RCPRM0,RCPRM1,ip, x);
     *op = (cx += zigzagdec16(x));
   }
+  return _outlen;
 }
 
 size_t T3(rcgz,RC_PRD,enc32)(unsigned char *_in, size_t _inlen, unsigned char *out RCPRM) {
@@ -605,6 +623,7 @@ size_t T3(rcgz,RC_PRD,dec32)(unsigned char *in, size_t _outlen, unsigned char *_
     mbgdec32(rcrange,rccode, mbguc,mbgbc,RCPRM0,RCPRM1,ip, x, GQMAX32);
 	*op = (cx += zigzagdec32(x)); 
   }
+  return _outlen;
 }
 
 //************ Variable Length Coding : Adaptive Length limited Rice coding for 8, 16 and 32 bits integers ************************
@@ -636,7 +655,8 @@ size_t T3(rcr,RC_PRD,dec8)(unsigned char *in, size_t outlen, unsigned char *out 
     mbrdec32(rcrange,rccode, mbguc,mbgbc,RCPRM0,RCPRM1,ip, x, RICEMAX,log2m); ema = EMA(6,ema, 63, x);
     *op = x; 
   }
-} 
+  return outlen;
+}
 
 size_t T3(rcr,RC_PRD,enc16)(unsigned char *_in, size_t _inlen, unsigned char *out RCPRM) { 
   unsigned char *op = out;
@@ -707,6 +727,7 @@ size_t T3(rcr,RC_PRD,dec32)(unsigned char *in, size_t _outlen, unsigned char *_o
 	ema[CXR(cx)] = EMA(8, (uint64_t)ema[CXR(cx)], 255, (uint64_t)x);
     *op = x;
   }
+  return _outlen;
 }
 
 //-- Rice + delta zigzag ------------------------------------
@@ -741,7 +762,8 @@ size_t T3(rcrz,RC_PRD,dec8)(unsigned char *in, size_t outlen, unsigned char *out
 	*op = (cx += d); 
 	ema = EMA(4, ema, 15, x); 
   }
-} 
+  return outlen;
+}
 
 size_t T3(rcrz,RC_PRD,enc16)(unsigned char *_in, size_t _inlen, unsigned char *out RCPRM) {
   unsigned char *op = out;
@@ -778,6 +800,7 @@ size_t T3(rcrz,RC_PRD,dec16)(unsigned char *in, size_t _outlen, unsigned char *_
 	*op = (cx += d); 
 	ema = EMA(6,ema, 63, x);
   }
+  return _outlen;
 }
 
 size_t T3(rcrz,RC_PRD,enc32)(unsigned char *_in, size_t _inlen, unsigned char *out RCPRM) {
@@ -814,6 +837,7 @@ size_t T3(rcrz,RC_PRD,dec32)(unsigned char *in, size_t _outlen, unsigned char *_
 	*op = (cx += d);
 	ema = EMA(6, (uint64_t)ema, 63, (uint64_t)x);
   }
+  return _outlen;
 }
 
 //-------------------- RLE : Run Length Encoding in gamma+rc ----------------------------------
@@ -892,6 +916,7 @@ size_t T3(rcrle,RC_PRD,dec16)(unsigned char *in, size_t _outlen, unsigned char *
     mbgdec(rcrange,rccode, &mbg0[u], mbgu[u>>8], mbgb, RCPRM0,RCPRM1,ip, r);
 	memset_(op, u, r+1);
   }
+  return _outlen;
 }
 
 // Character  : encoded as order-8bits sliding context
@@ -977,6 +1002,7 @@ size_t T3(rcrle1,RC_PRD,dec16)(unsigned char *in, size_t _outlen, unsigned char 
     mbgdec(rcrange,rccode, &mbg0[u], mbgu[u>>8], mbgb, RCPRM0,RCPRM1,ip, r);
 	memset_(op, u, r+1);
   }
+  return _outlen;
 }
 
 
@@ -1026,6 +1052,7 @@ size_t T3(rcv,RC_PRD,dec16)(unsigned char *in, size_t _outlen, unsigned char *_o
 	bitvrget(bw,br,ip_, VLC_VN8, VLC_VB8, x);
     *op = cx = x;
   }
+  return _outlen;
 }
 
 //---- Turbo vlc: 16 bits zigzag delta --------------
@@ -1064,6 +1091,7 @@ size_t T3(rcvz,RC_PRD,dec16)(unsigned char *in, size_t _outlen, unsigned char *_
 	bitvrget(bw,br,ip_, VLC_VN8, VLC_VB8, x);
     *op = (cx += zigzagdec16(x));
   }
+  return _outlen;
 }
 
 // Turbo vlc 32 bits -----------
@@ -1120,6 +1148,7 @@ size_t T3(rcv,RC_PRD,dec32)(unsigned char *in, size_t _outlen, unsigned char *_o
 	bitvrget(bw,br,ip_, VLC_VN8, vb, x);
     *op = x;
   }
+  return _outlen;
 }
 
 // Turbo vlc 32 bits + zigzag delta -----------
@@ -1157,6 +1186,7 @@ size_t T3(rcvz,RC_PRD,dec32)(unsigned char *in, size_t _outlen, unsigned char *_
 	bitvrget(bw,br,ip_, VLC_VN8, VLC_VB8, x);
     *op = (cx += zigzagdec32(x));														
   }
+  return _outlen;
 }
 
 //---- Turbo VLC with exponent coded in gamma and mantissa in bitio -----------------------------------
@@ -1194,6 +1224,7 @@ size_t T3(rcvg,RC_PRD,dec16)(unsigned char *in, size_t _outlen, unsigned char *_
 	bitdnormr(bw,br,ip_); mbvdec(rcrange,rccode, &mbg0, mbgu, mbgb, RCPRM0,RCPRM1, ip, x, bw, br, VNG, VBG);
     *op = cx = x;
   }
+  return _outlen;
 }
 
 size_t T3(rcvgz,RC_PRD,enc16)(unsigned char *_in, size_t _inlen, unsigned char *out RCPRM) {
@@ -1228,6 +1259,7 @@ size_t T3(rcvgz,RC_PRD,dec16)(unsigned char *in, size_t _outlen, unsigned char *
 	bitdnormr(bw,br,ip_); mbvdec(rcrange,rccode, &mbg0, mbgu, mbgb, RCPRM0,RCPRM1, ip, x, bw, br, VNG, VBG);
     *op = (cx += zigzagdec16(x));												
   }
+  return _outlen;
 }
 
 size_t T3(rcvg,RC_PRD,enc32)(unsigned char *_in, size_t _inlen, unsigned char *out RCPRM) {
@@ -1262,6 +1294,7 @@ size_t T3(rcvg,RC_PRD,dec32)(unsigned char *in, size_t _outlen, unsigned char *_
 	bitdnormr(bw,br,ip_); mbvdec(rcrange,rccode, &mbg0, mbgu, mbgb, RCPRM0,RCPRM1, ip, x, bw, br, VNG, VBG);
     *op = cx = x;
   }
+  return _outlen;
 }
 
 size_t T3(rcvgz,RC_PRD,enc32)(unsigned char *_in, size_t _inlen, unsigned char *out RCPRM) {
@@ -1298,6 +1331,7 @@ size_t T3(rcvgz,RC_PRD,dec32)(unsigned char *in, size_t _outlen, unsigned char *
 	mbvdec(rcrange,rccode, &mbg0, mbgu, mbgb, RCPRM0,RCPRM1, ip, x, bw, br, VNG, VBG);
     *op = (cx += zigzagdec32(x));
   }
+  return _outlen;
 }
 
 //---- Turbo VLC - 32 bits: Large exponent -----------------------
@@ -1336,6 +1370,7 @@ size_t T3(rcv10,RC_PRD,dec32)(unsigned char *in, size_t _outlen, unsigned char *
 	bitvrget(bw,br,ip_, VLC_VN10, VLC_VB10, x);
     *op = cx = x;
   }
+  return _outlen;
 }
 
 size_t T3(rcve,RC_PRD,enc32)(unsigned char *_in, size_t _inlen, unsigned char *out RCPRM) {
@@ -1373,6 +1408,7 @@ size_t T3(rcve,RC_PRD,dec32)(unsigned char *in, size_t _outlen, unsigned char *_
 	bitvrget(bw,br,ip_, VLC_VN12, VLC_VB12, x);
     *op = cx = x;
   }
+  return _outlen;
 }
 
 //----  Turbo VLC 32 bits: zigzag delta
@@ -1410,6 +1446,7 @@ size_t T3(rcvez,RC_PRD,dec32)(unsigned char *in, size_t _outlen, unsigned char *
 	bitvrget(bw,br,ip_, VLC_VN12, VLC_VB12, x);
     *op = (cx += zigzagdec32(x)); 											
   }
+  return _outlen;
 }
 
 //--------------------------------------------------------------------------------------
