@@ -103,6 +103,7 @@ static ALWAYS_INLINE unsigned ror64(unsigned x, int s) { return x >> s | x << (6
 #define ALIGNED(t,v,n)  __declspec(align(n)) t v
 #define ALWAYS_INLINE   __forceinline
 #define NOINLINE        __declspec(noinline)
+#define _PACKED         
 #define THREADLOCAL     __declspec(thread)
 #define likely(x)       (x)
 #define unlikely(x)     (x)
@@ -164,21 +165,21 @@ static ALWAYS_INLINE double round(double num) { return (num > 0.0) ? floor(num +
 //--------------- Unaligned memory access -------------------------------------
   #ifdef UA_MEMCPY
 #include <string.h>
-static ALWAYS_INLINE unsigned short     ctou16(const void *cp) { unsigned short     x; memcpy(&x, cp, sizeof(x)); return x; }
+static ALWAYS_INLINE unsigned short     ctou16(const void *cp) { unsigned short     x; memcpy(&x, cp, sizeof(x)); return x; } // ua read
 static ALWAYS_INLINE unsigned           ctou32(const void *cp) { unsigned           x; memcpy(&x, cp, sizeof(x)); return x; }
 static ALWAYS_INLINE unsigned long long ctou64(const void *cp) { unsigned long long x; memcpy(&x, cp, sizeof(x)); return x; }
 static ALWAYS_INLINE size_t             ctousz(const void *cp) { size_t             x; memcpy(&x, cp, sizeof(x)); return x; }
 static ALWAYS_INLINE float              ctof32(const void *cp) { float              x; memcpy(&x, cp, sizeof(x)); return x; }
 static ALWAYS_INLINE double             ctof64(const void *cp) { double             x; memcpy(&x, cp, sizeof(x)); return x; }
 
-static ALWAYS_INLINE void               stou16(      void *cp, unsigned short     x) { memcpy(cp, &x, sizeof(x)); }
+static ALWAYS_INLINE void               stou16(      void *cp, unsigned short     x) { memcpy(cp, &x, sizeof(x)); } // ua write
 static ALWAYS_INLINE void               stou32(      void *cp, unsigned           x) { memcpy(cp, &x, sizeof(x)); }
 static ALWAYS_INLINE void               stou64(      void *cp, unsigned long long x) { memcpy(cp, &x, sizeof(x)); }
 static ALWAYS_INLINE void               stousz(      void *cp, size_t             x) { memcpy(cp, &x, sizeof(x)); }
 static ALWAYS_INLINE void               stof32(      void *cp, float              x) { memcpy(cp, &x, sizeof(x)); }
 static ALWAYS_INLINE void               stof64(      void *cp, double             x) { memcpy(cp, &x, sizeof(x)); }
 
-static ALWAYS_INLINE void               ltou32(unsigned           *x, const void *cp) { memcpy(x, cp, sizeof(*x)); }
+static ALWAYS_INLINE void               ltou32(unsigned           *x, const void *cp) { memcpy(x, cp, sizeof(*x)); } // ua read into ptr 
 static ALWAYS_INLINE void               ltou64(unsigned long long *x, const void *cp) { memcpy(x, cp, sizeof(*x)); }
 
   #elif defined(__i386__) || defined(__x86_64__) || \
@@ -192,9 +193,11 @@ static ALWAYS_INLINE void               ltou64(unsigned long long *x, const void
 #define ctou32(_cp_) (*(unsigned       *)(_cp_))
 #define ctof32(_cp_) (*(float          *)(_cp_))
 
-#define stou16(_cp_, _x_) (*(unsigned short *)(_cp_) = _x_)
-#define stou32(_cp_, _x_) (*(unsigned       *)(_cp_) = _x_)
-#define stof32(_cp_, _x_) (*(float          *)(_cp_) = _x_)
+#define stou16(_cp_, _x_)  (*(unsigned short *)(_cp_) = _x_)
+#define stou32(_cp_, _x_)  (*(unsigned       *)(_cp_) = _x_)
+#define stof32(_cp_, _x_)  (*(float          *)(_cp_) = _x_)
+
+#define ltou32(_px_, _cp_) *(_px_) = *(unsigned *)(_cp_)
 
     #if defined(__i386__) || defined(__x86_64__) || defined(__powerpc__) || defined(__s390__) || defined(_MSC_VER)
 #define ctou64(_cp_)       (*(uint64_t *)(_cp_))
@@ -202,6 +205,9 @@ static ALWAYS_INLINE void               ltou64(unsigned long long *x, const void
 
 #define stou64(_cp_, _x_)  (*(uint64_t *)(_cp_) = _x_)
 #define stof64(_cp_, _x_)  (*(double   *)(_cp_) = _x_)
+
+#define ltou64(_px_, _cp_) *(_px_) = *(uint64_t *)(_cp_)
+
     #elif defined(__ARM_FEATURE_UNALIGNED)
 struct _PACKED longu     { uint64_t l; };
 struct _PACKED doubleu   { double   d; };
@@ -210,6 +216,7 @@ struct _PACKED doubleu   { double   d; };
 
 #define stou64(_cp_) ((struct longu     *)(_cp_))->l = _x_
 #define stof64(_cp_) ((struct doubleu   *)(_cp_))->d = _x_
+#define ltou64(_px_, _cp_) *(_px_) = ((struct longu *)(_cp_))->l
     #endif
 
   #elif defined(__ARM_ARCH_7__) || defined(__ARM_ARCH_7A__) || defined(__ARM_ARCH_7M__) || defined(__ARM_ARCH_7R__) || defined(__ARM_ARCH_7S__)
@@ -230,6 +237,9 @@ struct _PACKED doubleu   { double             d; };
 #define stou64(_cp_, _x_) ((struct longu     *)(_cp_))->l = _x_
 #define stof32(_cp_, _x_) ((struct floatu    *)(_cp_))->f = _x_
 #define stof64(_cp_, _x_) ((struct doubleu   *)(_cp_))->d = _x_
+
+#define ltou32(_cp_) *(_px_) = ((struct unsignedu *)(_cp_))->u
+#define ltou64(_cp_) *(_px_) = ((struct longu *)(_cp_))->l
   #else
 #error "unknown cpu"
   #endif
@@ -261,7 +271,7 @@ struct _PACKED doubleu   { double             d; };
 #define BZHI32(_u_, _b_)                 ((_u_) & BZMASK32(_b_)) 
 #define BZHI16(_u_, _b_)                 BZHI32(_u_, _b_)
 #define BZHI8( _u_, _b_)                 BZHI32(_u_, _b_)
-#define BEXTR32(_x_,_start_,_len_)       BZHI32(((_x_) >> (_start_)), _len_) //Bit field extract (with register)
+#define BEXTR32(x,start,len)             (((x) >> (start)) & ((1u << (len)) - 1)) //Bit field extract (with register)
 
     #ifdef __AVX2__
       #if defined(_MSC_VER) && !defined(__INTEL_COMPILER)
