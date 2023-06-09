@@ -649,7 +649,7 @@ size_t bitdec(unsigned char *__restrict in, size_t outlen, unsigned char *__rest
 #endif
   
   //----------- 24 -----------------
-    #ifndef NCOMP
+  #ifndef NCOMP
 unsigned  delta8l24(uint8_t *in, size_t n) { size_t l = 0; uint8_t  u[3]={0},z; uint8_t *ip; for(ip = in; ip < in+(n-3);   ip+= 3        ) { EL(0, 8);EL(1,8);EL(2,8); } ELE; }
 void      delta8e24(uint8_t *in, size_t n, uint8_t *out) { uint8_t  u[3]={0},z; uint8_t *ip; for(ip = in; ip < in+(n-3);   ip+= 3,out+= 3) { EC(0, 8);EC(1,8);EC(2,8); } ECE; }
     #endif
@@ -657,6 +657,56 @@ void      delta8e24(uint8_t *in, size_t n, uint8_t *out) { uint8_t  u[3]={0},z; 
 void      delta8d24(uint8_t *in, size_t n, uint8_t *out) { uint8_t  u[3]={0},z; uint8_t *ip; for(ip = in; ip < in+(n-3);   ip+= 3,out+= 3) { ED(0, 8);ED(1,8);ED(2,8); } EDE; }
     #endif
   #endif
+
+  #ifndef _NQUANT
+//----------- Quantization -----------------------------------
+#define ROUND16(x) roundf(x)
+#define ROUND32(x) roundf(x)
+#define ROUND64(x) round(x)
+
+#define _FPQUANTE(t_s, _x_, _fmin_, _delta_) T2(ROUND,t_s)(((_x_) - _fmin_)*_delta_)
+
+#define FPQUANTE(t_t, in, n, out, b, t_s, pfmin, pfmax) { t_t fmax = in[0], fmin = in[0], *ip;\
+  for(ip = in; ip < in+n; ip++) { if(*ip > fmax) fmax = *ip; else if(*ip < fmin) fmin = *ip; } *pfmin = fmin; *pfmax = fmax;/*min,max*/\
+  fmax = (fmax == fmin)?(t_t)0.0:BZMASK32(b)/(fmax - fmin);\
+  for(ip = in; ip < in+n; ip++) *out++ = _FPQUANTE(t_s, ip[0],fmin,fmax);\
+}
+
+#define FPQUANTD(t_t, in, n, out, b, fmin, fmax) { t_t *op;\
+  fmax = (fmax - fmin) / BZMASK32(b);\
+  for(op = out; op < out+n; op++) *op = fmin + (*in++) * fmax; \
+  t_t fmax = out[0], fmin = out[0]; for(op = out; op < out+n; op++) { if(*op > fmax) fmax = *op; else if(*op < fmin) fmin = *op; }   \
+   printf("RANGE=[%g-%g]=%g ", (double)fmin, (double)fmax, (double)fmax - (double)fmin);\
+}
+
+    #if defined(FLT16_BUILTIN) 
+void fpquant8e16( _Float16 *in, size_t n, uint8_t  *out, unsigned b, _Float16 *pfmin, _Float16 *pfmax) { FPQUANTE(_Float16, in, n, out, b, 16, pfmin, pfmax); }
+void fpquant16e16(_Float16 *in, size_t n, uint16_t *out, unsigned b, _Float16 *pfmin, _Float16 *pfmax) { FPQUANTE(_Float16, in, n, out, b, 16, pfmin, pfmax); }
+    #endif
+
+void fpquant8e32(    float *in, size_t n, uint8_t  *out, unsigned b, float    *pfmin,    float *pfmax) { FPQUANTE(   float, in, n, out, b, 32, pfmin, pfmax); }
+void fpquant16e32(   float *in, size_t n, uint16_t *out, unsigned b, float    *pfmin,    float *pfmax) { FPQUANTE(   float, in, n, out, b, 32, pfmin, pfmax); }
+void fpquant32e32(   float *in, size_t n, uint32_t *out, unsigned b, float    *pfmin,    float *pfmax) { FPQUANTE(   float, in, n, out, b, 32, pfmin, pfmax); }
+
+void fpquant8e64(   double *in, size_t n, uint8_t  *out, unsigned b, double   *pfmin,   double *pfmax) { FPQUANTE(  double, in, n, out, b, 64, pfmin, pfmax); }
+void fpquant16e64(  double *in, size_t n, uint16_t *out, unsigned b, double   *pfmin,   double *pfmax) { FPQUANTE(  double, in, n, out, b, 64, pfmin, pfmax); }
+void fpquant32e64(  double *in, size_t n, uint32_t *out, unsigned b, double   *pfmin,   double *pfmax) { FPQUANTE(  double, in, n, out, b, 64, pfmin, pfmax); }
+void fpquant64e64(  double *in, size_t n, uint64_t *out, unsigned b, double   *pfmin,   double *pfmax) { FPQUANTE(  double, in, n, out, b, 64, pfmin, pfmax); }
+
+    #if defined(FLT16_BUILTIN) 
+void fpquant8d16( uint8_t  *in, size_t n, _Float16 *out, unsigned b, _Float16   fmin, _Float16   fmax) { FPQUANTD(_Float16, in, n, out, b,  fmin,  fmax); }
+void fpquant16d16(uint16_t *in, size_t n, _Float16 *out, unsigned b, _Float16   fmin, _Float16   fmax) { FPQUANTD(_Float16, in, n, out, b,  fmin,  fmax); }
+    #endif
+
+void fpquant8d32( uint8_t  *in, size_t n, float    *out, unsigned b, float      fmin,    float   fmax) { FPQUANTD(   float, in, n, out, b,  fmin,  fmax); }
+void fpquant16d32(uint16_t *in, size_t n, float    *out, unsigned b, float      fmin,    float   fmax) { FPQUANTD(   float, in, n, out, b,  fmin,  fmax); }
+void fpquant32d32(uint32_t *in, size_t n, float    *out, unsigned b, float      fmin,    float   fmax) { FPQUANTD(   float, in, n, out, b,  fmin,  fmax); }
+
+void fpquant8d64( uint8_t  *in, size_t n, double   *out, unsigned b, double     fmin,   double   fmax) { FPQUANTD(  double, in, n, out, b,  fmin,  fmax); }
+void fpquant16d64(uint16_t *in, size_t n, double   *out, unsigned b, double     fmin,   double   fmax) { FPQUANTD(  double, in, n, out, b,  fmin,  fmax); }
+void fpquant32d64(uint32_t *in, size_t n, double   *out, unsigned b, double     fmin,   double   fmax) { FPQUANTD(  double, in, n, out, b,  fmin,  fmax); }
+void fpquant64d64(uint64_t *in, size_t n, double   *out, unsigned b, double     fmin,   double   fmax) { FPQUANTD(  double, in, n, out, b,  fmin,  fmax); }
+  #endif  
   
 #ifndef _NCPUISA
 static unsigned _cpuisa;
