@@ -40,6 +40,43 @@ unsigned  delta8l24(uint8_t *in, size_t n);
 void      delta8e24(uint8_t *in, size_t n, uint8_t *out);
 void      delta8d24(uint8_t *in, size_t n, uint8_t *out);
 
+
+#if defined(__clang__) && defined(__is_identifier)
+  #if !__is_identifier(_Float16)
+    #undef FLT16_BUILTIN
+  #endif
+#elif defined(FLT16_MAX)
+#define FLT16_BUILTIN
+#endif
+//------- Quantization : b number of bits quantized in out ----------------
+  #if defined(FLT16_BUILTIN) 
+void fpquant8e16( _Float16 *in, size_t n, uint8_t  *out, unsigned b, _Float16 *pfmin, _Float16 *pfmax);
+void fpquant16e16(_Float16 *in, size_t n, uint16_t *out, unsigned b, _Float16 *pfmin, _Float16 *pfmax);
+  #endif                                                                                              
+																									  
+void fpquant8e32(    float *in, size_t n, uint8_t  *out, unsigned b, float    *pfmin,    float *pfmax);
+void fpquant16e32(   float *in, size_t n, uint16_t *out, unsigned b, float    *pfmin,    float *pfmax);
+void fpquant32e32(   float *in, size_t n, uint32_t *out, unsigned b, float    *pfmin,    float *pfmax);
+																									  
+void fpquant8e64(   double *in, size_t n, uint8_t  *out, unsigned b, double   *pfmin,   double *pfmax);
+void fpquant16e64(  double *in, size_t n, uint16_t *out, unsigned b, double   *pfmin,   double *pfmax);
+void fpquant32e64(  double *in, size_t n, uint32_t *out, unsigned b, double   *pfmin,   double *pfmax);
+void fpquant64e64(  double *in, size_t n, uint64_t *out, unsigned b, double   *pfmin,   double *pfmax);
+																									  
+  #if defined(FLT16_BUILTIN)                                                                          
+void fpquant8d16( uint8_t  *in, size_t n, _Float16 *out, unsigned b, _Float16   fmin, _Float16   fmax);
+void fpquant16d16(uint16_t *in, size_t n, _Float16 *out, unsigned b, _Float16   fmin, _Float16   fmax);
+  #endif                                                                                              
+																									  
+void fpquant8d32( uint8_t  *in, size_t n, float    *out, unsigned b, float      fmin,    float   fmax);
+void fpquant16d32(uint16_t *in, size_t n, float    *out, unsigned b, float      fmin,    float   fmax);
+void fpquant32d32(uint32_t *in, size_t n, float    *out, unsigned b, float      fmin,    float   fmax);
+																									  
+void fpquant8d64( uint8_t  *in, size_t n, double   *out, unsigned b, double     fmin,   double   fmax);
+void fpquant16d64(uint16_t *in, size_t n, double   *out, unsigned b, double     fmin,   double   fmax);
+void fpquant32d64(uint32_t *in, size_t n, double   *out, unsigned b, double     fmin,   double   fmax);
+void fpquant64d64(uint64_t *in, size_t n, double   *out, unsigned b, double     fmin,   double   fmax);
+
 #ifdef __cplusplus
 }
 #endif
