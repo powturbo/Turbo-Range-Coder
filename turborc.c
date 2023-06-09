@@ -1015,22 +1015,22 @@ int main(int argc, char* argv[]) {
           #ifndef _NDELTA
         case 22: delta8e24(in,inlen,out); clen = inlen+1; break;
           #endif
-		  #ifndef _NQUANT)
-		    #if defined(FLT16_BUILTIN)
+	  #ifndef _NQUANT)
+	    #if defined(FLT16_BUILTIN)
         case 25: { _Float16 fmin, fmax; if(quantb > 16) quantb = 16;
-	      fpquant16e16(in,inlen/2,out, quantb, &fmin, &fmax); memcpy(in,out,inlen); tpenc(in, inlen, out, 2); 
-		  ctof16(out+inlen) = fmin; ctof16(out+inlen+2) = fmax; ctou8(out+inlen+4) = quantb; clen = inlen+4+1;   if(verbose>2) printf("len = %u R:[%g - %g] q=%u ", inlen, (double)fmin, (double)fmax, quantb);
-		} break;
-		    #endif
+	           fpquant16e16(in,inlen/2,out, quantb, &fmin, &fmax); memcpy(in,out,inlen); tpenc(in, inlen, out, 2); 
+		   ctof16(out+inlen) = fmin; ctof16(out+inlen+2) = fmax; ctou8(out+inlen+4) = quantb; clen = inlen+4+1;   if(verbose>2) printf("len = %u R:[%g - %g] q=%u ", inlen, (double)fmin, (double)fmax, quantb);
+	} break;
+	    #endif
         case 26: { float fmin,fmax; if(quantb > 32) quantb = 32;
-	      fpquant32e32(in,inlen/2,out, quantb, &fmin, &fmax); memcpy(in,out,inlen); tpenc(in, inlen, out, 4); 
-		  ctof16(out+inlen) = fmin; ctof16(out+inlen+4) = fmax; ctou8(out+inlen+8) = quantb; clen = inlen+8+1;	 if(verbose>2) printf("len = %u R:[%g - %g] q=%u ", inlen, (double)fmin, (double)fmax, quantb);
-		} break;
+	           fpquant32e32(in,inlen/2,out, quantb, &fmin, &fmax); memcpy(in,out,inlen); tpenc(in, inlen, out, 4); 
+		   ctof32(out+inlen) = fmin; ctof32(out+inlen+4) = fmax; ctou8(out+inlen+8) = quantb; clen = inlen+8+1;	 if(verbose>2) printf("len = %u R:[%g - %g] q=%u ", inlen, (double)fmin, (double)fmax, quantb);
+	} break;
         case 27: { double fmin,fmax; if(quantb > 32) quantb = 32;
-	      fpquant64e64(in,inlen/2,out, quantb, &fmin, &fmax); memcpy(in,out,inlen); tpenc(in, inlen, out, 8); 
-		  ctof16(out+inlen) = fmin; ctof16(out+inlen+8) = fmax; ctou8(out+inlen+16) = quantb; clen = inlen+16+1; if(verbose>2) printf("len = %u R:[%g - %g] q=%u ", inlen, (double)fmin, (double)fmax, quantb);	 
-		} break;
-		  #endif
+	           fpquant64e64(in,inlen/2,out, quantb, &fmin, &fmax); memcpy(in,out,inlen); tpenc(in, inlen, out, 8); 
+		   ctof64(out+inlen) = fmin; ctof64(out+inlen+8) = fmax; ctou8(out+inlen+16) = quantb; clen = inlen+16+1; if(verbose>2) printf("len = %u R:[%g - %g] q=%u ", inlen, (double)fmin, (double)fmax, quantb);	 
+	} break;
+	  #endif
         default: ERR(E_CODEC); 
       }
       hdb_t hdb = { 0 }; hdb.inlen = inlen; hdb.bsize = bsize; hdb.clen = clen; if ((rc = hdbwr(&hdb, fo)) < 0) ERR(-rc); folen += rc;
@@ -1073,19 +1073,19 @@ int main(int argc, char* argv[]) {
           #endif
         case 21: utf8dec(   in, outlen, out);        break;
         case 22: delta8d24(in,outlen,out); break; 
-		  #ifndef _NQUANT)
-		    #if defined(FLT16_BUILTIN) //if(verbose>3) printf("len = %u R:[%g - %g] q=%u ", outlen, (double)fmin, (double)fmax, quantb);
-		case 25: { _Float16 fmin = ctof16(in+outlen), fmax = ctof16(in+outlen+2); quantb = ctou8(in+outlen+4); 
+	  #ifndef _NQUANT)
+	    #if defined(FLT16_BUILTIN) //if(verbose>3) printf("len = %u R:[%g - %g] q=%u ", outlen, (double)fmin, (double)fmax, quantb);
+	case 25: { _Float16 fmin = ctof16(in+outlen), fmax = ctof16(in+outlen+2); quantb = ctou8(in+outlen+4); 
 		  tpdec(in, outlen, out,  2); memcpy(in, out, outlen); fpquant16d16(in, outlen/2, out, quantb, fmin, fmax); 
-		} break;
-		    #endif
-		case 26: { float    fmin=ctof32(in+outlen), fmax = ctof32(in+outlen+4); quantb = ctou8(in+outlen+8);  
-		  tpdec(in, outlen, out, 4); memcpy(in, out, outlen); fpquant32d32(in, outlen/4, out, quantb, fmin, fmax); 
-		} break;
-		case 27: { double   fmin=ctof32(in+outlen), fmax = ctof32(in+outlen+8); quantb = ctou8(in+outlen+16); 
+	} break;
+	    #endif
+	case 26: { float    fmin=ctof32(in+outlen), fmax = ctof32(in+outlen+4); quantb = ctou8(in+outlen+8);  
+		   tpdec(in, outlen, out, 4); memcpy(in, out, outlen); fpquant32d32(in, outlen/4, out, quantb, fmin, fmax); 
+	} break;
+	case 27: { double   fmin=ctof32(in+outlen), fmax = ctof32(in+outlen+8); quantb = ctou8(in+outlen+16); 
 		  tpdec(in, outlen, out, 8); memcpy(in, out, outlen); fpquant32d32(in, outlen/8, out, quantb, fmin, fmax); 
-		} break;
-		  #endif
+	} break;
+	  #endif
         default: ERR(E_CODEC); 
       }  
       if(fwrite(out, 1, outlen, fo) != outlen) ERR(E_FWR); folen += outlen;  
