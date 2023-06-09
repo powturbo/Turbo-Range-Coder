@@ -36,6 +36,8 @@ typedef unsigned long long uint64_t;
 #include <stdint.h>
 #endif
 #include <stddef.h>
+#define __STDC_WANT_IEC_60559_TYPES_EXT__
+#include <float.h>
 
 //------------------------- Compiler ------------------------------------------
   #if defined(__GNUC__)
@@ -103,7 +105,7 @@ static ALWAYS_INLINE unsigned ror64(unsigned x, int s) { return x >> s | x << (6
 #define ALIGNED(t,v,n)  __declspec(align(n)) t v
 #define ALWAYS_INLINE   __forceinline
 #define NOINLINE        __declspec(noinline)
-#define _PACKED         
+#define _PACKED         __attribute__ ((packed))
 #define THREADLOCAL     __declspec(thread)
 #define likely(x)       (x)
 #define unlikely(x)     (x)
@@ -169,6 +171,9 @@ static ALWAYS_INLINE unsigned short     ctou16(const void *cp) { unsigned short 
 static ALWAYS_INLINE unsigned           ctou32(const void *cp) { unsigned           x; memcpy(&x, cp, sizeof(x)); return x; }
 static ALWAYS_INLINE unsigned long long ctou64(const void *cp) { unsigned long long x; memcpy(&x, cp, sizeof(x)); return x; }
 static ALWAYS_INLINE size_t             ctousz(const void *cp) { size_t             x; memcpy(&x, cp, sizeof(x)); return x; }
+#ifdef FLT16_MAX
+static ALWAYS_INLINE _Float16           ctof16(const void *cp) { _Float16           x; memcpy(&x, cp, sizeof(x)); return x; }
+#endif
 static ALWAYS_INLINE float              ctof32(const void *cp) { float              x; memcpy(&x, cp, sizeof(x)); return x; }
 static ALWAYS_INLINE double             ctof64(const void *cp) { double             x; memcpy(&x, cp, sizeof(x)); return x; }
 
@@ -176,6 +181,9 @@ static ALWAYS_INLINE void               stou16(      void *cp, unsigned short   
 static ALWAYS_INLINE void               stou32(      void *cp, unsigned           x) { memcpy(cp, &x, sizeof(x)); }
 static ALWAYS_INLINE void               stou64(      void *cp, unsigned long long x) { memcpy(cp, &x, sizeof(x)); }
 static ALWAYS_INLINE void               stousz(      void *cp, size_t             x) { memcpy(cp, &x, sizeof(x)); }
+#ifdef FLT16_MAX
+static ALWAYS_INLINE void               stof16(      void *cp, _Float16           x) { memcpy(cp, &x, sizeof(x)); }
+#endif
 static ALWAYS_INLINE void               stof32(      void *cp, float              x) { memcpy(cp, &x, sizeof(x)); }
 static ALWAYS_INLINE void               stof64(      void *cp, double             x) { memcpy(cp, &x, sizeof(x)); }
 
@@ -191,10 +199,12 @@ static ALWAYS_INLINE void               ltou64(unsigned long long *x, const void
     defined(__ARM_ARCH_6__) || defined(__ARM_ARCH_6J__) || defined(__ARM_ARCH_6K__)  || defined(__ARM_ARCH_6T2__) || defined(__ARM_ARCH_6Z__)   || defined(__ARM_ARCH_6ZK__)
 #define ctou16(_cp_) (*(unsigned short *)(_cp_))
 #define ctou32(_cp_) (*(unsigned       *)(_cp_))
+#define ctof16(_cp_) (*(_Float16       *)(_cp_))
 #define ctof32(_cp_) (*(float          *)(_cp_))
 
 #define stou16(_cp_, _x_)  (*(unsigned short *)(_cp_) = _x_)
 #define stou32(_cp_, _x_)  (*(unsigned       *)(_cp_) = _x_)
+#define stof16(_cp_, _x_)  (*(_Float16       *)(_cp_) = _x_)
 #define stof32(_cp_, _x_)  (*(float          *)(_cp_) = _x_)
 
 #define ltou32(_px_, _cp_) *(_px_) = *(unsigned *)(_cp_)
@@ -223,18 +233,23 @@ struct _PACKED doubleu   { double   d; };
 struct _PACKED shortu    { unsigned short     s; };
 struct _PACKED unsignedu { unsigned           u; };
 struct _PACKED longu     { uint64_t           l; };
+#ifdef FLT16_MAX
+struct _PACKED float16u  { _Float16           g; };
+#endif
 struct _PACKED floatu    { float              f; };
 struct _PACKED doubleu   { double             d; };
 
 #define ctou16(_cp_) ((struct shortu    *)(_cp_))->s
 #define ctou32(_cp_) ((struct unsignedu *)(_cp_))->u
 #define ctou64(_cp_) ((struct longu     *)(_cp_))->l
+#define ctof16(_cp_) ((struct float16u  *)(_cp_))->g
 #define ctof32(_cp_) ((struct floatu    *)(_cp_))->f
 #define ctof64(_cp_) ((struct doubleu   *)(_cp_))->d
 
 #define stou16(_cp_, _x_) ((struct shortu    *)(_cp_))->s = _x_
 #define stou32(_cp_, _x_) ((struct unsignedu *)(_cp_))->u = _x_
 #define stou64(_cp_, _x_) ((struct longu     *)(_cp_))->l = _x_
+#define stof16(_cp_, _x_) ((struct float16u  *)(_cp_))->g = _x_
 #define stof32(_cp_, _x_) ((struct floatu    *)(_cp_))->f = _x_
 #define stof64(_cp_, _x_) ((struct doubleu   *)(_cp_))->d = _x_
 
