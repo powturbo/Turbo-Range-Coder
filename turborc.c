@@ -30,6 +30,7 @@
 #define __STDC_WANT_IEC_60559_TYPES_EXT__
 #include <float.h>
 
+#include "include_/rcutil.h"
 #include "include_/conf.h"
 
   #ifdef _MSC_VER
@@ -40,7 +41,6 @@
 #include "include/turborc.h"
  
 #include "include_/time_.h"
-#include "include_/rcutil.h"
 #include "include_/bec.h"
 #include "rcutil_.h"
   #ifdef _TRANSPOSE
