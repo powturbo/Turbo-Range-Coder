@@ -15,7 +15,7 @@ ANS=1
 #NOCOMP=1
 #AVX2=1
 #TURBORLE=1
-#TRANSPOSE=1
+TRANSPOSE=1
 #----------------------------------------------
 CC ?= gcc
 CXX ?= g++
