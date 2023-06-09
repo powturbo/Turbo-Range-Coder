@@ -27,6 +27,8 @@
   #if !defined(_WIN32) && !defined(_WIN64)
 #include <sys/resource.h>
   #endif
+#define __STDC_WANT_IEC_60559_TYPES_EXT__
+#include <float.h>
 
 #include "include_/conf.h"
 
@@ -701,7 +703,7 @@ static int cmpsna(const void *a, const void *b) { return CMPSA(a, b, len_t, len)
 
 //---------------------------------------------- main : benchmark + file compression ----------------------------------------------
 int main(int argc, char* argv[]) {
-  unsigned _bsize = 1536, prdid = RC_PRD_S;
+  unsigned _bsize = 1792, prdid = RC_PRD_S, quantb=0;
   int      xstdout=0, xstdin=0, decomp=0, codec=0, dobench=0, cmp=1, c, digit_optind=0, decs=0, divs=0, skiph=0, isize=4, dfmt=0, mdelta=0, kid=0, osize=1;
   char     *scmd = NULL, prids[8]="s", *keysep = NULL;                                                  //fdbg = fopen("test.dat", "wb"); if(!fdbg) perror("fopen failed");
   #define CODECNUM 256
@@ -729,7 +731,7 @@ int main(int argc, char* argv[]) {
       { "help",     0, 0, 'h'},
       { 0,          0, 0, 0}
     }; 
-    if((c = getopt_long(argc, argv, "0:1:2:3:4:5:6:7:8:9:b:cde:fhk:l:m:nop:q:r:t:v:x:XzF:H:I:J:K:B:O:P:Q:S:T:UV:", long_options, &optind)) == -1) break;
+    if((c = getopt_long(argc, argv, "0:1:2:3:4:5:6:7:8:9:b:cde:fhk:l:m:nop:q:Q:r:t:v:x:XzF:H:I:J:K:B:O:P:Q:S:T:UV:", long_options, &optind)) == -1) break;
     switch(c) {
       case 0:
         printf("Option %s", long_options[optind].name);
@@ -777,12 +779,6 @@ int main(int argc, char* argv[]) {
       case 'd': decomp++;  break;
       case 'n': xnibble++; break;
       case 'o': xstdout++; break;
-      case 'v': verbose = atoi(optarg); break;
-          
-      case 'U': nutf8++;    break;
-      case 'X': bwtx++;    break;
-      case 'S': xsort = atoi(optarg); break;
-      case 'z': forcelzp = BWT_LZP; break;
       case 'P': prdid = atoi(optarg); if(prdid<1 || prdid>RC_PRD_LAST) prdid=RC_PRD_LAST; break;
       case 'p': { char *p = optarg; strncpy(prids, p, 2); prids[2]=0;
                   if(p[0]=='s') {
@@ -791,6 +787,13 @@ int main(int argc, char* argv[]) {
                     else if(p[1] == 'f') prdid = 3;
                   }          
       } break;
+	  case 'q': quantb = atoi(optarg); if(quantb < 8) quantb = 8; break;
+      case 'v': verbose = atoi(optarg); break;
+          
+      case 'U': nutf8++;    break;
+      case 'X': bwtx++;    break;
+      case 'S': xsort = atoi(optarg); break;
+      case 'z': forcelzp = BWT_LZP; break;
       case 'r': { char *p = optarg; if(*p >= '0' && *p <= '9') { prm1 = p[0]-'0'; prm2 = p[1]-'0'; } if(prm1>9) prm1=9; if(prm2>9) prm2=9; } break;
       case 't': xtpbyte = atoi(optarg); if(xtpbyte) { if(xtpbyte < 1) xtpbyte = 1;else if(xtpbyte > 16) xtpbyte = 16; } break; 
         #ifndef NO_BENCH
@@ -799,7 +802,7 @@ int main(int argc, char* argv[]) {
         #endif
       case 'l': lev = atoi(optarg); if(lev>9) lev=9; break;
       case 'm': lenmin = atoi(optarg); if(lenmin > 256) lenmin = 256; break;
-      case 'q':      if(!strcasecmp(optarg,"sse"))    cpuini(0x33);  
+      case 'Q':      if(!strcasecmp(optarg,"sse"))    cpuini(0x33);  
                 else if(!strcasecmp(optarg,"avx"))    cpuini(0x50); 
                 else if(!strcasecmp(optarg,"avx2"))   cpuini(0x60); 
                 else if(!strcasecmp(optarg,"avx512")) cpuini(0x78);   
@@ -893,6 +896,22 @@ int main(int argc, char* argv[]) {
           case 15: delta8e24( in,n,out); memcpy(in, out, n); break;
           //case 16: delta24e24(in,n,out); memcpy(in, out, n); break;
             #endif
+			#ifndef _QUANT
+			  #if defined(FLT16_BUILTIN)
+		  case 8: { _Float16 fmin,fmax;												
+	        if(quantb > 16) quantb = 16;                                          printf("Quantization=%d\n", quantb);
+		    fpquant16e16(in,n/2,out, quantb, &fmin, &fmax);    tpenc(out, n, in, 2);//memcpy(in,out,n);//
+		  } break;			  
+		      #endif
+		  case 9 : { float fmin,fmax;
+	        if(quantb > 32) quantb = 32;
+	        fpquant32e32(in, n/4, out, quantb, &fmin, &fmax);  tpenc(out, n, in, 4);             
+		  } break;
+		  case 10 : { double fmin,fmax;
+	        if(quantb > 32) quantb = 32;
+	        fpquant64e64(in, n/8, out, quantb, &fmin, &fmax);  tpenc(out, n, in, 8);            
+		  } break;
+			#endif
         }
 
         nblk++;
@@ -996,6 +1015,22 @@ int main(int argc, char* argv[]) {
           #ifndef _NDELTA
         case 22: delta8e24(in,inlen,out); clen = inlen+1; break;
           #endif
+		  #ifndef _NQUANT)
+		    #if defined(FLT16_BUILTIN)
+        case 25: { _Float16 fmin, fmax; if(quantb > 16) quantb = 16;
+	      fpquant16e16(in,inlen/2,out, quantb, &fmin, &fmax); memcpy(in,out,inlen); tpenc(in, inlen, out, 2); 
+		  ctof16(out+inlen) = fmin; ctof16(out+inlen+2) = fmax; ctou8(out+inlen+4) = quantb; clen = inlen+4+1;   if(verbose>2) printf("len = %u R:[%g - %g] q=%u ", inlen, (double)fmin, (double)fmax, quantb);
+		} break;
+		    #endif
+        case 26: { float fmin,fmax; if(quantb > 32) quantb = 32;
+	      fpquant32e32(in,inlen/2,out, quantb, &fmin, &fmax); memcpy(in,out,inlen); tpenc(in, inlen, out, 4); 
+		  ctof16(out+inlen) = fmin; ctof16(out+inlen+4) = fmax; ctou8(out+inlen+8) = quantb; clen = inlen+8+1;	 if(verbose>2) printf("len = %u R:[%g - %g] q=%u ", inlen, (double)fmin, (double)fmax, quantb);
+		} break;
+        case 27: { double fmin,fmax; if(quantb > 32) quantb = 32;
+	      fpquant64e64(in,inlen/2,out, quantb, &fmin, &fmax); memcpy(in,out,inlen); tpenc(in, inlen, out, 8); 
+		  ctof16(out+inlen) = fmin; ctof16(out+inlen+8) = fmax; ctou8(out+inlen+16) = quantb; clen = inlen+16+1; if(verbose>2) printf("len = %u R:[%g - %g] q=%u ", inlen, (double)fmin, (double)fmax, quantb);	 
+		} break;
+		  #endif
         default: ERR(E_CODEC); 
       }
       hdb_t hdb = { 0 }; hdb.inlen = inlen; hdb.bsize = bsize; hdb.clen = clen; if ((rc = hdbwr(&hdb, fo)) < 0) ERR(-rc); folen += rc;
@@ -1038,6 +1073,19 @@ int main(int argc, char* argv[]) {
           #endif
         case 21: utf8dec(   in, outlen, out);        break;
         case 22: delta8d24(in,outlen,out); break; 
+		  #ifndef _NQUANT)
+		    #if defined(FLT16_BUILTIN) //if(verbose>3) printf("len = %u R:[%g - %g] q=%u ", outlen, (double)fmin, (double)fmax, quantb);
+		case 25: { _Float16 fmin = ctof16(in+outlen), fmax = ctof16(in+outlen+2); quantb = ctou8(in+outlen+4); 
+		  tpdec(in, outlen, out,  2); memcpy(in, out, outlen); fpquant16d16(in, outlen/2, out, quantb, fmin, fmax); 
+		} break;
+		    #endif
+		case 26: { float    fmin=ctof32(in+outlen), fmax = ctof32(in+outlen+4); quantb = ctou8(in+outlen+8);  
+		  tpdec(in, outlen, out, 4); memcpy(in, out, outlen); fpquant32d32(in, outlen/4, out, quantb, fmin, fmax); 
+		} break;
+		case 27: { double   fmin=ctof32(in+outlen), fmax = ctof32(in+outlen+8); quantb = ctou8(in+outlen+16); 
+		  tpdec(in, outlen, out, 8); memcpy(in, out, outlen); fpquant32d32(in, outlen/8, out, quantb, fmin, fmax); 
+		} break;
+		  #endif
         default: ERR(E_CODEC); 
       }  
       if(fwrite(out, 1, outlen, fo) != outlen) ERR(E_FWR); folen += outlen;  
