@@ -22,6 +22,17 @@
     - email    : powturbo [_AT_] gmail [_DOT_] com
 **/
 // TurboRC Range Coder : include header 
+#if defined(_MSC_VER) && (_MSC_VER < 1600)
+  #if !defined(_STDINT) && !defined(_MSC_STDINT_H_)
+typedef unsigned char      uint8_t;
+typedef unsigned short     uint16_t;
+typedef unsigned int       uint32_t;
+typedef unsigned long long uint64_t;
+  #endif
+#else
+#include <stdint.h>
+#endif
+#include <stddef.h>
 
 #ifdef __cplusplus
 extern "C" {
