@@ -184,7 +184,7 @@ static void tm_init(int _tm_Rep, int _tm_verbose) { tm_verbose = _tm_verbose; if
   \
   TMBEG(tm_Rep2) _dfunc_; TMEND(_size_);\
   dm = tm_tm; dr = tm_rm; if(tm_verbose>2) printf("%8.*f      \b\b\b\b\b", TM_PRE,TMBS(_size_, dm/dr) );else if(tm_verbose) printf("%8.*f      ", TM_PRE,TMBS(_size_, dm/dr) );\
-  if(tm_verbose>1) printf("%s ", _name_?_name_:#_efunc_);\
+  if(tm_verbose>3) printf("%s ", _name_?_name_:#_efunc_);\
 } while(0)
 
 #define TM0(_name_, _efunc_, _size_, _len_) do {\
@@ -193,7 +193,7 @@ static void tm_init(int _tm_Rep, int _tm_verbose) { tm_verbose = _tm_verbose; if
   if(tm_verbose>2) printf("%8.*f      \b\b\b\b\b", TM_PRE, TMBS(_size_, dm/dr) );\
   else if(tm_verbose) printf("%8.*f      ", TM_PRE, TMBS(_size_, dm/dr) );\
   \
-  if(tm_verbose>1) printf("%s ", _name_?_name_:#_efunc_);\
+  if(tm_verbose>3) printf("%s ", _name_?_name_:#_efunc_);\
 } while(0)
 
 static void pr(unsigned l, unsigned n) {
@@ -239,7 +239,7 @@ static uint64_t argtol(char *s) {
     case 'g': f = Gb; break;
     case 'B': return n; break;
     case 'b': return 1u << n;
-    default:  f = MB;
+    default:  f = Mb;
   }
   return n*f;
 }
