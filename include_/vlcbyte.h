@@ -67,15 +67,15 @@ extern unsigned char _vtab32_[];
 #define _vso2(_vsmax_,_vsb2_) (_vso1(_vsmax_,_vsb2_) + (1 << (8+(_vsb2_))))
 
 #define _vsput(_op_, _x_, _vsmax_,_vsb2_, _act_) { \
-  if(likely((_x_) < _vso1(_vsmax_,_vsb2_))){ *_op_++ = (_x_);																_act_	}\
-  else if  ((_x_) < _vso2(_vsmax_,_vsb2_)) { ctou16(_op_) = bswap16((_vso1(_vsmax_,_vsb2_)<<8)+((_x_)-_vso1(_vsmax_,_vsb2_)));                _op_  += 2; _act_}\
-  else                                       { *_op_++ = _vsba2(_vsmax_,_vsb2_) + (((_x_) -= _vso2(_vsmax_,_vsb2_)) >> 16); ctou16(_op_) = (_x_); _op_  += 2; _act_}\
+  if(likely((_x_) < _vso1(_vsmax_,_vsb2_))){ *_op_++ = (_x_);																                                _act_}\
+  else if  ((_x_) < _vso2(_vsmax_,_vsb2_)) { ctou16(_op_) = bswap16((_vso1(_vsmax_,_vsb2_)<<8)+((_x_)-_vso1(_vsmax_,_vsb2_)));                  _op_  += 2; _act_}\
+  else                                     { *_op_++ = _vsba2(_vsmax_,_vsb2_) + (((_x_) -= _vso2(_vsmax_,_vsb2_)) >> 16); ctou16(_op_) = (_x_); _op_  += 2; _act_}\
 }
 
 #define _vsget(_ip_, _x_, _vsmax_,_vsb2_, _act_) do { _x_ = *_ip_++;\
        if(likely(_x_ < _vso1(_vsmax_,_vsb2_))) { _act_ }\
-  else if(likely(_x_ < _vsba2(_vsmax_,_vsb2_)))  { _x_ = ((_x_<<8) + (*_ip_)) + (_vso1(_vsmax_,_vsb2_) - (_vso1(_vsmax_,_vsb2_) <<  8)); _ip_++; _act_} \
-  else                                           { _x_ = ctou16(_ip_) + ((_x_ - _vsba2(_vsmax_,_vsb2_) ) << 16) + _vso2(_vsmax_,_vsb2_); _ip_ += 2; _act_}\
+  else if(likely(_x_ < _vsba2(_vsmax_,_vsb2_))){ _x_ = ((_x_<<8) + (*_ip_)) + (_vso1(_vsmax_,_vsb2_) - (_vso1(_vsmax_,_vsb2_) <<  8)); _ip_++;    _act_} \
+  else                                         { _x_ = ctou16(_ip_) + ((_x_ - _vsba2(_vsmax_,_vsb2_) ) << 16) + _vso2(_vsmax_,_vsb2_); _ip_ += 2; _act_}\
 } while(0)
 
 #define _vslen(_x_,_vsmax_,_vsb2_) ((_x_) < _vbo1(_vsmax_,_vsb2_)?1:((_x_) < _vbo2(_vsmax_,_vsb2_)?2):3)
@@ -95,6 +95,11 @@ extern unsigned char _vtab32_[];
 #define vslen20(_x_)       _vslen(_x_,0xff,4)
 #define vsput20(_op_, _x_) _vsput(_op_, _x_, 0xff, 4, ;)
 #define vsget20(_ip_, _x_) _vsget(_ip_, _x_, 0xff, 4, ;) 
+
+//#define VS12MAX            1118431
+#define vslen12(_x_)       _vslen(_x_,0xff,2)
+#define vsput12(_op_, _x_) _vsput(_op_, _x_, 0xff, 2, ;)
+#define vsget12(_ip_, _x_) _vsget(_ip_, _x_, 0xff, 2, ;) 
  #else
  #endif
 
