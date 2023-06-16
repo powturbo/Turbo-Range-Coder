@@ -40,6 +40,7 @@
   #endif
 #include "include/turborc.h"
  
+#include "include_/conf.h"
 #include "include_/time_.h"
 #include "include_/bec.h"
 #include "rcutil_.h"
@@ -73,7 +74,7 @@ unsigned bwtx, forcelzp, xprep8, xsort, nutf8;
 int BGFREQMIN = 50, BGMAX = 250, itmax;
 #define bwtflag(z) (z==2?BWT_BWT16:0) | (xprep8?BWT_PREP8:0) | forcelzp | (nutf8?BWT_NUTF8:0) | (verbose?BWT_VERBOSE:0) | xsort <<14 | itmax <<10 | lenmin
 
-#define MAGIC     0x153 // 12 bits
+#define MAGIC     0x154 // 12 bits
 #define BLKMAX    3584
 #define BLKBWTMAX 2047
 
@@ -398,6 +399,8 @@ RCGEN2(rcv8z,32)
 
 //FILE *fdbg;
 int xcheck;
+double zerrlim;
+
 #define OSIZE(_n_) ((_n_)*4/3)
 #define ID_RC16 8
 unsigned bench(unsigned char *in, unsigned n, unsigned char *out, unsigned char *cpy, int id, int r, int z) { //rcxor(in, n); return n;
@@ -538,6 +541,17 @@ unsigned bench(unsigned char *in, unsigned n, unsigned char *out, unsigned char 
 	  #ifdef _TRANSPOSE
     case 85:l=n;     TM("85:tpenc 24 bits                        ",tpenc(in,n,out,3),                           n,l,     tpdec( out,n,cpy, 3)); break;
 	  #endif
+	  #ifndef _NQUANT
+		#if defined(FLT16_BUILTIN)
+    case 86: { _Float16 fmin = -1.16, fmax = 1.4; unsigned quantb = 8;                                      
+	  size_t clen = fpquant8e16(in,n,out, BZMASK32(quantb), &fmin, &fmax, FLT16_EPSILON);  if(verbose>2) printf("\nlen:%u R:[%g/%g]=%g q=%u ", clen, (double)fmin, (double)fmax, (double)fmax-(double)fmin, quantb);	
+	  fpquant8d16(out, n, cpy, BZMASK32(quantb), fmin, fmax, clen);         
+      fpstat(in, n/2, cpy, -2, NULL);
+	} break;
+    case 87: if(zerrlim>DBL_EPSILON) { l=n; TM0("", fprazor16(in, n/2, out,zerrlim), n, l);                                          memcpy(cpy,in,n); if(verbose>1) fpstat(in, n/2, out, -2, NULL); } break;
+		#endif
+      #endif
+
       #ifdef _EXT
     #include "xturborc.c"
       #endif
@@ -633,16 +647,19 @@ static void usage(char *pgm) {
 
 //----------------------------- File compression header serialization ----------------------------------------------------
 typedef struct hd {                                                                                     // main header
-  unsigned short magic, _bsize;
+  unsigned bsize;
+  unsigned short magic;
   unsigned char  codec, lev, prm1, prm2, prdid;
 } hd_t;
 typedef struct chdb {                                                                       // block header
   unsigned bsize, inlen, clen;
 } hdb_t;
 
-int hdwr(hd_t *hd, FILE *fo) {                                                                                                  // file header
-  unsigned hdlen = 0, u32 = (hd->_bsize-1) << 20 | hd->codec << 12 | hd->magic; //12+8+12=32 bits
-  if(fwrite(&u32, 1, 4, fo) != 4) return -E_FWR;             hdlen  = 4;        // blocksize
+int hdwr(hd_t *hd, FILE *fo) {    																		 //if(powof2(hd->bsize)) b = ctz32(hd->bsize)<<1; // file header  else 
+  unsigned hdlen = 0, u32 = hd->codec << 12 | hd->magic;                                      //12+8+12=32 bits
+  if(hd->bsize < (1<<12)) u32 |= hd->bsize << 20;
+  if(fwrite(&u32, 1, 4, fo) != 4) return -E_FWR;                                  hdlen   = 4; // blocksize 
+  if(hd->bsize >= (1<<12)) { if(fwrite(&hd->bsize, 1, 4, fo) != 4) return -E_FWR; hdlen  += 4; }
   unsigned short u16 = hd->lev<<10 | hd->prm2<<6 | hd->prm1<<2 | (hd->prdid-1); // 2+4+4+4+2=16 bits
   if(fwrite(&u16, 1, 2, fo) != 2) return -E_FWR;             hdlen += 2;   
   return hdlen; 
@@ -653,9 +670,10 @@ int hdrd(hd_t *hd, FILE *fi) {                                                  
   unsigned short u16;
   if(fread(&u32, 1, 4, fi) != 4) return -E_FRD;                  hdlen  = 4;
   if((u32&0xfffu) != MAGIC) return -E_MAG;
-  if((hd->codec  = (char)(u32>>12)) > CODEC_MAX) return -E_CODEC;
-  if((hd->_bsize = (u32>>20)+1) > BLKMAX)        return -E_CORR;
-  if(fread(&u16, 1, 2, fi) != 2)                 return -E_FRD;                  
+  if((hd->codec  = (char)(u32>>12)) > CODEC_MAX)     return -E_CODEC;
+  hd->bsize = u32>>20;
+  if(!hd->bsize && fread(&hd->bsize, 1, 4, fi) != 4) return -E_FRD; 
+  if(fread(&u16, 1, 2, fi) != 2)                     return -E_FRD;                  
   hd->prdid =  (u16&3)+1;                                        hdlen += 2;
   hd->prm1  =  (u16>> 2)&0xf;
   hd->prm2  =  (u16>> 6)&0xf;
@@ -703,7 +721,7 @@ static int cmpsna(const void *a, const void *b) { return CMPSA(a, b, len_t, len)
 
 //---------------------------------------------- main : benchmark + file compression ----------------------------------------------
 int main(int argc, char* argv[]) {
-  unsigned _bsize = 1792, prdid = RC_PRD_S, quantb=0;
+  unsigned bsize = 1792*Mb, prdid = RC_PRD_S, quantb=0;
   int      xstdout=0, xstdin=0, decomp=0, codec=0, dobench=0, cmp=1, c, digit_optind=0, decs=0, divs=0, skiph=0, isize=4, dfmt=0, mdelta=0, kid=0, osize=1;
   char     *scmd = NULL, prids[8]="s", *keysep = NULL;                                                  //fdbg = fopen("test.dat", "wb"); if(!fdbg) perror("fopen failed");
   #define CODECNUM 256
@@ -731,13 +749,13 @@ int main(int argc, char* argv[]) {
       { "help",     0, 0, 'h'},
       { 0,          0, 0, 0}
     }; 
-    if((c = getopt_long(argc, argv, "0:1:2:3:4:5:6:7:8:9:b:cde:fhk:l:m:nop:q:Q:r:t:v:x:XzF:H:I:J:K:B:O:P:Q:S:T:UV:", long_options, &optind)) == -1) break;
+    if((c = getopt_long(argc, argv, "0:1:2:3:4:5:6:7:8:9:b:B:cde:fF:hH:I:J:k:K:l:m:noO:p:P:q:Q:r:S:t:T:UV:v:x:XY:zZ:", long_options, &optind)) == -1) break;
     switch(c) {
       case 0:
         printf("Option %s", long_options[optind].name);
         if(optarg) printf(" with arg %s", optarg);  printf ("\n");
         break;          
-      case 'b': _bsize = atoi(optarg); if(_bsize<1) _bsize=1; if(_bsize > BLKMAX) _bsize = BLKMAX; break;
+      case 'b': bsize = argtol(optarg); if(bsize < 16) bsize = 16;else if(bsize > BLKMAX*Mb) bsize = BLKMAX*Mb; break;
       case 'e': scmd = optarg; dobench++; break;
       case 'f': xprep8=1; break;      
       case 'F': { char *s = optarg;    // Input format
@@ -788,6 +806,7 @@ int main(int argc, char* argv[]) {
                   }          
       } break;
 	  case 'q': quantb = atoi(optarg); if(quantb < 8) quantb = 8; break;
+	  //case 'Q': qmax   = atoi(optarg); break;
       case 'v': verbose = atoi(optarg); break;
           
       case 'U': nutf8++;    break;
@@ -802,7 +821,7 @@ int main(int argc, char* argv[]) {
         #endif
       case 'l': lev = atoi(optarg); if(lev>9) lev=9; break;
       case 'm': lenmin = atoi(optarg); if(lenmin > 256) lenmin = 256; break;
-      case 'Q':      if(!strcasecmp(optarg,"sse"))    cpuini(0x33);  
+      case 'Y':      if(!strcasecmp(optarg,"sse"))    cpuini(0x33);  
                 else if(!strcasecmp(optarg,"avx"))    cpuini(0x50); 
                 else if(!strcasecmp(optarg,"avx2"))   cpuini(0x60); 
                 else if(!strcasecmp(optarg,"avx512")) cpuini(0x78);   
@@ -812,6 +831,8 @@ int main(int argc, char* argv[]) {
         #ifndef NO_BENCH
       case 'x': { int m = atoi(optarg); if(m<4) m=4;else if(m>16) m=16; mbcset(m); /*set context bits*/} break;
         #endif
+	  case 'Z': zerrlim = strtod(optarg, NULL); break;
+
       case '0':case '1':case '2':case '3': case '4':case '5':case '6':case '7':case '8':case '9': {
         char *q;
                 unsigned l = atoi(optarg); 
@@ -832,7 +853,6 @@ int main(int argc, char* argv[]) {
   //anscdfini(0);                                                                   if(verbose>1) printf("detected simd id=%x, %s\n\n", cpuini(0), cpustr(cpuini(0)));
   tm_init(tm_Rep, tm_verbose /* 2 print id */);  
   #define ERR(e) do { rc = e; printf("line=%d ", __LINE__); goto err; } while(0)
-  size_t bsize = (size_t)_bsize * Mb;
   int  rc = 0, inlen;
   unsigned char *in = NULL, *out = NULL, *cpy = NULL; 
     #ifdef _SF
@@ -882,10 +902,10 @@ int main(int argc, char* argv[]) {
       }
       for(;;) {                                                                                                                     
         n = dfmt?befgen(fi, in, b, dfmt, isize, osize, kid, skiph, decs, divs, keysep, mdelta):fread(in, 1, b, fi); 
-        if(n <=0 ) break;                                                       if(verbose>2) printf("read=%u\n", n);
+        if(n <= 0) break;                                                       if(verbose>2) printf("read=%u\n", n);
         switch(tpbyte) {
 			#ifdef _TRANSPOSE
-          case 11: delta8e24( in,n,out); tpenc(out, n, in, 3); break;
+          case 11: delta8e24(in,n,out); tpenc(out, n, in, 3); break;
           case 12: tpenc(in, n, out, 3); memcpy(in, out, n); break;
 		    #endif
 			#ifdef _TURBORLE
@@ -896,20 +916,24 @@ int main(int argc, char* argv[]) {
           case 15: delta8e24( in,n,out); memcpy(in, out, n); break;
           //case 16: delta24e24(in,n,out); memcpy(in, out, n); break;
             #endif
-			#ifndef _QUANT
+			#ifndef _NQUANT
 			  #if defined(FLT16_BUILTIN)
+		  //case 7: { _Float16 fmin,fmax;												
+	      //  if(quantb > 16) quantb = 16;                                          printf("Quantization=%d\n", quantb);
+		  //      n = fpquantv8e16(in,n/2,out,BZMASK32(quantb), &fmin,&fmax,FLT16_EPSILON); memcpy(in,out,n); 
+		  //} break;			  
 		  case 8: { _Float16 fmin,fmax;												
-	        if(quantb > 16) quantb = 16;                                          printf("Quantization=%d\n", quantb);
-		    fpquant16e16(in,n/2,out, quantb, &fmin, &fmax);    tpenc(out, n, in, 2);//memcpy(in,out,n);//
+	        if(quantb > 16) quantb = 16;                                             printf("Quantization=%d\n", quantb);
+		        fpquant16e16(in,n/2,out,BZMASK32(quantb), &fmin,&fmax,FLT16_EPSILON); tpenc(out, n, in, 2);
 		  } break;			  
 		      #endif
 		  case 9 : { float fmin,fmax;
 	        if(quantb > 32) quantb = 32;
-	        fpquant32e32(in, n/4, out, quantb, &fmin, &fmax);  tpenc(out, n, in, 4);             
+	            fpquant32e32(in,n/4,out,BZMASK32(quantb), &fmin,&fmax,FLT_EPSILON);  tpenc(out, n, in, 4);             
 		  } break;
 		  case 10 : { double fmin,fmax;
 	        if(quantb > 32) quantb = 32;
-	        fpquant64e64(in, n/8, out, quantb, &fmin, &fmax);  tpenc(out, n, in, 8);            
+	            fpquant64e64(in,n/8,out,BZMASK32(quantb), &fmin,&fmax,DBL_EPSILON);  tpenc(out, n, in, 8);            
 		  } break;
 			#endif
         }
@@ -985,13 +1009,13 @@ int main(int argc, char* argv[]) {
   FILE *fi = xstdin ?stdin :fopen(finame, "rb"); if(!fi) { perror(finame); return 1; }
   FILE *fo = xstdout?stdout:fopen(foname, "wb"); if(!fo) { perror(finame); return 1; } 
     #ifndef NO_COMP 
-  if(!decomp) { 
-      hd_t hd = { 0 }; hd.magic = MAGIC; hd._bsize = _bsize; hd.codec = codec; hd.lev = lev; hd.prdid = prdid; hd.prm1 = prm1; hd.prm2 = prm2;
-    if((rc = hdwr(&hd, fo)) < 0) ERR(-rc); folen = rc;
+  if(!decomp) {  																						if(verbose>3) printf("bsize=%u ", bsize);
+    hd_t hd = { 0 }; hd.magic = MAGIC; hd.bsize = bsize; hd.codec = codec; hd.lev = lev; hd.prdid = prdid; hd.prm1 = prm1; hd.prm2 = prm2; 
+    if((rc = hdwr(&hd, fo)) < 0) ERR(-rc); folen = rc;      
     in  = vmalloc(bsize+1024);
-    out = vmalloc(bsize+1024); if(!in || !out) ERR(E_MEM); 
+    out = vmalloc(bsize*4/3+1024); if(!in || !out) ERR(E_MEM); 
     unsigned clen;
-    while((inlen = fread(in, 1, bsize, fi)) > 0) {        filen += inlen;
+    while((inlen = fread(in, 1, bsize, fi)) > 0) {        filen += inlen;                               if(verbose>3) printf("read=%u ", inlen);
       switch(codec) {             
         case  0: clen = inlen; memcpy(out, in, inlen);    break;
                   #ifndef NO_RC
@@ -1015,22 +1039,33 @@ int main(int argc, char* argv[]) {
           #ifndef _NDELTA
         case 22: delta8e24(in,inlen,out); clen = inlen+1; break;
           #endif
-	  #ifndef _NQUANT)
-	    #if defined(FLT16_BUILTIN)
-        case 25: { _Float16 fmin, fmax; if(quantb > 16) quantb = 16;
-	           fpquant16e16(in,inlen/2,out, quantb, &fmin, &fmax); memcpy(in,out,inlen); tpenc(in, inlen, out, 2); 
-		   ctof16(out+inlen) = fmin; ctof16(out+inlen+2) = fmax; ctou8(out+inlen+4) = quantb; clen = inlen+4+1;   if(verbose>2) printf("len = %u R:[%g - %g] q=%u ", inlen, (double)fmin, (double)fmax, quantb);
-	} break;
-	    #endif
-        case 26: { float fmin,fmax; if(quantb > 32) quantb = 32;
-	           fpquant32e32(in,inlen/2,out, quantb, &fmin, &fmax); memcpy(in,out,inlen); tpenc(in, inlen, out, 4); 
-		   ctof32(out+inlen) = fmin; ctof32(out+inlen+4) = fmax; ctou8(out+inlen+8) = quantb; clen = inlen+8+1;	 if(verbose>2) printf("len = %u R:[%g - %g] q=%u ", inlen, (double)fmin, (double)fmax, quantb);
-	} break;
-        case 27: { double fmin,fmax; if(quantb > 32) quantb = 32;
-	           fpquant64e64(in,inlen/2,out, quantb, &fmin, &fmax); memcpy(in,out,inlen); tpenc(in, inlen, out, 8); 
-		   ctof64(out+inlen) = fmin; ctof64(out+inlen+8) = fmax; ctou8(out+inlen+16) = quantb; clen = inlen+16+1; if(verbose>2) printf("len = %u R:[%g - %g] q=%u ", inlen, (double)fmin, (double)fmax, quantb);	 
-	} break;
-	  #endif
+	      #ifndef _NQUANT)
+	        #if defined(FLT16_BUILTIN)
+        case 24: { _Float16 fmin = -1.16, fmax = 1.4; if(quantb > 8) quantb = 8;                                     
+	      clen = fpquant8e16(in,inlen,out, BZMASK32(quantb), &fmin, &fmax, FLT16_EPSILON);  
+          if(clen < inlen) {
+		    ctof16(out+clen) = fmin; ctof16(out+clen+2) = fmax; ctou8(out+clen+4) = quantb; clen += 4+1;
+          }	                                                                    if(verbose>2) printf("\nlen:%u R:[%g/%g]=%g q=%u ", clen, (double)fmin, (double)fmax, (double)fmax-(double)fmin, quantb);	   
+	    } break;
+        //case 23: { _Float16 fmin=0.0, fmax=0.0; if(quantb > 16) quantb = 16; clen = fpquantv8e16(in,inlen,out, BZMASK32(quantb), &fmin, &fmax, FLT16_EPSILON); if(clen < inlen) { ctof16(out+clen) = fmin; ctof16(out+clen+2) = fmax; ctou8(out+clen+4) = quantb; clen += 4+1;
+        //  }	else printf("overflow ");                                           if(verbose>2) printf("\nlen:%u R:[%g/%g]=%g q=%u ", clen, (double)fmin, (double)fmax, (double)fmax-(double)fmin, quantb);	   
+	    //} break;
+        case 25: { _Float16 fmin=0.0, fmax=0.0; if(quantb > 16) quantb = 16;
+	             fpquant16e16(in,inlen,out, BZMASK32(quantb), &fmin, &fmax, FLT16_EPSILON); memcpy(in,out,inlen); tpenc(in, inlen, out, 2); 
+		  ctof16(out+inlen) = fmin; ctof16(out+inlen+2) = fmax; ctou8(out+inlen+4) = quantb; clen = inlen+4+1;  
+                                                                                if(verbose>2) printf("\nlen:%u R:[%g/%g]=%g q=%u ", inlen, (double)fmin, (double)fmax, (double)fmax-(double)fmin, quantb);	    
+		} break;
+	        #endif
+        case 26: { float fmin=0.0, fmax=0.0; if(quantb > 32) quantb = 32;
+	      fpquant32e32(in,inlen,out, BZMASK32(quantb), &fmin, &fmax, FLT_EPSILON); memcpy(in,out,inlen); tpenc(in, inlen, out, 4); 
+		  ctof32(out+inlen) = fmin; ctof32(out+inlen+4) = fmax; ctou8(out+inlen+8) = quantb; clen = inlen+8+1;	 if(verbose>2) printf("len:%u R:[%g/%g]=%g q=%u ", inlen, (double)fmin, (double)fmax, (double)fmax-(double)fmin, quantb);
+	    } break;
+        case 27: { double fmin=0.0, fmax=0.0; if(quantb > 32) quantb = 32;
+	      fpquant64e64(in,inlen,out, BZMASK32(quantb), &fmin, &fmax, DBL_EPSILON); memcpy(in,out,inlen); tpenc(in, inlen, out, 8); 
+		  ctof64(out+inlen) = fmin; ctof64(out+inlen+8) = fmax; ctou8(out+inlen+16) = quantb; clen = inlen+16+1; 
+		                                                                        if(verbose>2) printf("\nlen:%u R:[%g/%g]=%g q=%u ", inlen, (double)fmin, (double)fmax, (double)fmax-(double)fmin, quantb);	 
+	    } break;
+	      #endif
         default: ERR(E_CODEC); 
       }
       hdb_t hdb = { 0 }; hdb.inlen = inlen; hdb.bsize = bsize; hdb.clen = clen; if ((rc = hdbwr(&hdb, fo)) < 0) ERR(-rc); folen += rc;
@@ -1040,18 +1075,17 @@ int main(int argc, char* argv[]) {
   } else 
         #endif
   { // Decompress
-    hd_t hd; if((rc = hdrd(&hd, fi)) < 0) ERR(-rc); filen = rc; _bsize = hd._bsize; codec = hd.codec; lev = hd.lev; prdid = hd.prdid; prm1 = hd.prm1; prm2 = hd.prm2; 
-    bsize = (size_t)_bsize * Mb;
+    hd_t hd; if((rc = hdrd(&hd, fi)) < 0) ERR(-rc); filen = rc; bsize = hd.bsize; codec = hd.codec; lev = hd.lev; prdid = hd.prdid; prm1 = hd.prm1; prm2 = hd.prm2; 
     in    = vmalloc(bsize); 
     out   = vmalloc(bsize); if(!in || !out) ERR(E_MEM); 
     for(;;) {
       hdb_t hdb = { 0 }; hdb.bsize = bsize; hdb.inlen = 0;
       if((rc = hdbrd(&hdb, fi)) < 0) break;     
       filen += rc;
-      unsigned outlen = hdb.inlen;
-      if(fread(in, 1, hdb.clen, fi) != hdb.clen) ERR(E_FRD);   
-        filen += hdb.clen; // read block
-      if(hdb.clen == outlen) memcpy(out, in, outlen);
+      unsigned outlen = hdb.inlen, inlen = hdb.clen;
+      if(fread(in, 1, inlen, fi) != inlen) ERR(E_FRD);   
+        filen += inlen; // read block
+      if(inlen == outlen) memcpy(out, in, outlen);
       else switch(codec) { 
               #ifndef NO_RC
         case  0: memcpy(out,in, outlen);             break;
@@ -1073,19 +1107,23 @@ int main(int argc, char* argv[]) {
           #endif
         case 21: utf8dec(   in, outlen, out);        break;
         case 22: delta8d24(in,outlen,out); break; 
-	  #ifndef _NQUANT)
-	    #if defined(FLT16_BUILTIN) //if(verbose>3) printf("len = %u R:[%g - %g] q=%u ", outlen, (double)fmin, (double)fmax, quantb);
-	case 25: { _Float16 fmin = ctof16(in+outlen), fmax = ctof16(in+outlen+2); quantb = ctou8(in+outlen+4); 
-		  tpdec(in, outlen, out,  2); memcpy(in, out, outlen); fpquant16d16(in, outlen/2, out, quantb, fmin, fmax); 
-	} break;
-	    #endif
-	case 26: { float    fmin=ctof32(in+outlen), fmax = ctof32(in+outlen+4); quantb = ctou8(in+outlen+8);  
-		   tpdec(in, outlen, out, 4); memcpy(in, out, outlen); fpquant32d32(in, outlen/4, out, quantb, fmin, fmax); 
-	} break;
-	case 27: { double   fmin=ctof32(in+outlen), fmax = ctof32(in+outlen+8); quantb = ctou8(in+outlen+16); 
-		  tpdec(in, outlen, out, 8); memcpy(in, out, outlen); fpquant32d32(in, outlen/8, out, quantb, fmin, fmax); 
-	} break;
-	  #endif
+	      #ifndef _NQUANT)
+	        #if defined(FLT16_BUILTIN) 
+	    case 24: { _Float16 fmin = ctof16(in+inlen-5), fmax = ctof16(in+inlen-3); quantb = ctou8(in+inlen-1); if(verbose>3) printf("len = %u R:[%g - %g] q=%u ", outlen, (double)fmin, (double)fmax, quantb);
+	      fpquant8d16(in, outlen, out, BZMASK32(quantb), fmin, fmax, inlen-5); 
+	    } break;
+	  //case 23: { _Float16 fmin = ctof16(in+inlen), fmax = ctof16(in+inlen+2); quantb = ctou8(in+inlen+4); fpquantv8d16(in, outlen, out, BZMASK32(quantb), fmin, fmax); } break;
+	    case 25: { _Float16 fmin = ctof16(in+outlen), fmax = ctof16(in+outlen+2); quantb = ctou8(in+outlen+4); 
+          tpdec(in, outlen, out,  2); memcpy(in, out, outlen); fpquant16d16(in, outlen, out, BZMASK32(quantb), fmin, fmax); 
+	    } break;
+	        #endif
+	    case 27: { float    fmin=ctof32(in+outlen), fmax = ctof32(in+outlen+4); quantb = ctou8(in+outlen+8);  
+	      tpdec(in, outlen, out, 4); memcpy(in, out, outlen); fpquant32d32(in, outlen, out, BZMASK32(quantb), fmin, fmax);
+	    } break;
+	    case 28: { double   fmin=ctof32(in+outlen), fmax = ctof32(in+outlen+8); quantb = ctou8(in+outlen+16); 
+	      tpdec(in, outlen, out, 8); memcpy(in, out, outlen); fpquant32d32(in, outlen, out, BZMASK32(quantb), fmin, fmax);
+	    } break;
+	      #endif
         default: ERR(E_CODEC); 
       }  
       if(fwrite(out, 1, outlen, fo) != outlen) ERR(E_FWR); folen += outlen;  
