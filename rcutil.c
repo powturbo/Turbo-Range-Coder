@@ -659,53 +659,286 @@ void      delta8d24(uint8_t *in, size_t n, uint8_t *out) { uint8_t  u[3]={0},z; 
   #endif
 
   #ifndef _NQUANT
+extern int verbose;
+
+//------------------------ Floating point statistics ------------------------------------------------------------------
+#define BR(b) ((b/8)*100.0)/(double)(n*esize)
+
+#define CMPA(_a_,_b_,_t_)         ((*(_t_ *)(_a_) > *(_t_ *)(_b_)) - (*(_t_ *)(_a_) < *(_t_ *)(_b_)))
+static int cmpua16(const void *a, const void *b) { return CMPA(a,b,uint16_t); }
+static int cmpua32(const void *a, const void *b) { return CMPA(a,b,uint32_t); }
+static int cmpua64(const void *a, const void *b) { return CMPA(a,b,uint64_t); }
+
+void fpstat(unsigned char *in, size_t n, unsigned char *out, int s, unsigned char *_tmp) {												if(verbose>0) printf("\nFloating point statistics\n");
+  double        imin  = DBL_MAX, imax  = DBL_MIN, isum  = 0,               //original data (input)             : minimum,maximum,sum
+                eamin = DBL_MAX, eamax = DBL_MIN, easum = 0, easumsqr = 0, //absolute error                    : abs(input-output)
+                ermin = DBL_MAX, ermax = DBL_MIN, ersum = 0, ersumsqr = 0, //relative error                    : abs(input-output)/abs(input)
+                osum  = 0;                                                 //transformed lossy data (output)   : sum
+  long long     xtb = 0, xlb = 0, zlb = 0, tb = 0, lb = 0, elb = 0, mtb = 0, itb = 0;
+  size_t        idn = 0;
+  unsigned char *ip, *op;
+  unsigned      esize = s<0?-s:s, t = 0, uni = 0, zero=0;
+  long long     mant = 0;
+  int           expo = 0,e;
+  if(_tmp || verbose > 4) {
+    unsigned char *tmp = _tmp;
+    if(!tmp) { tmp = malloc(n*esize);  if(!tmp) die("malloc failed\n"); }  memcpy(tmp, out, n*esize);
+    switch(esize) {
+      case 2: { uint16_t *p,*t = tmp; qsort(tmp, n, 2, cmpua16); for(uni=zero=0,p = t; p < t+n-1; p++) { if(p[0] != p[1]) uni++; if(!p[0]) zero++; } } break;
+	  case 4: { uint32_t *p,*t = tmp; qsort(tmp, n, 4, cmpua32); for(uni=zero=0,p = t; p < t+n-1; p++) { if(p[0] != p[1]) uni++; if(!p[0]) zero++; } } break;
+	  case 8: { uint64_t *p,*t = tmp; qsort(tmp, n, 8, cmpua64); for(uni=zero=0,p = t; p < t+n-1; p++) { if(p[0] != p[1]) uni++; if(!p[0]) zero++; } } break;
+	  default: die("#fpstat");
+    } 
+    if(!_tmp) free(tmp);
+  }
+  for(ip = in, op = out; ip < in+n*esize; ip += esize, op += esize)
+    switch(s) {
+        #if defined(FLT16_BUILTIN)
+      case -2: isum += ctof16(ip); osum += ctof16(op); break;
+        #endif
+      case -4: isum += ctof32(ip); osum += ctof32(op); break;
+      case -8: isum += ctof64(ip); osum += ctof64(op); break;
+      case  1: isum += ctou8( ip); osum += ctou8( op); break;
+      case  2: isum += ctou16(ip); osum += ctou16(op); break;
+      case  4: isum += ctou32(ip); osum += ctou32(op); break;
+      case  8: isum += ctou64(ip); osum += ctou64(op); break;
+    }
+  double iavg = isum/n, oavg = osum/n, isumpavg = 0, osumpavg = 0, iosumpavg = 0; uint64_t xstart = 0, zstart = 0;
+  #define EXPO16(u) ((u>>10 &  0x1f) - 15 )
+  #define EXPO32(u) ((u>>23 &  0xff) - 0x7e )
+  #define EXPO64(u) ((u>>52 & 0x7ff) - 0x3fe)
+  #define MANT16(u) (u & 0x83ffu)                //SeeeeeMMMMMMMMMM
+  #define MANT32(u) (u & 0x807fffffu)
+  #define MANT64(u) (u & 0x800fffffffffffffull)
+  #define U(s) T3(uint, s, _t) u = T2(ctou,s)(op), v = T2(ctou,s)(ip);\
+    itb +=  v?T2(ctz,s)(v):s;           tb +=      u?T2(ctz,s)(u):s;       lb += u?T2(clz,s)(u):s;          AC(t<=s,"Fatal t=%d ", t); \
+    xstart ^= u;                       xtb += xstart?T2(ctz,s)(xstart):s; xlb += xstart?T2(clz,s)(xstart):0; xstart = u;\
+    zstart  = T2(zigzagenc,s)(u - zstart);                       zlb += zstart?T2(clz,s)(zstart):s; zstart = u
+
+  for(ip = in, op = out; ip < in+n*esize; ip += esize, op += esize) { 
+    double id, od;
+	unsigned e;	uint64_t m;
+    switch(s) {
+        #if defined(FLT16_BUILTIN)
+      case -2: { unsigned e; uint16_t m;id = ctof16(ip); od = ctof16(op); U(16); e = EXPO16(u); expo = clz16(zigzagenc16(e-expo))/*-(16-(16-MANTF16-1))*/; elb+=expo; expo = e;
+                                                          m = MANT16(u); mant = ctz16(            m^mant)                     ;     mtb+=mant; mant = m;//ctz16(zigzagenc16(m-mant))
+                                                         } break;
+        #endif                                                          
+      case -4: { unsigned e; uint32_t m;id = ctof32(ip); od = ctof32(op); U(32); e = EXPO32(u); expo = clz32(zigzagenc32(e-expo))/*-(32-(32-MANTF32-1))*/; elb+=expo; expo = e;
+                                                          m = MANT32(u); mant = ctz32(            m^mant)                     ;     mtb+=mant; mant = m;//ctz32(zigzagenc32(m-mant))
+                                                         } break;
+      case -8: { unsigned e; uint64_t m;id = ctof64(ip); od = ctof64(op); U(64); e = EXPO64(u); expo = clz32(zigzagenc32(e-expo))/*-(32-(64-MANTF64-1))*/; elb+=expo; expo = e;
+                                                          m = MANT64(u); mant = ctz64(            m^mant)                     ; mtb+=mant; mant = m;//ctz64(zigzagenc64(m-mant))
+                                                         } break;
+      case  1: { id = ctou8( ip); od = ctou8( op); U( 8);} break;
+      case  2: { id = ctou16(ip); od = ctou16(op); U(16);} break;
+      case  4: { id = ctou32(ip); od = ctou32(op); U(32);} break;
+      case  8: { id = ctou64(ip); od = ctou64(op); U(64);} break;
+    }
+
+    imax = max(id, imax);
+    imin = min(id, imin);
+
+      double ea = fabs(id - od); eamax = max(eamax,ea);  eamin = min(eamin,ea);  easum += ea;  easumsqr += ea*ea;  // absolute error
+    if(id) { idn++;
+      double er = ea/fabs(id);   ermax = max(ermax,er);  ermin = min(ermin,er);  ersum += er;  ersumsqr += er*er;   // relative error
+    }
+    isumpavg  += (id - iavg)*(id - iavg);
+    osumpavg  += (od - oavg)*(od - oavg);
+    iosumpavg += (id - iavg)*(od - oavg);   //bits      += ctz64(ctou64(&od)) - ctz64(ctou64(&id));
+  } 
+  double fb = 0;
+       if(s == -2) fb = (double)elb*100/((double)n*5);
+  else if(s == -4) fb = (double)elb*100/((double)n*8);
+  else if(s == -8) fb = (double)elb*100/((double)n*11);
+
+  double mse = easumsqr/n, irange = imax - imin;
+  if(verbose >= 2) printf("\n");
+  //printf("Leading/Trailing bits [%.2f%%,%.2f%%=%.2f%%]. XOR[%.2f%%,%.2f%%=%.2f%%] Zigzag[%.2f%%]\n", BR(lb), BR(tb), BR(lb+tb), BR(xlb), BR(xtb), BR(xlb+xtb), BR(zlb)/*BR(elb), BR(mtb), BR(elb+mtb)*/ );
+  if(verbose >= 2)         printf("Range: [min=%g / max=%g] = %g\n", imin, imax, irange);
+  if(verbose >  3 || _tmp) printf("zeros=[%u,%.2f%%], Distinct=[%u=%.4f%%] ctz=%.1f%%\n", zero,(double)zero*100.0/(double)n, uni, (double)uni*100.0/(double)n, (double)((tb-itb)/8)*100.0/(double)(n*esize));
+  //if(verbose > 2) printf("Min error: Absolute = %g, Relative = %g, pointwise relative(PWE) = %g\n", eamin,      eamin/irange,      eamax/irange, ermax);
+  //if(verbose > 2) printf("Avg error: Absolute = %g, Relative = %g, pointwise relative(PWE) = %g\n", easum/idn, (easum/idn)/irange,          ersum/idn);
+  if(verbose > 2) printf("Max error: Absolute = %g, Relative = %g, pointwise relative(PWE) = %g\n", eamax,      eamax/irange,               ermax); else if(verbose==2) printf("e=%g ", ermax);
+  double psnr=20*log10(irange)-10*log10(mse); 
+  if(verbose > 2) printf("Peak Signal-to-Noise Ratio: PSNR         = %.1f\n", psnr);            else if(verbose==2) printf("PSNR=%.0f ", psnr);
+  if(verbose > 2) printf("Normalized Root Mean Square Error: NRMSE = %g\n", sqrt(mse)/irange);  else if(verbose==2) printf("NRMSE=%g ", sqrt(mse)/irange);
+  double std1 = sqrt(isumpavg/n), std2 = sqrt(osumpavg/n), ee = iosumpavg/n, acEff = (iosumpavg/n)/sqrt(isumpavg/n)/sqrt(osumpavg/n);
+  if(verbose > 2) printf("Pearson Correlation Coefficient          = %f\n",    (iosumpavg/n)/sqrt(isumpavg/n)/sqrt(osumpavg/n));
+}
+
 //----------- Quantization -----------------------------------
+//#include "include_/vlcbyte.h"
 #define ROUND16(x) roundf(x)
 #define ROUND32(x) roundf(x)
 #define ROUND64(x) round(x)
 
-#define _FPQUANTE(t_s, _x_, _fmin_, _delta_) T2(ROUND,t_s)(((_x_) - _fmin_)*_delta_)
+#define QUANTE(t_s, _x_, _fmin_, _delta_) T2(ROUND,t_s)(((_x_) - _fmin_)*_delta_) //T2(ROUND,t_s)((_x_) * 100)
+#define _FPQUANTE( t_s, _op_, _x_, _fmin_, _delta_) *_op_++  = QUANTE(t_s, _x_, _fmin_, _delta_)
+//#define _FPQUANTVE(t_s, _op_, _x_, _fmin_, _delta_) { uint16_t _u = QUANTE(t_s, _x_, _fmin_, _delta_); vsput20(_op_,_u); }
 
-#define FPQUANTE(t_t, in, n, out, b, t_s, pfmin, pfmax) { t_t fmax = in[0], fmin = in[0], *ip;\
-  for(ip = in; ip < in+n; ip++) { if(*ip > fmax) fmax = *ip; else if(*ip < fmin) fmin = *ip; } *pfmin = fmin; *pfmax = fmax;/*min,max*/\
-  fmax = (fmax == fmin)?(t_t)0.0:BZMASK32(b)/(fmax - fmin);\
-  for(ip = in; ip < in+n; ip++) *out++ = _FPQUANTE(t_s, ip[0],fmin,fmax);\
+#define FPQUANTE(t_t, _in_, inlen, _op_, qmax, t_s, pfmin, pfmax, _zmin_, _fpquante_) {\
+  t_t fmin = _in_[0], fmax = _in_[0], *_ip;\
+  for(_ip = _in_; _ip < _in_+(inlen/(t_s/8)); _ip++)\
+    if(*_ip > fmax) fmax = *_ip; else if(*_ip < fmin) fmin = *_ip;\
+  *pfmin = fmin; *pfmax = fmax;\
+  t_t _delta = (fmax - fmin <= _zmin_)?(t_t)0.0:qmax/(fmax - fmin);\
+  for(_ip = _in_; _ip < _in_+(inlen/(t_s/8)); _ip++)\
+    _fpquante_(t_s, _op_, _ip[0], fmin, _delta);\
 }
 
-#define FPQUANTD(t_t, in, n, out, b, fmin, fmax) { t_t *op;\
-  fmax = (fmax - fmin) / BZMASK32(b);\
-  for(op = out; op < out+n; op++) *op = fmin + (*in++) * fmax; \
-  t_t fmax = out[0], fmin = out[0]; for(op = out; op < out+n; op++) { if(*op > fmax) fmax = *op; else if(*op < fmin) fmin = *op; }   \
-   printf("RANGE=[%g-%g]=%g ", (double)fmin, (double)fmax, (double)fmax - (double)fmin);\
+#define FPQUANTE8(t_t, _in_, _inlen_, _out_, qmax, t_s, pfmin, pfmax, _zmin_, _fpquante_) {\
+  t_t           fmin = *pfmin, fmax = *pfmax, *_ip;\
+  unsigned char *_op = _out_, *_ep_ = _out_ + _inlen_, *_ep = _ep_;                   unsigned cm = 0,cx = 0;\
+  if(fmin == 0.0 && fmax == 0.0) {\
+	fmax = _in_[0], fmin = _in_[0];\
+    for(_ip = _in_; _ip < _in_ + (_inlen_/(t_s/8)); _ip++)\
+      if(*_ip > fmax) fmax = *_ip; else if(*_ip < fmin) fmin = *_ip;\
+    *pfmin = fmin; *pfmax = fmax; \
+  } else qmax--;\
+  t_t _delta = (fmax - fmin <= _zmin_)?(t_t)0.0:qmax/(fmax - fmin);\
+  \
+  for(_ip = _in_; _ip < _in_+(_inlen_/(t_s/8)); _ip++) {\
+    t_t _f = _ip[0]; \
+    if(_f < fmin || _f > fmax) { *_op++ = qmax+1; _ep -= t_s/8; T2(ctof,t_s)(_ep) = _f; _f > fmax?cx++:cm++; } \
+    else _fpquante_(t_s, _op, _f, fmin, _delta);\
+                                                                                      if(_op >= _ep) goto overflow;\
+  }\
+  unsigned _l = _ep_ - _ep; 														  if(_op+_l >= _ep_) goto overflow;\
+  memcpy(_op, _ep, _l); _op += _l;                                                    if(verbose>2) printf("qmax=%u clamp(%u+%u=%u)",qmax, cm, cx, cm+cx);\
+  return _op - _out_;\
+  overflow:                                                                           if(verbose>2) printf("overflow:%u ", _inlen_); \
+    memcpy(_out_, _in_, _inlen_); return _inlen_;\
 }
 
+#define QUANTD(_x_) fmin + (_x_) * fmax
+#define _FPQUANTD( _ip_, _x_) _x_ = fmin + (*_ip_++) * fmax
+//#define _FPQUANTVD(_ip_, _x_) { unsigned _u; vsget20(_ip_,_u); _x_ = QUANTD(_u); }
+
+#define FPQUANTD(t_t, _ip_, outlen, _out_, qmax, fmin, fmax, _fpquantd_) { t_t *_op;\
+  fmax = (fmax - fmin) / qmax;\
+  for(_op = _out_; _op < _out_+(outlen/sizeof(_out_[0])); _op++) _fpquantd_(_ip_, _op[0]);\
+}
+
+#define FPQUANTD8(t_t, _ip_, outlen, _out_, qmax, t_s, fmin, fmax, _fpquantd_) { \
+  t_t *_op; unsigned char *_ep = _ip_ + inlen;                                  unsigned _cx = 0;\
+  qmax--; fmax = (fmax - fmin) / qmax;                                          printf("qmax=%u ", qmax);\
+  for(_op = _out_; _op < _out_+(outlen/(t_s/8)); _op++)\
+    if(*_ip_ == qmax+1) { _ip_++; _ep -= t_s/8; *_op = T2(ctof,t_s)(_ep); _cx++; /*if(_cx<20) printf("%g,", (double)_op[0]);*/ } else _fpquantd_(_ip_, _op[0]);  if(verbose>2) printf("cx=%u", _cx);\
+}
+
+  #if defined(FLT16_BUILTIN) 
+size_t fpquant8e16( _Float16 *in, size_t inlen, uint8_t  *out, unsigned qmax, _Float16 *pfmin, _Float16 *pfmax, _Float16 zmin) { FPQUANTE8(_Float16, in, inlen, out, qmax, 16, pfmin, pfmax, zmin,_FPQUANTE); }
+size_t fpquant16e16(_Float16 *in, size_t inlen, uint16_t *out, unsigned qmax, _Float16 *pfmin, _Float16 *pfmax, _Float16 zmin) { FPQUANTE( _Float16, in, inlen, out, qmax, 16, pfmin, pfmax, zmin,_FPQUANTE);  return inlen; }
+//size_t fpquantv8e16(_Float16 *in, size_t inlen, uint8_t  *out, unsigned qmax, _Float16 *pfmin, _Float16 *pfmax, _Float16 zmin) { unsigned char *op = out; FPQUANTE(_Float16, in, inlen, op,  qmax, 16, pfmin, pfmax, zmin,_FPQUANTVE); return op - out; }
+  #endif
+
+size_t fpquant8e32(     float *in, size_t inlen, uint8_t  *out, unsigned qmax, float    *pfmin,    float *pfmax,   float zmin) { FPQUANTE8(  float, in, inlen, out, qmax, 32, pfmin, pfmax, zmin,_FPQUANTE);  return inlen; }
+size_t fpquant16e32(    float *in, size_t inlen, uint16_t *out, unsigned qmax, float    *pfmin,    float *pfmax,   float zmin) { FPQUANTE(   float, in, inlen, out, qmax, 32, pfmin, pfmax, zmin,_FPQUANTE);  return inlen; }
+size_t fpquant32e32(    float *in, size_t inlen, uint32_t *out, unsigned qmax, float    *pfmin,    float *pfmax,   float zmin) { FPQUANTE(   float, in, inlen, out, qmax, 32, pfmin, pfmax, zmin,_FPQUANTE);  return inlen; }
+
+size_t fpquant8e64(    double *in, size_t inlen, uint8_t  *out, unsigned qmax, double   *pfmin,   double *pfmax,  double zmin) { FPQUANTE8( double, in, inlen, out, qmax, 64, pfmin, pfmax, zmin,_FPQUANTE);  return inlen; }
+size_t fpquant16e64(   double *in, size_t inlen, uint16_t *out, unsigned qmax, double   *pfmin,   double *pfmax,  double zmin) { FPQUANTE(  double, in, inlen, out, qmax, 64, pfmin, pfmax, zmin,_FPQUANTE);  return inlen; }
+size_t fpquant32e64(   double *in, size_t inlen, uint32_t *out, unsigned qmax, double   *pfmin,   double *pfmax,  double zmin) { FPQUANTE(  double, in, inlen, out, qmax, 64, pfmin, pfmax, zmin,_FPQUANTE);  return inlen; }
+size_t fpquant64e64(   double *in, size_t inlen, uint64_t *out, unsigned qmax, double   *pfmin,   double *pfmax,  double zmin) { FPQUANTE(  double, in, inlen, out, qmax, 64, pfmin, pfmax, zmin,_FPQUANTE);  return inlen; }
+
     #if defined(FLT16_BUILTIN) 
-void fpquant8e16( _Float16 *in, size_t n, uint8_t  *out, unsigned b, _Float16 *pfmin, _Float16 *pfmax) { FPQUANTE(_Float16, in, n, out, b, 16, pfmin, pfmax); }
-void fpquant16e16(_Float16 *in, size_t n, uint16_t *out, unsigned b, _Float16 *pfmin, _Float16 *pfmax) { FPQUANTE(_Float16, in, n, out, b, 16, pfmin, pfmax); }
+size_t fpquant8d16(  uint8_t  *in, size_t outlen, _Float16 *out, unsigned qmax, _Float16   fmin, _Float16   fmax, size_t inlen) { FPQUANTD8(_Float16, in, outlen, out, qmax, 16, fmin, fmax, _FPQUANTD); return outlen;}
+size_t fpquant16d16( uint16_t *in, size_t outlen, _Float16 *out, unsigned qmax, _Float16   fmin, _Float16   fmax) { FPQUANTD(_Float16, in, outlen, out, qmax,  fmin, fmax, _FPQUANTD); return outlen;}
+//size_t fpquantv8d16( uint8_t  *in, size_t outlen, _Float16 *out, unsigned qmax, _Float16   fmin, _Float16   fmax) { unsigned char *ip = in; FPQUANTD(_Float16, in, outlen, out, qmax, fmin, fmax, _FPQUANTVD); return ip - in; }
     #endif
 
-void fpquant8e32(    float *in, size_t n, uint8_t  *out, unsigned b, float    *pfmin,    float *pfmax) { FPQUANTE(   float, in, n, out, b, 32, pfmin, pfmax); }
-void fpquant16e32(   float *in, size_t n, uint16_t *out, unsigned b, float    *pfmin,    float *pfmax) { FPQUANTE(   float, in, n, out, b, 32, pfmin, pfmax); }
-void fpquant32e32(   float *in, size_t n, uint32_t *out, unsigned b, float    *pfmin,    float *pfmax) { FPQUANTE(   float, in, n, out, b, 32, pfmin, pfmax); }
+size_t fpquant8d32(  uint8_t  *in, size_t outlen, float    *out, unsigned qmax, float      fmin,    float   fmax, size_t inlen) { FPQUANTD8(  float, in, outlen, out, qmax, 32, fmin,  fmax, _FPQUANTD); return outlen;}
+size_t fpquant16d32( uint16_t *in, size_t outlen, float    *out, unsigned qmax, float      fmin,    float   fmax) { FPQUANTD(   float, in, outlen, out, qmax,  fmin,  fmax, _FPQUANTD); return outlen;}
+size_t fpquant32d32( uint32_t *in, size_t outlen, float    *out, unsigned qmax, float      fmin,    float   fmax) { FPQUANTD(   float, in, outlen, out, qmax,  fmin,  fmax, _FPQUANTD); return outlen;}
 
-void fpquant8e64(   double *in, size_t n, uint8_t  *out, unsigned b, double   *pfmin,   double *pfmax) { FPQUANTE(  double, in, n, out, b, 64, pfmin, pfmax); }
-void fpquant16e64(  double *in, size_t n, uint16_t *out, unsigned b, double   *pfmin,   double *pfmax) { FPQUANTE(  double, in, n, out, b, 64, pfmin, pfmax); }
-void fpquant32e64(  double *in, size_t n, uint32_t *out, unsigned b, double   *pfmin,   double *pfmax) { FPQUANTE(  double, in, n, out, b, 64, pfmin, pfmax); }
-void fpquant64e64(  double *in, size_t n, uint64_t *out, unsigned b, double   *pfmin,   double *pfmax) { FPQUANTE(  double, in, n, out, b, 64, pfmin, pfmax); }
+size_t fpquant8d64(  uint8_t  *in, size_t outlen, double   *out, unsigned qmax, double     fmin,   double   fmax, size_t inlen) { FPQUANTD8( double, in, outlen, out, qmax, 64, fmin,  fmax, _FPQUANTD); return outlen;}
+size_t fpquant16d64( uint16_t *in, size_t outlen, double   *out, unsigned qmax, double     fmin,   double   fmax) { FPQUANTD(  double, in, outlen, out, qmax,  fmin,  fmax, _FPQUANTD); return outlen;}
+size_t fpquant32d64( uint32_t *in, size_t outlen, double   *out, unsigned qmax, double     fmin,   double   fmax) { FPQUANTD(  double, in, outlen, out, qmax,  fmin,  fmax, _FPQUANTD); return outlen;}
+size_t fpquant64d64( uint64_t *in, size_t outlen, double   *out, unsigned qmax, double     fmin,   double   fmax) { FPQUANTD(  double, in, outlen, out, qmax,  fmin,  fmax, _FPQUANTD); return outlen;}
 
-    #if defined(FLT16_BUILTIN) 
-void fpquant8d16( uint8_t  *in, size_t n, _Float16 *out, unsigned b, _Float16   fmin, _Float16   fmax) { FPQUANTD(_Float16, in, n, out, b,  fmin,  fmax); }
-void fpquant16d16(uint16_t *in, size_t n, _Float16 *out, unsigned b, _Float16   fmin, _Float16   fmax) { FPQUANTD(_Float16, in, n, out, b,  fmin,  fmax); }
-    #endif
+//----------- Lossy floating point conversion: pad the trailing mantissa bits with zero bits according to the relative error e (ex. 0.00001)  ----------
+  #if defined(FLT16_BUILTIN) 
+// https://clang.llvm.org/docs/LanguageExtensions.html#half-precision-floating-point
+_Float16 _fprazor16(_Float16 d, float e, int lg2e) {
+  uint16_t du = ctou16(&d), sign, u;
+  int      b  = (du>>10 & 0x1f) - 15; // exponent=[5 bits,bias=15], mantissa=10 bits SeeeeeMMMMMMMMMM
+  _Float16 ed;
+  if ((b = 12 - b - lg2e) <= 0) 
+	return d;
+  b     = b > 10?10:b;
+  sign  = du & (1<<15); 
+  du   &= 0x7fff;       
+  for(d = ctof16(&du), ed = e * d;;) {
+    u = du & (~((1u<<(--b))-1)); if(d - ctof16(&u) <= ed) break;
+    u = du & (~((1u<<(--b))-1)); if(d - ctof16(&u) <= ed) break;
+  }
+  u |= sign;
+  return ctof16(&u);
+}
 
-void fpquant8d32( uint8_t  *in, size_t n, float    *out, unsigned b, float      fmin,    float   fmax) { FPQUANTD(   float, in, n, out, b,  fmin,  fmax); }
-void fpquant16d32(uint16_t *in, size_t n, float    *out, unsigned b, float      fmin,    float   fmax) { FPQUANTD(   float, in, n, out, b,  fmin,  fmax); }
-void fpquant32d32(uint32_t *in, size_t n, float    *out, unsigned b, float      fmin,    float   fmax) { FPQUANTD(   float, in, n, out, b,  fmin,  fmax); }
+void fprazor16(_Float16 *in, unsigned n, _Float16 *out, float e) { 
+  int lg2e = -log(e)/log(2.0); _Float16 *ip; 
+  
+  for (ip = in; ip < in+n; ip++,out++)
+    *out = _fprazor16(*ip, e, lg2e); 
+}
+  #endif
 
-void fpquant8d64( uint8_t  *in, size_t n, double   *out, unsigned b, double     fmin,   double   fmax) { FPQUANTD(  double, in, n, out, b,  fmin,  fmax); }
-void fpquant16d64(uint16_t *in, size_t n, double   *out, unsigned b, double     fmin,   double   fmax) { FPQUANTD(  double, in, n, out, b,  fmin,  fmax); }
-void fpquant32d64(uint32_t *in, size_t n, double   *out, unsigned b, double     fmin,   double   fmax) { FPQUANTD(  double, in, n, out, b,  fmin,  fmax); }
-void fpquant64d64(uint64_t *in, size_t n, double   *out, unsigned b, double     fmin,   double   fmax) { FPQUANTD(  double, in, n, out, b,  fmin,  fmax); }
+float _fprazor32(float d, float e, int lg2e) {
+  uint32_t du = ctou32(&d), sign, u;
+  int      b  = (du>>23 & 0xff) - 0x7e;
+  float    ed;
+ 
+  if((b = 25 - b - lg2e) <= 0)
+    return d;                                         AS(!isnan(d), "_fprazor32: isnan");
+  b    = b > 23?23:b;
+  sign = du & (1<<31);
+  du  &= 0x7fffffffu;
+  
+  for(d = ctof32(&du), ed = e * d;;) {
+    u = du & (~((1u<<(--b))-1)); if(d - ctof32(&u) <= ed) break;
+    u = du & (~((1u<<(--b))-1)); if(d - ctof32(&u) <= ed) break;
+    u = du & (~((1u<<(--b))-1)); if(d - ctof32(&u) <= ed) break;
+  }
+  u |= sign;
+  return ctof32(&u);
+}
+
+void fprazor32(float *in, unsigned n, float *out, float e) { 
+  int   lg2e = -log(e)/log(2.0); 
+  float *ip; 
+  for(ip = in; ip < in+n; ip++,out++) 
+	*out = _fprazor32(*ip, e, lg2e); 
+}
+
+double _fprazor64(double d, double e, int lg2e) { //if(isnan(d)) return d;
+  uint64_t du = ctou64(&d), sign, u;
+  int      b  = (du>>52 & 0x7ff) - 0x3fe;
+  double   ed;
+  
+  if((b = 54 - b - lg2e) <= 0)
+    return d;
+  b     = b > 52?52:b;
+  sign  = du & (1ull<<63); 
+  du   &= 0x7fffffffffffffffull;
+
+  for(d = ctof64(&du), ed = e * d;;) {
+    u = du & (~((1ull<<(--b))-1)); if(d - ctof64(&u) <= ed) break;
+    u = du & (~((1ull<<(--b))-1)); if(d - ctof64(&u) <= ed) break;
+  }
+  u |= sign; 
+  return ctof64(&u);
+}
+
+void fprazor64(double *in, unsigned n, double *out, double e) { 
+  int    lg2e = -log(e)/log(2.0); 
+  double *ip; 
+  
+  for(ip = in; ip < in+n; ip++,out++) 
+	*out = _fprazor64(*ip, e, lg2e); 
+}
+
   #endif  
   
 #ifndef _NCPUISA
