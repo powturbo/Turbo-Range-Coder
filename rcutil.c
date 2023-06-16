@@ -31,6 +31,11 @@
 #include "include_/rcutil.h"
 #include "rcutil_.h"
 
+#ifndef min
+#define min(x,y) (((x)<(y)) ? (x) : (y))
+#define max(x,y) (((x)>(y)) ? (x) : (y))
+#endif
+
 //-------------------------------- malloc ----------------------------------------
   #ifdef _WIN32
 #include <windows.h>
