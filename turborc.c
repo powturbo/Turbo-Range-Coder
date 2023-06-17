@@ -399,7 +399,9 @@ RCGEN2(rcv8z,32)
 
 //FILE *fdbg;
 int xcheck;
-double zerrlim;
+#define FP_ZERO DBL_EPSILON
+double   gmin = FP_ZERO, gmax = FP_ZERO, zerrlim;
+unsigned quantb;
 
 #define OSIZE(_n_) ((_n_)*4/3)
 #define ID_RC16 8
@@ -543,8 +545,9 @@ unsigned bench(unsigned char *in, unsigned n, unsigned char *out, unsigned char 
 	  #endif
 	  #ifndef _NQUANT
 		#if defined(FLT16_BUILTIN)
-    case 86: { _Float16 fmin = -1.16, fmax = 1.4; unsigned quantb = 8;                                      
-	  size_t clen = fpquant8e16(in,n,out, BZMASK32(quantb), &fmin, &fmax, FLT16_EPSILON);  if(verbose>2) printf("\nlen:%u R:[%g/%g]=%g q=%u ", clen, (double)fmin, (double)fmax, (double)fmax-(double)fmin, quantb);	
+    case 86: { _Float16 fmin = -1.16, fmax = 1.4; if(gmin != FP_ZERO) fmin = gmin; if(gmax != FP_ZERO) fmax = gmax;
+	  if(!quantb || quantb > 8) quantb = 8;                                      
+	  size_t clen = fpquant8e16(in,n,out, BZMASK32(quantb), &fmin, &fmax, FLT16_EPSILON);  if(verbose>2) printf("\nlen:%u R:[%g/%g]=%g q=%u,%u ", clen, (double)fmin, (double)fmax, (double)fmax-(double)fmin, quantb, BZMASK32(quantb));	
 	  fpquant8d16(out, n, cpy, BZMASK32(quantb), fmin, fmax, clen);         
       fpstat(in, n/2, cpy, -2, NULL);
 	} break;
@@ -721,7 +724,7 @@ static int cmpsna(const void *a, const void *b) { return CMPSA(a, b, len_t, len)
 
 //---------------------------------------------- main : benchmark + file compression ----------------------------------------------
 int main(int argc, char* argv[]) {
-  unsigned bsize = 1792*Mb, prdid = RC_PRD_S, quantb=0;
+  size_t   bsize = 1792*Mb; unsigned prdid = RC_PRD_S;
   int      xstdout=0, xstdin=0, decomp=0, codec=0, dobench=0, cmp=1, c, digit_optind=0, decs=0, divs=0, skiph=0, isize=4, dfmt=0, mdelta=0, kid=0, osize=1;
   char     *scmd = NULL, prids[8]="s", *keysep = NULL;                                                  //fdbg = fopen("test.dat", "wb"); if(!fdbg) perror("fopen failed");
   #define CODECNUM 256
@@ -749,7 +752,7 @@ int main(int argc, char* argv[]) {
       { "help",     0, 0, 'h'},
       { 0,          0, 0, 0}
     }; 
-    if((c = getopt_long(argc, argv, "0:1:2:3:4:5:6:7:8:9:b:B:cde:fF:hH:I:J:k:K:l:m:noO:p:P:q:Q:r:S:t:T:UV:v:x:XY:zZ:", long_options, &optind)) == -1) break;
+    if((c = getopt_long(argc, argv, "0:1:2:3:4:5:6:7:8:9:b:B:cde:fF:g:G:hH:I:J:k:K:l:m:noO:p:P:q:Q:r:S:t:T:UV:v:x:XY:zZ:", long_options, &optind)) == -1) break;
     switch(c) {
       case 0:
         printf("Option %s", long_options[optind].name);
@@ -789,6 +792,8 @@ int main(int argc, char* argv[]) {
           case 'd': osize = -8, s++; break; // double: 8 bytes
         }
       } break;
+	  case 'g': gmin = strtod(optarg, NULL); break;
+	  case 'G': gmax = strtod(optarg, NULL); break;
       case 'H': skiph = atoi(optarg); break;
       case 'K': { kid = atoi(optarg); if(!keysep) keysep = ",;\t"; } break;
       case 'k': keysep = optarg; break;
@@ -805,7 +810,7 @@ int main(int argc, char* argv[]) {
                     else if(p[1] == 'f') prdid = 3;
                   }          
       } break;
-	  case 'q': quantb = atoi(optarg); if(quantb < 8) quantb = 8; break;
+	  case 'q': quantb = atoi(optarg); break;
 	  //case 'Q': qmax   = atoi(optarg); break;
       case 'v': verbose = atoi(optarg); break;
           
@@ -849,11 +854,11 @@ int main(int argc, char* argv[]) {
         usage(argv[0]);
         exit(0); 
     }
-  } 
+  }
   //anscdfini(0);                                                                   if(verbose>1) printf("detected simd id=%x, %s\n\n", cpuini(0), cpustr(cpuini(0)));
   tm_init(tm_Rep, tm_verbose /* 2 print id */);  
   #define ERR(e) do { rc = e; printf("line=%d ", __LINE__); goto err; } while(0)
-  int  rc = 0, inlen;
+  int  rc = 0; unsigned inlen;
   unsigned char *in = NULL, *out = NULL, *cpy = NULL; 
     #ifdef _SF
   if(prdid == RC_PRD_SF) { printf("fsm"); if(prm1<0) prm1=1;if(prm1>9) prm1=9; fsm_init(prm1); }
@@ -918,22 +923,22 @@ int main(int argc, char* argv[]) {
             #endif
 			#ifndef _NQUANT
 			  #if defined(FLT16_BUILTIN)
-		  //case 7: { _Float16 fmin,fmax;												
-	      //  if(quantb > 16) quantb = 16;                                          printf("Quantization=%d\n", quantb);
-		  //      n = fpquantv8e16(in,n/2,out,BZMASK32(quantb), &fmin,&fmax,FLT16_EPSILON); memcpy(in,out,n); 
-		  //} break;			  
-		  case 8: { _Float16 fmin,fmax;												
-	        if(quantb > 16) quantb = 16;                                             printf("Quantization=%d\n", quantb);
-		        fpquant16e16(in,n/2,out,BZMASK32(quantb), &fmin,&fmax,FLT16_EPSILON); tpenc(out, n, in, 2);
+		  case 7: { _Float16 fmin=0.0,fmax=0.0;	if(gmin != FP_ZERO) fmin = gmin; if(gmax != FP_ZERO) fmax = gmax;											
+	        if(!quantb || quantb > 8) quantb = 8;                                          printf("Quantization=%d\n", quantb);
+		    n = fpquant8e16(in,n,out,BZMASK32(quantb), &fmin,&fmax,FLT16_EPSILON); memcpy(in,out,n); 
+		  } break;			  
+		  case 8: { _Float16 fmin=0.0,fmax=0.0;	if(gmin != FP_ZERO) fmin = gmin; if(gmax != FP_ZERO) fmax = gmax;
+	        if(!quantb || quantb > 16) quantb = 16;                                             printf("Quantization=%d\n", quantb);
+		    fpquant16e16(in,n/2,out,BZMASK32(quantb), &fmin,&fmax,FLT16_EPSILON); tpenc(out, n, in, 2);
 		  } break;			  
 		      #endif
-		  case 9 : { float fmin,fmax;
-	        if(quantb > 32) quantb = 32;
-	            fpquant32e32(in,n/4,out,BZMASK32(quantb), &fmin,&fmax,FLT_EPSILON);  tpenc(out, n, in, 4);             
+		  case 9 : { float fmin=0.0, fmax=0.0;	if(gmin != FP_ZERO) fmin = gmin; if(gmax != FP_ZERO) fmax = gmax;
+	        if(!quantb || quantb > 32) quantb = 32;
+	        fpquant32e32(in,n/4,out,BZMASK32(quantb), &fmin,&fmax,FLT_EPSILON);  tpenc(out, n, in, 4);             
 		  } break;
-		  case 10 : { double fmin,fmax;
-	        if(quantb > 32) quantb = 32;
-	            fpquant64e64(in,n/8,out,BZMASK32(quantb), &fmin,&fmax,DBL_EPSILON);  tpenc(out, n, in, 8);            
+		  case 10 : { double fmin=0.0, fmax=0.0;	if(gmin != FP_ZERO) fmin = gmin; if(gmax != FP_ZERO) fmax = gmax;
+	        if(!quantb || quantb > 32) quantb = 32;
+	        fpquant64e64(in,n/8,out,BZMASK32(quantb), &fmin,&fmax,DBL_EPSILON);  tpenc(out, n, in, 8);            
 		  } break;
 			#endif
         }
@@ -1041,7 +1046,8 @@ int main(int argc, char* argv[]) {
           #endif
 	      #ifndef _NQUANT)
 	        #if defined(FLT16_BUILTIN)
-        case 24: { _Float16 fmin = -1.16, fmax = 1.4; if(quantb > 8) quantb = 8;                                     
+        case 24: { _Float16 fmin = -1.16, fmax = 1.4; if(gmin != FP_ZERO) fmin = gmin; if(gmax != FP_ZERO) fmax = gmax;
+		  if(quantb > 8) quantb = 8;                                     
 	      clen = fpquant8e16(in,inlen,out, BZMASK32(quantb), &fmin, &fmax, FLT16_EPSILON);  
           if(clen < inlen) {
 		    ctof16(out+clen) = fmin; ctof16(out+clen+2) = fmax; ctou8(out+clen+4) = quantb; clen += 4+1;
@@ -1050,17 +1056,19 @@ int main(int argc, char* argv[]) {
         //case 23: { _Float16 fmin=0.0, fmax=0.0; if(quantb > 16) quantb = 16; clen = fpquantv8e16(in,inlen,out, BZMASK32(quantb), &fmin, &fmax, FLT16_EPSILON); if(clen < inlen) { ctof16(out+clen) = fmin; ctof16(out+clen+2) = fmax; ctou8(out+clen+4) = quantb; clen += 4+1;
         //  }	else printf("overflow ");                                           if(verbose>2) printf("\nlen:%u R:[%g/%g]=%g q=%u ", clen, (double)fmin, (double)fmax, (double)fmax-(double)fmin, quantb);	   
 	    //} break;
-        case 25: { _Float16 fmin=0.0, fmax=0.0; if(quantb > 16) quantb = 16;
-	             fpquant16e16(in,inlen,out, BZMASK32(quantb), &fmin, &fmax, FLT16_EPSILON); memcpy(in,out,inlen); tpenc(in, inlen, out, 2); 
+        case 25: { _Float16 fmin=0.0, fmax=0.0; if(gmin != FP_ZERO) fmin = gmin; if(gmax != FP_ZERO) fmax = gmax; if(quantb > 16) quantb = 16;
+	      fpquant16e16(in,inlen,out, BZMASK32(quantb), &fmin, &fmax, FLT16_EPSILON); memcpy(in,out,inlen); tpenc(in, inlen, out, 2); 
 		  ctof16(out+inlen) = fmin; ctof16(out+inlen+2) = fmax; ctou8(out+inlen+4) = quantb; clen = inlen+4+1;  
                                                                                 if(verbose>2) printf("\nlen:%u R:[%g/%g]=%g q=%u ", inlen, (double)fmin, (double)fmax, (double)fmax-(double)fmin, quantb);	    
 		} break;
 	        #endif
-        case 26: { float fmin=0.0, fmax=0.0; if(quantb > 32) quantb = 32;
+        case 26: { float fmin=0.0, fmax=0.0;	if(gmin != FP_ZERO) fmin = gmin; if(gmax != FP_ZERO) fmax = gmax;
+  		  if(quantb > 32) quantb = 32;
 	      fpquant32e32(in,inlen,out, BZMASK32(quantb), &fmin, &fmax, FLT_EPSILON); memcpy(in,out,inlen); tpenc(in, inlen, out, 4); 
 		  ctof32(out+inlen) = fmin; ctof32(out+inlen+4) = fmax; ctou8(out+inlen+8) = quantb; clen = inlen+8+1;	 if(verbose>2) printf("len:%u R:[%g/%g]=%g q=%u ", inlen, (double)fmin, (double)fmax, (double)fmax-(double)fmin, quantb);
 	    } break;
-        case 27: { double fmin=0.0, fmax=0.0; if(quantb > 32) quantb = 32;
+        case 27: { double fmin=0.0, fmax=0.0;	if(gmin != FP_ZERO) fmin = gmin; if(gmax != FP_ZERO) fmax = gmax;
+		  if(quantb > 32) quantb = 32;
 	      fpquant64e64(in,inlen,out, BZMASK32(quantb), &fmin, &fmax, DBL_EPSILON); memcpy(in,out,inlen); tpenc(in, inlen, out, 8); 
 		  ctof64(out+inlen) = fmin; ctof64(out+inlen+8) = fmax; ctou8(out+inlen+16) = quantb; clen = inlen+16+1; 
 		                                                                        if(verbose>2) printf("\nlen:%u R:[%g/%g]=%g q=%u ", inlen, (double)fmin, (double)fmax, (double)fmax-(double)fmin, quantb);	 
