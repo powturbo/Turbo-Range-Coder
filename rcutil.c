@@ -31,11 +31,6 @@
 #include "include_/rcutil.h"
 #include "rcutil_.h"
 
-#ifndef min
-#define min(x,y) (((x)<(y)) ? (x) : (y))
-#define max(x,y) (((x)>(y)) ? (x) : (y))
-#endif
-
 //-------------------------------- malloc ----------------------------------------
   #ifdef _WIN32
 #include <windows.h>
@@ -773,14 +768,12 @@ void fpstat(unsigned char *in, size_t n, unsigned char *out, int s, unsigned cha
 }
 
 //----------- Quantization -----------------------------------
-//#include "include_/vlcbyte.h"
 #define ROUND16(x) roundf(x)
 #define ROUND32(x) roundf(x)
-#define ROUND64(x) round(x)
+#define ROUND64(x) round(x)                                                                             //#include "include_/vlcbyte.h"
 
-#define QUANTE(t_s, _x_, _fmin_, _delta_) T2(ROUND,t_s)(((_x_) - _fmin_)*_delta_) //T2(ROUND,t_s)((_x_) * 100)
-#define _FPQUANTE( t_s, _op_, _x_, _fmin_, _delta_) *_op_++  = QUANTE(t_s, _x_, _fmin_, _delta_)
-//#define _FPQUANTVE(t_s, _op_, _x_, _fmin_, _delta_) { uint16_t _u = QUANTE(t_s, _x_, _fmin_, _delta_); vsput20(_op_,_u); }
+#define QUANTE(t_s, _x_, _fmin_, _delta_) T2(ROUND,t_s)(((_x_) - _fmin_)*_delta_)                       //T2(ROUND,t_s)((_x_) * 100)
+#define _FPQUANTE( t_s, _op_, _x_, _fmin_, _delta_) *_op_++  = QUANTE(t_s, _x_, _fmin_, _delta_)        //#define _FPQUANTVE(t_s, _op_, _x_, _fmin_, _delta_) { uint16_t _u = QUANTE(t_s, _x_, _fmin_, _delta_); vsput20(_op_,_u); }
 
 #define FPQUANTE(t_t, _in_, inlen, _op_, qmax, t_s, pfmin, pfmax, _zmin_, _fpquante_) {\
   t_t fmin = _in_[0], fmax = _in_[0], *_ip;\
@@ -794,42 +787,42 @@ void fpstat(unsigned char *in, size_t n, unsigned char *out, int s, unsigned cha
 
 #define FPQUANTE8(t_t, _in_, _inlen_, _out_, qmax, t_s, pfmin, pfmax, _zmin_, _fpquante_) {\
   t_t           fmin = *pfmin, fmax = *pfmax, *_ip;\
-  unsigned char *_op = _out_, *_ep_ = _out_ + _inlen_, *_ep = _ep_;                   unsigned cm = 0,cx = 0;\
+  unsigned char *_op = _out_, *_ep_ = _out_ + _inlen_, *_ep = _ep_;              unsigned cm = 0,cx = 0;\
   if(fmin == 0.0 && fmax == 0.0) {\
 	fmax = _in_[0], fmin = _in_[0];\
     for(_ip = _in_; _ip < _in_ + (_inlen_/(t_s/8)); _ip++)\
       if(*_ip > fmax) fmax = *_ip; else if(*_ip < fmin) fmin = *_ip;\
-    *pfmin = fmin; *pfmax = fmax; \
+    *pfmin = fmin; *pfmax = fmax;\
   } else qmax--;\
   t_t _delta = (fmax - fmin <= _zmin_)?(t_t)0.0:qmax/(fmax - fmin);\
   \
   for(_ip = _in_; _ip < _in_+(_inlen_/(t_s/8)); _ip++) {\
-    t_t _f = _ip[0]; \
-    if(_f < fmin || _f > fmax) { *_op++ = qmax+1; _ep -= t_s/8; T2(ctof,t_s)(_ep) = _f; _f > fmax?cx++:cm++; } \
-    else _fpquante_(t_s, _op, _f, fmin, _delta);\
-                                                                                      if(_op >= _ep) goto overflow;\
-  }\
-  unsigned _l = _ep_ - _ep; 														  if(_op+_l >= _ep_) goto overflow;\
-  memcpy(_op, _ep, _l); _op += _l;                                                    if(verbose>2) printf("qmax=%u clamp(%u+%u=%u)",qmax, cm, cx, cm+cx);\
+    t_t _f = _ip[0];\
+    if(_f < fmin || _f > fmax) { *_op++ = qmax+1; _ep -= (t_s/8); T2(ctof,t_s)(_ep) = _f; _f > fmax?cx++:cm++; } /*store outliers w/o compression at the buffer end*/\
+    else _fpquante_(t_s, _op, _f, fmin, _delta); \
+                                                                                if(_op+8 >= _ep) goto ovr;\
+  }                                                                             if(verbose > 2) printf("qmax=%u outliers:%u+%u=%u ",qmax, cm, cx, cm+cx);\
+  unsigned _l = _ep_ - _ep; 													if(_op+_l >= _ep_) goto ovr;\
+  memcpy(_op, _ep, _l); _op += _l;\
   return _op - _out_;\
-  overflow:                                                                           if(verbose>2) printf("overflow:%u ", _inlen_); \
+  ovr:                                                                          if(verbose>2) printf("overflow:%u ", _inlen_); \
     memcpy(_out_, _in_, _inlen_); return _inlen_;\
 }
 
 #define QUANTD(_x_) fmin + (_x_) * fmax
-#define _FPQUANTD( _ip_, _x_) _x_ = fmin + (*_ip_++) * fmax
-//#define _FPQUANTVD(_ip_, _x_) { unsigned _u; vsget20(_ip_,_u); _x_ = QUANTD(_u); }
+#define _FPQUANTD(t_t, _ip_, _x_) _x_ = fmin + (t_t)(*_ip_++) * fmax            //#define _FPQUANTVD(_ip_, _x_) { unsigned _u; vsget20(_ip_,_u); _x_ = QUANTD(_u); }
 
 #define FPQUANTD(t_t, _ip_, outlen, _out_, qmax, fmin, fmax, _fpquantd_) { t_t *_op;\
   fmax = (fmax - fmin) / qmax;\
-  for(_op = _out_; _op < _out_+(outlen/sizeof(_out_[0])); _op++) _fpquantd_(_ip_, _op[0]);\
+  for(_op = _out_; _op < _out_+(outlen/sizeof(_out_[0])); _op++) _fpquantd_(t_t, _ip_, _op[0]);\
 }
 
 #define FPQUANTD8(t_t, _ip_, outlen, _out_, qmax, t_s, fmin, fmax, _fpquantd_) { \
-  t_t *_op; unsigned char *_ep = _ip_ + inlen;                                  unsigned _cx = 0;\
-  qmax--; fmax = (fmax - fmin) / qmax;                                          printf("qmax=%u ", qmax);\
+  t_t *_op; unsigned char *_ep = _ip_ + inlen;\
+  qmax--; fmax = (fmax - fmin) / qmax;\
   for(_op = _out_; _op < _out_+(outlen/(t_s/8)); _op++)\
-    if(*_ip_ == qmax+1) { _ip_++; _ep -= t_s/8; *_op = T2(ctof,t_s)(_ep); _cx++; /*if(_cx<20) printf("%g,", (double)_op[0]);*/ } else _fpquantd_(_ip_, _op[0]);  if(verbose>2) printf("cx=%u", _cx);\
+    if(*_ip_ == qmax+1) { _ip_++; _ep -= t_s/8; *_op = T2(ctof,t_s)(_ep); }\
+	else _fpquantd_(t_t, _ip_, _op[0]);\
 }
 
   #if defined(FLT16_BUILTIN) 
