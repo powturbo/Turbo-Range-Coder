@@ -768,6 +768,11 @@ void fpstat(unsigned char *in, size_t n, unsigned char *out, int s, unsigned cha
 }
 
 //----------- Quantization -----------------------------------
+#ifndef min
+#define min(x,y) (((x)<(y)) ? (x) : (y))
+#define max(x,y) (((x)>(y)) ? (x) : (y))
+#endif
+
 #define ROUND16(x) roundf(x)
 #define ROUND32(x) roundf(x)
 #define ROUND64(x) round(x)                                                                             //#include "include_/vlcbyte.h"
