@@ -22,13 +22,6 @@ CXX ?= g++
 #CC=clang
 #CXX=clang++
 
-ifeq ($(PGO), 1)
-CFLAGS=-fprofile-generate 
-LDFLAGS+=-lgcov
-else
-#CFLAGS=-fprofile-use 
-endif
-
 #CC=powerpc64le-linux-gnu-gcc
 #CL = $(CC)
 #DEBUG=-DDEBUG -g
@@ -47,10 +40,13 @@ endif
 #------- OS/ARCH -------------------
 ifneq (,$(filter Windows%,$(OS)))
   OS := Windows
-#  CC=gcc
-#  CXX=g++
+  CC=gcc
+  CXX=g++
+#  CC=clang
   ARCH=x86_64
-  LDFLAGS+=-Wl,--stack,33554432
+ifeq ($(ICCODEC),1) 
+  LDFLAGS=-Wl,--stack,33554432
+endif
 else
   OS := $(shell uname -s)
   ARCH := $(shell uname -m)
@@ -67,23 +63,25 @@ endif
 ifeq ($(ARCH),ppc64le)
   _SSE=-D__SSSE3__
   MARCH=-mcpu=power9 -mtune=power9 $(_SSE)
+  CFLAGS+=-D_NAVX2 -D_NSCALAR
 else ifeq ($(ARCH),aarch64)
-  MARCH+=-march=armv8-a 
+  MARCH=-march=armv8-a
+  CFLAGS+=-D_NAVX2 -D_NSCALAR
 ifneq (,$(findstring clang, $(CC)))
-  MARCH+=-march=armv8-a 
-  OPT+=-fomit-frame-pointer
-else
-  MARCH+=-march=armv8-a 
+  OPT+=-fomit-frame-pointer 
+#-fmacro-backtrace-limit=0
 endif
   _SSE=-march=armv8-a
 else ifeq ($(ARCH),$(filter $(ARCH),x86_64))
-  LDFLAG+=-lm
+  _SCALAR=-mno-sse2 
 # set minimum arch sandy bridge SSE4.1 + AVX
   _SSE=-march=corei7-avx -mtune=corei7-avx 
-# SSE+=-mno-avx -mno-aes
+# _SSE+=-mno-avx -mno-aes
   _AVX2=-march=haswell
-#  CFLAGS=$(SSE)
-#  CFLAGS=$(AVX2)
+endif
+
+ifeq (,$(findstring clang, $(CC)))
+OPT+=-falign-loops 
 endif
 
 ifeq ($(AVX2),1)
@@ -92,7 +90,7 @@ else
 MARCH=$(_SSE) 
 endif
 
-CFLAGS+= $(DEBUG) $(OPT) -w -Wall -pedantic
+CFLAGS+= $(DEBUG) $(OPT) -w -Wall
 ifeq ($(PGO), 1)
 CFLAGS+=-fprofile-generate 
 LDFLAGS+=-lgcov
@@ -160,14 +158,19 @@ ifeq ($(ANS), 1)
 CFLAGS+=-D_ANS
 L=./
 $(L)anscdf0.o: $(L)anscdf.c $(L)anscdf_.h
-	$(CC) -c -O3 $(CFLAGS) -mno-sse2 -falign-loops=32 $(L)anscdf.c -o $(L)anscdf0.o  
+	$(CC) -c -O3 $(CFLAGS) $(_SCALAR) -falign-loops=32 $(L)anscdf.c -o $(L)anscdf0.o  
 
 $(L)anscdfs.o: $(L)anscdf.c $(L)anscdf_.h
-	$(CC) -c -O3 $(CFLAGS) -march=corei7-avx -mtune=corei7-avx -mno-aes -falign-loops=32 $(L)anscdf.c -o $(L)anscdfs.o  
+	$(CC) -c -O3 $(CFLAGS) $(_SSE) -falign-loops=32 $(L)anscdf.c -o $(L)anscdfs.o  
 
+LIB+=$(L)anscdfs.o 
+ifeq ($(ARCH), x86_64)
 $(L)anscdfx.o: $(L)anscdf.c $(L)anscdf_.h
-	$(CC) -c -O3 $(CFLAGS) -march=haswell -falign-loops=32 $(L)anscdf.c -o $(L)anscdfx.o 
-LIB+=$(L)anscdfx.o $(L)anscdfs.o $(L)anscdf0.o
+	$(CC) -c -O3 $(CFLAGS) -march=haswell -falign-loops=32 $(L)anscdf.c -o $(L)anscdfx.o
+
+LIB+=$(L)anscdfx.o 
+#$(L)anscdf0.o
+endif
 endif
 
 ifeq ($(TURBORLE), 1)
@@ -180,7 +183,11 @@ transpose_avx2.o: transpose.c
 	$(CC) -O3 -w -mavx2 $(OPT) -c transpose.c -o transpose_avx2.o
 
 CFLAGS+=-D_TRANSPOSE -D_NCPUISA
-LIB+=transpose.o transpose_.o transpose_avx2.o
+LIB+=transpose.o transpose_.o 
+
+ifeq ($(ARCH), x86_64)
+LIB+=transpose_avx2.o
+endif
 endif
 
 ifeq ($(V8), 1)
@@ -223,7 +230,7 @@ reorder: $(LIBDIV) reorder.o
 	$(CC) $^ $(LDFLAGS) -o reorder
 
 .c.o:
-	$(CC) -O3 $(CFLAGS)  $(MARCH) $< -c -o $@
+	$(CC) -O3 $(CFLAGS) $(MARCH) $< -c -o $@
 
 .cpp.o:
 	$(CXX) -O3 $(MARCH) $(CXXFLAGS) $< -c -o $@ 
