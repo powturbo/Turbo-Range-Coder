@@ -44,9 +44,7 @@ ifneq (,$(filter Windows%,$(OS)))
   CXX=g++
 #  CC=clang
   ARCH=x86_64
-ifeq ($(ICCODEC),1) 
   LDFLAGS=-Wl,--stack,33554432
-endif
 else
   OS := $(shell uname -s)
   ARCH := $(shell uname -m)
@@ -80,17 +78,14 @@ else ifeq ($(ARCH),$(filter $(ARCH),x86_64))
   _AVX2=-march=haswell
 endif
 
-ifeq (,$(findstring clang, $(CC)))
-OPT+=-falign-loops 
-endif
-
 ifeq ($(AVX2),1)
 MARCH=$(_AVX2) 
 else
 MARCH=$(_SSE) 
 endif
 
-CFLAGS+= $(DEBUG) $(OPT) -w -Wall
+CFLAGS+= $(DEBUG) $(OPT) -w -Wall 
+#-pedantic
 ifeq ($(PGO), 1)
 CFLAGS+=-fprofile-generate 
 LDFLAGS+=-lgcov
