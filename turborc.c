@@ -503,10 +503,12 @@ unsigned bench(unsigned char *in, unsigned n, unsigned char *out, unsigned char 
             else    {TM("56:ans auto                             ",l=anscdfenc(   in,n,out), n,l, CCPY:anscdfdec(   out,n,cpy));} break;
     case 57:if(m<16){TM("57:ans sse nibble                       ",l=anscdf4encs( in,n,out), n,l, CCPY:anscdf4decs( out,n,cpy));}
             else    {TM("57:ans sse                              ",l=anscdfencs(  in,n,out), n,l, CCPY:anscdfdecs(  out,n,cpy));} break;
+        #ifndef _NAVX2             
     case 58:if(cpuisa()>=0x60) {
               if(m<16){TM("58:ans avx2 nibble                      ",l=anscdf4encx( in,n,out), n,l, CCPY:anscdf4decx( out,n,cpy));}
               else    {TM("58:ans avx2                             ",l=anscdfencx(  in,n,out), n,l, CCPY:anscdfdecx(  out,n,cpy));} 
             }  break;
+        #endif      
     //case 59:if(m<16){TM("57:ansx sse nibble                      ",l=anscdf4encs( in,n,out), n,l, CCPY:anscdf4decs( out,n,cpy));}
     //        else    {TM("57:ansx sse                             ",l=anscdfxencx(  in,n,out), n,l, CCPY:anscdfxdecx(  out,n,cpy));} break;
     case 60:if(z==2){TM("60:anscdf-16 Turbo vlc6                 ",l=anscdfuenc16(in,n,out),   n,l, CCPY:anscdfudec16( out,n,cpy));  } break;
