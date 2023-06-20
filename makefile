@@ -51,7 +51,7 @@ else
 
 ifneq (,$(findstring aarch64,$(CC)))
   ARCH = aarch64
-else ifneq (,$(findstring arm64,$(CC)))
+else ifneq (,$(findstring arm64,$(ARCH)))
   ARCH = aarch64
 else ifneq (,$(findstring powerpc64le,$(CC)))
   ARCH = ppc64le
