@@ -23,6 +23,7 @@ CXX ?= g++
 #CXX=clang++
 
 #CC=powerpc64le-linux-gnu-gcc
+#CC=clang -target arm64-apple-darwin
 #CL = $(CC)
 #DEBUG=-DDEBUG -g
 DEBUG=-DNDEBUG -s
