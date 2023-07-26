@@ -2,7 +2,7 @@
 [![Build ubuntu](https://github.com/powturbo/Turbo-Range-Coder/actions/workflows/build.yaml/badge.svg)](https://github.com/powturbo/Turbo-Range-Coder/actions/workflows/build.yaml)
 
 ======================================
-* **Fastest Range Coder / Arithmetic Coder**
+* **Fastest (Branchless) Range Coder / Arithmetic Coder**
   * 100% C (C++ headers). 
   * OS/Arch: Linux amd/intel, arm, PowerPC, s390x, MacOs+Apple M1. Windows: Mingw, visual c++
   * No other Range Coder / Arithmetic Coder encode or decode faster with better compression
