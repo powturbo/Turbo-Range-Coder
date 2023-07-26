@@ -28,7 +28,7 @@
     - read and convert text, csv or binary files to 8/16/32 bits before processing
     - set predictor and parameters at the command line
 * **Asymmetric Numeral Systems**
-  * :new: Fastest Adaptive CDF rANS Asymmetric Numeral Systems (2023.05) 
+  * :new: Fastest Adaptive CDF rANS Asymmetric Numeral Systems / SSE,AVX2 (2023.05) 
   * :new: bitwise ANS (2023.05)
   * No other adaptive ANS encode or decode faster with better compression
 ###  LICENSE
