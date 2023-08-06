@@ -25,6 +25,11 @@
 // conf.h - config & common
 #ifndef CONF_H_
 #define CONF_H_
+
+#include <stddef.h>
+#define __STDC_WANT_IEC_60559_TYPES_EXT__
+#include <float.h>
+
 #if defined(_MSC_VER) && (_MSC_VER < 1600)
   #if !defined(_STDINT) && !defined(_MSC_STDINT_H_)
 typedef unsigned char      uint8_t;
@@ -35,14 +40,12 @@ typedef unsigned long long uint64_t;
 #else
 #include <stdint.h>
 #endif
-#include <stddef.h>
-#define __STDC_WANT_IEC_60559_TYPES_EXT__
-#include <float.h>
+
 #if defined(__clang__) && defined(__is_identifier)
   #if !__is_identifier(_Float16)
     #undef FLT16_BUILTIN
   #endif
-#elif defined(FLT16_MAX)
+#elif defined(__HAVE_FLOAT16) || defined(FLT16_MAX)  
 #define FLT16_BUILTIN
 #endif
 
@@ -112,7 +115,7 @@ static ALWAYS_INLINE unsigned ror64(unsigned x, int s) { return x >> s | x << (6
 #define ALIGNED(t,v,n)  __declspec(align(n)) t v
 #define ALWAYS_INLINE   __forceinline
 #define NOINLINE        __declspec(noinline)
-#define _PACKED         __attribute__ ((packed))
+#define _PACKED         //__attribute__ ((packed))
 #define THREADLOCAL     __declspec(thread)
 #define likely(x)       (x)
 #define unlikely(x)     (x)
