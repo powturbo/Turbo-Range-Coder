@@ -22,6 +22,8 @@
     - email    : powturbo [_AT_] gmail [_DOT_] com
 **/
 // TurboRC: Range Coder - CDF functions
+#include "include/turborc.h"
+
 #include "include_/conf.h"
 
   #ifdef __AVX2__      
@@ -35,7 +37,6 @@
   #endif
 #define RC_MULTISYMBOL
 #define RC_MACROS 
-#include "include_/turborc.h"
 #include "rcutil_.h"
 #include "turborc_.h"
 #include "rccdf_.h" 
