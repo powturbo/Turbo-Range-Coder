@@ -62,7 +62,7 @@ typedef unsigned short io_t;
 #define ecdini(  _x_, _ip_)         { _x_   = *(state_t *)_ip_; _ip_ += sizeof(state_t); }
 #define ecenorm(_st_,_mbp_,_out_)   if(_st_ >= (state_t)(_mbp_)<<(sizeof(state_t)*8-1-ANS_BITS)) { _putc(_st_, _out_); _st_ >>= IOBITS; }
 
-  #ifdef __x86_64 // https://gcc.godbolt.org/z/5fY1M6qsd
+  #ifdef __x86_64 // https://gcc.godbolt.org/z/ae5vP7EEG
 #define ecdnorm(_x_,_ip_) { asm(\
     "mov    %1,    %%edx\n\t"\
     "shl    $0x10, %%edx\n\t"\
