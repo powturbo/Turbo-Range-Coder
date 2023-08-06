@@ -402,7 +402,7 @@ size_t T3(rcx,RC_PRD,dec)(unsigned char *in, size_t outlen, unsigned char *out R
 #define MBC_C2 15
   #if RC_PRDID == 1
 int mbc_c = 15;
-mbcset(unsigned m) { mbc_c = m; if(mbc_c > MBC_C2) mbc_c = MBC_C2; if(mbc_c < 4) mbc_c = 4; } // set context bits length 1-16
+void mbcset(unsigned m) { mbc_c = m; if(mbc_c > MBC_C2) mbc_c = MBC_C2; if(mbc_c < 4) mbc_c = 4; } // set context bits length 1-16
   #else
 extern int mbc_c;
   #endif
