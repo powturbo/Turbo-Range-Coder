@@ -26,9 +26,9 @@
 #include <string.h>
 #include <ctype.h>
 #include <math.h> //isnan
+#include "include_/conf.h"
 #include "include/turborc.h"
 
-#include "include_/conf.h"
 #include "include_/rcutil.h" // #include <float.h> //DBL_MAX
 #include "rcutil_.h"
 
