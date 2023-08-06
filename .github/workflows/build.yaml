@@ -21,6 +21,7 @@ jobs:
         with:
           submodules: 'true'     
       - run: git submodule update --init --recursive
+      - run: gcc -v
       - run: make
       - run: lscpu
       - run: ./turborc -e0 turborc -V2
@@ -39,7 +40,6 @@ jobs:
         with:
           submodules: 'true'
       - run: git submodule update --init --recursive
-      - run: gcc -v
       - run: make
       - run: sysctl -n machdep.cpu.brand_string
       - run: ./turborc -e0 turborc -V2
