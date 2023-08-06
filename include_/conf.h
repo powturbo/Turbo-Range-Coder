@@ -28,16 +28,16 @@
 
   #if __HAVE_FLOAT16
 #define HAVE_FLOAT16 1
-  #else  
+  #elif !defined(__HAVE_FLOAT16)  
 #define __STDC_WANT_IEC_60559_TYPES_EXT__
 #include <float.h>
 
 #if defined(__clang__) && defined(__is_identifier)
   #if __is_identifier(_Float16)
-    #define HAVE_FLOAT16
+    #define HAVE_FLOAT16 1
   #endif
 #elif defined(FLT16_MAX)
-#define HAVE_FLOAT16
+#define HAVE_FLOAT16 1
 #endif
   #endif
 
