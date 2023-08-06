@@ -290,7 +290,7 @@ int memcheck(unsigned char *in, unsigned n, unsigned char *cpy) {
       return i+1; 
     }
   return 0;
-}
+} 
 
 //************************ TurboRC functions *******************************************
 // functions parameters
@@ -302,13 +302,20 @@ extern int fsm[]; // fsm global array declared as fsm_t in rc_s.c "
 #define SF(x) 
   #endif
 
-// Generate functions with all predictors
+  #ifdef _NZ
+#define NZ(x) x
+  #else
+#define NZ(x) 
+  #endif
+
+//  Generate functions with all predictors
 #define RCGEN(_p_) \
 size_t _p_##enc(unsigned char *in, size_t inlen, unsigned char *out, int prdid) {\
   switch(prdid) {\
     case RC_PRD_S :    return _p_##senc( in, inlen, out);\
     case RC_PRD_SS:    return _p_##ssenc(in, inlen, out, prm1,prm2);\
-    case RC_PRD_SF: SF(return _p_##sfenc(in, inlen, out, fsm));\
+    SF(case RC_PRD_SF: return _p_##sfenc(in, inlen, out, fsm));\
+    NZ(case RC_PRD_NZ: return _p_##nzenc(in, inlen, out, fsm));\
   }\
   return 0; \
 }\
@@ -317,7 +324,8 @@ size_t _p_##dec(unsigned char *in, size_t outlen, unsigned char *out, int prdid)
   switch(prdid) {\
     case RC_PRD_S :    return _p_##sdec( in, outlen, out);\
     case RC_PRD_SS:    return _p_##ssdec(in, outlen, out, prm1,prm2);\
-    case RC_PRD_SF: SF(return _p_##sfdec(in, outlen, out, fsm));\
+    SF(case RC_PRD_SF: return _p_##sfdec(in, outlen, out, fsm));\
+    NZ(case RC_PRD_NZ: return _p_##nzdec(in, outlen, out, fsm));\
   }\
   return 0; \
 }
@@ -328,7 +336,8 @@ size_t _p_##enc##_s_(unsigned char *in, size_t inlen, unsigned char *out, int pr
   switch(prdid) {\
     case RC_PRD_S :    return _p_##senc##_s_( in, inlen, out);\
     case RC_PRD_SS:    return _p_##ssenc##_s_(in, inlen, out, prm1,prm2);\
-    case RC_PRD_SF: SF(return _p_##sfenc##_s_(in, inlen, out, fsm));\
+    SF(case RC_PRD_SF: return _p_##sfenc##_s_(in, inlen, out, fsm));\
+    NZ(case RC_PRD_NZ: return _p_##nzenc##_s_(in, inlen, out, fsm));\
   }\
   return 0; \
 }\
@@ -337,7 +346,8 @@ size_t _p_##dec##_s_(unsigned char *in, size_t outlen, unsigned char *out, int p
   switch(prdid) {\
     case RC_PRD_S :    return _p_##sdec##_s_( in, outlen, out);\
     case RC_PRD_SS:    return _p_##ssdec##_s_(in, outlen, out, prm1,prm2);\
-    case RC_PRD_SF: SF(return _p_##sfdec##_s_(in, outlen, out, fsm));\
+    SF(case RC_PRD_SF: return _p_##sfdec##_s_(in, outlen, out, fsm));\
+    NZ(case RC_PRD_NZ: return _p_##nzdec##_s_(in, outlen, out, fsm));\
   }\
   return 0; \
 }
@@ -724,6 +734,7 @@ typedef struct len_t { unsigned id, len; } len_t;
 #define CMPSA(_a_,_b_, _t_, _v_)  (((((_t_ *)_a_)->_v_) > (((_t_ *)_b_)->_v_)) - ((((_t_ *)_a_)->_v_) < (((_t_ *)_b_)->_v_)))
 static int cmpsna(const void *a, const void *b) { return CMPSA(a, b, len_t, len); }
 
+
 //---------------------------------------------- main : benchmark + file compression ----------------------------------------------
 int main(int argc, char* argv[]) {
   size_t   bsize = 1792*Mb; unsigned prdid = RC_PRD_S;
@@ -810,7 +821,8 @@ int main(int argc, char* argv[]) {
                          if(!p[1])       prdid = 1; 
                     else if(p[1] == 's') prdid = 2; 
                     else if(p[1] == 'f') prdid = 3;
-                  }          
+                  } else if(p[0]=='n' && p[1] == 'z') prdid = 4;
+         
       } break;
 	  case 'q': quantb = atoi(optarg); break;
 	  //case 'Q': qmax   = atoi(optarg); break;
@@ -821,7 +833,7 @@ int main(int argc, char* argv[]) {
       case 'S': xsort = atoi(optarg); break;
       case 'z': forcelzp = BWT_LZP; break;
       case 'r': { char *p = optarg; if(*p >= '0' && *p <= '9') { prm1 = p[0]-'0'; prm2 = p[1]-'0'; } if(prm1>9) prm1=9; if(prm2>9) prm2=9; } break;
-      case 't': xtpbyte = atoi(optarg); if(xtpbyte) { if(xtpbyte < 1) xtpbyte = 1;else if(xtpbyte > 16) xtpbyte = 16; } break; 
+      case 't': xtpbyte = atoi(optarg); if(xtpbyte) { if(xtpbyte < 1) xtpbyte = 1;else if(xtpbyte > 30) xtpbyte = 30; } break; 
         #ifndef NO_BENCH
       case 'I': if((tm_Rep  = atoi(optarg))<=0) tm_rep = tm_Rep =1; break;
       case 'J': tm_Rep2 = atoi(optarg); if(tm_Rep2<0) xcheck++,tm_Rep2=-tm_Rep2; if(!tm_Rep2) tm_rep= tm_Rep2=1;  break;
@@ -865,6 +877,9 @@ int main(int argc, char* argv[]) {
     #ifdef _SF
   if(prdid == RC_PRD_SF) { printf("fsm"); if(prm1<0) prm1=1;if(prm1>9) prm1=9; fsm_init(prm1); }
     #endif
+    #ifdef _NZ
+  if(prdid == RC_PRD_NZ) { printf("nz"); }
+    #endif
     #ifndef NO_BENCH
   if(dobench) { //---------------------------------- Benchmark -----------------------------------------------------
     char _scmd[33];
@@ -875,6 +890,7 @@ int main(int argc, char* argv[]) {
       case 1: printf("'s(5)'\n"); break;
       case 2: printf("'ss(%u,%u)'\n", prm1, prm2); break;
       case 3: printf("'sf(%u)'\n", prm1); break;
+      case 4: printf("'nz'\n"); break;
     }
     uint64_t clen = 0;  
     for(fno = optind; fno < argc; fno++) {
@@ -909,9 +925,10 @@ int main(int argc, char* argv[]) {
       }
       for(;;) {                                                                                                                     
         n = dfmt?befgen(fi, in, b, dfmt, isize, osize, kid, skiph, decs, divs, keysep, mdelta):fread(in, 1, b, fi); 
-        if(n <= 0) break;                                                       if(verbose>2) printf("read=%u\n", n);
+        if(n <= 0) break;                                                       if(verbose>2) printf("read=%u t=%zd\n", n, tpbyte);		//memcpy(cpy, in, n); fpstat(in, n/2, cpy, -2, NULL);
         switch(tpbyte) {
 			#ifdef _TRANSPOSE
+          case 22:  tpenc(in, n, out, 2); memcpy(in, out, n); break;
           case 11: delta8e24(in,n,out); tpenc(out, n, in, 3); break;
           case 12: tpenc(in, n, out, 3); memcpy(in, out, n); break;
 		    #endif
@@ -920,7 +937,13 @@ int main(int argc, char* argv[]) {
 		    #endif
           case 14: { unsigned l = bitenc(in, n, out); memcpy(in, out, l); n = l; } break;
             #ifndef _NDELTA
-          case 15: delta8e24( in,n,out); memcpy(in, out, n); break;
+          case 15: delta8e16(in,n,out); memcpy(in, out, n); break;
+          case 16: delta16e16(in,n,out); memcpy(in, out, n); break;
+          case 17: delta8e24( in,n,out); memcpy(in, out, n); break;
+          case 18: delta16e32(in,n,out); memcpy(in, out, n); break;
+          case 19: xorenc16(in,n,out); memcpy(in, out, n); break;
+          case 20: zzagenc16(in,n,out); memcpy(in, out, n); break;
+          case 21: nbenc16(in,n,out); memcpy(in, out, n); break;
           //case 16: delta24e24(in,n,out); memcpy(in, out, n); break;
             #endif
 			#ifndef _NQUANT
@@ -1016,7 +1039,7 @@ int main(int argc, char* argv[]) {
   FILE *fi = xstdin ?stdin :fopen(finame, "rb"); if(!fi) { perror(finame); return 1; }
   FILE *fo = xstdout?stdout:fopen(foname, "wb"); if(!fo) { perror(finame); return 1; } 
     #ifndef NO_COMP 
-  if(!decomp) {  																						if(verbose>3) printf("bsize=%u ", bsize);
+  if(!decomp) {  																						if(verbose>3) printf("bsize=%zu ", bsize);
     hd_t hd = { 0 }; hd.magic = MAGIC; hd.bsize = bsize; hd.codec = codec; hd.lev = lev; hd.prdid = prdid; hd.prm1 = prm1; hd.prm2 = prm2; 
     if((rc = hdwr(&hd, fo)) < 0) ERR(-rc); folen = rc;      
     in  = vmalloc(bsize+1024);
@@ -1046,7 +1069,7 @@ int main(int argc, char* argv[]) {
           #ifndef _NDELTA
         case 22: delta8e24(in,inlen,out); clen = inlen+1; break;
           #endif
-	      #ifndef _NQUANT)
+	      #ifndef _NQUANT
 	        #if defined(FLT16_BUILTIN)
         case 24: { _Float16 fmin = -1.16, fmax = 1.4; if(gmin != FP_ZERO) fmin = gmin; if(gmax != FP_ZERO) fmax = gmax;
 		  if(quantb > 8) quantb = 8;                                     
@@ -1117,7 +1140,7 @@ int main(int argc, char* argv[]) {
           #endif
         case 21: utf8dec(   in, outlen, out);        break;
         case 22: delta8d24(in,outlen,out); break; 
-	      #ifndef _NQUANT)
+	      #ifndef _NQUANT
 	        #if defined(FLT16_BUILTIN) 
 	    case 24: { _Float16 fmin = ctof16(in+inlen-5), fmax = ctof16(in+inlen-3); quantb = ctou8(in+inlen-1); if(verbose>3) printf("len = %u R:[%g - %g] q=%u ", outlen, (double)fmin, (double)fmax, quantb);
 	      fpquant8d16(in, outlen, out, BZMASK32(quantb), fmin, fmax, inlen-5); 
