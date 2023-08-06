@@ -33,10 +33,10 @@
   #if !__is_identifier(_Float16)
     #undef FLT16_BUILTIN
   #endif
-#elif defined(FLT16_MAX) 
+#elif defined(FLT16_MAX)
 #define FLT16_BUILTIN
-//#elif defined(__HAVE_FLOAT16) 
-//#define FLT16_BUILTIN
+#elif __HAVE_FLOAT16 
+#define FLT16_BUILTIN
 #endif
 
 #include <stddef.h>
