@@ -170,6 +170,16 @@ static inline int            zigzagdec32(unsigned x)       { return x >> 1 ^ -(x
 static inline uint64_t       zigzagenc64(int64_t  x)       { return x << 1 ^ x >> 63;  }
 static inline  int64_t       zigzagdec64(uint64_t x)       { return x >> 1 ^ -(x & 1); }
 
+//------------------------ negabinary ------------------------------------------------------
+static inline uint8_t  nb_enc8(   int8_t x) { return ((uint8_t)x   + 0xaa) ^ 0xaa; }
+static inline uint8_t  nb_dec8(  uint8_t x) { return ( uint8_t)((x ^ 0xaa) - 0xaa); }
+static inline uint16_t nb_enc16( int16_t x) { return ((uint16_t)x   + 0xaaaa) ^ 0xaaaa; }
+static inline uint16_t nb_dec16(uint16_t x) { return ( uint16_t)((x ^ 0xaaaa) - 0xaaaa); }
+static inline uint32_t nb_enc32( int32_t x) { return ((uint32_t)x   + 0xaaaaaaaau) ^ 0xaaaaaaaau; }
+static inline uint32_t nb_dec32(uint32_t x) { return ( uint32_t)((x ^ 0xaaaaaaaau) - 0xaaaaaaaau); }
+static inline uint64_t nb_enc64( int64_t x) { return ((uint64_t)x   + 0xaaaaaaaaaaaaaaaaull) ^ 0xaaaaaaaaaaaaaaaaull; }
+static inline uint64_t nb_dec64(uint64_t x) { return ( uint64_t)((x ^ 0xaaaaaaaaaaaaaaaaull) - 0xaaaaaaaaaaaaaaaaull); }
+
 #define BITREV
 //---- Encode - Big Endian -----------------------
 #define bitput_t  					     T3(uint, __WORDSIZE, _t)
