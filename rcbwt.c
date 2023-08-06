@@ -1,6 +1,6 @@
 // Turbo Range Coder bwt: templates include
+#include "include/turborc.h"
 #include "include_/conf.h"
-#include "include_/turborc.h"
 #include "include_/rcutil.h"
 #include "include_/bec.h"
 #include "include_/vlcbit.h"
