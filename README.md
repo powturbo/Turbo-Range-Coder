@@ -2,7 +2,7 @@
 [![Build ubuntu](https://github.com/powturbo/Turbo-Range-Coder/actions/workflows/build.yaml/badge.svg)](https://github.com/powturbo/Turbo-Range-Coder/actions/workflows/build.yaml)
 
 ======================================
-* **Fastest Range Coder / Arithmetic Coder**
+* **Fastest (Branchless) Range Coder / Arithmetic Coder**
   * 100% C (C++ headers). 
   * OS/Arch: Linux amd/intel, arm, PowerPC, s390x, MacOs+Apple M1. Windows: Mingw, visual c++
   * No other Range Coder / Arithmetic Coder encode or decode faster with better compression
@@ -28,8 +28,9 @@
     - read and convert text, csv or binary files to 8/16/32 bits before processing
     - set predictor and parameters at the command line
 * **Asymmetric Numeral Systems**
-  * :new:(2023.04) Adaptive CDF rANS Asymmetric Numeral Systems
-  * :new:(2023.05) bitwise ANS
+  * :new: Fastest Adaptive CDF rANS Asymmetric Numeral Systems / SSE,AVX2 (2023.05) 
+  * :new: bitwise ANS (2023.05)
+  * No other adaptive ANS encode or decode faster with better compression
 ###  LICENSE
 - GPL 3.0
 - A commercial license is available. Contact us at powturbo [AT] gmail.com for more information.
