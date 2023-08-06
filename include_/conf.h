@@ -34,9 +34,9 @@
     #undef FLT16_BUILTIN
   #endif
 #elif defined(FLT16_MAX) 
-//|| defined(__HAVE_FLOAT16) 
 #define FLT16_BUILTIN
-#error "FLT16_MAX defined"
+#elif defined(__HAVE_FLOAT16) 
+#define FLT16_BUILTIN
 #endif
 
 #include <stddef.h>
