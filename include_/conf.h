@@ -26,18 +26,20 @@
 #ifndef CONF_H_
 #define CONF_H_
 
+  #if defined(__HAVE_FLOAT16)
+#define HAVE_FLOAT16 __HAVE_FLOAT16
+  #else  
 #define __STDC_WANT_IEC_60559_TYPES_EXT__
 #include <float.h>
 
 #if defined(__clang__) && defined(__is_identifier)
-  #if !__is_identifier(_Float16)
-    #undef FLT16_BUILTIN
+  #if __is_identifier(_Float16)
+    #define HAVE_FLOAT16
   #endif
-#elif defined(HAVE_FLOAT16)
-#define FLT16_BUILTIN
-#elif __HAVE_FLOAT16 
-#define FLT16_BUILTIN
+#elif defined(FLT16_MAX)
+#define HAVE_FLOAT16
 #endif
+  #endif
 
 #include <stddef.h>
 #if defined(_MSC_VER) && (_MSC_VER < 1600)
