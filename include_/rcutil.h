@@ -34,18 +34,20 @@ typedef unsigned long long uint64_t;
 #endif
 #include <stddef.h>
 
+  #if __HAVE_FLOAT16
+#define HAVE_FLOAT16 1
+  #else  
 #define __STDC_WANT_IEC_60559_TYPES_EXT__
 #include <float.h>
 
 #if defined(__clang__) && defined(__is_identifier)
-  #if !__is_identifier(_Float16)
-    #undef HAVE_FLOAT16
+  #if __is_identifier(_Float16)
+    #define HAVE_FLOAT16
   #endif
 #elif defined(FLT16_MAX)
 #define HAVE_FLOAT16
-#elif __HAVE_FLOAT16 
-#define HAVE_FLOAT16
 #endif
+  #endif
 
 #ifdef __cplusplus
 extern "C" {
