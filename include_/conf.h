@@ -26,8 +26,8 @@
 #ifndef CONF_H_
 #define CONF_H_
 
-  #if defined(__HAVE_FLOAT16)
-#define HAVE_FLOAT16 __HAVE_FLOAT16
+  #if __HAVE_FLOAT16
+#define HAVE_FLOAT16 1
   #else  
 #define __STDC_WANT_IEC_60559_TYPES_EXT__
 #include <float.h>
