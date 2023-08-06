@@ -771,7 +771,7 @@ void fpstat(unsigned char *in, size_t n, unsigned char *out, int s, unsigned cha
   }
   for(ip = in, op = out; ip < in+n*esize; ip += esize, op += esize)
     switch(s) {
-        #if defined(FLT16_BUILTIN)
+        #if defined(HAVE_FLOAT16)
       case -2: isum += ctof16(ip); osum += ctof16(op); break;
         #endif
       case -4: isum += ctof32(ip); osum += ctof32(op); break;
@@ -797,7 +797,7 @@ void fpstat(unsigned char *in, size_t n, unsigned char *out, int s, unsigned cha
     double id, od;
 	unsigned e;	uint64_t m;
     switch(s) {
-        #if defined(FLT16_BUILTIN)
+        #if defined(HAVE_FLOAT16)
       case -2: { unsigned e; uint16_t m;id = ctof16(ip); od = ctof16(op); U(16); e = EXPO16(u); expo = clz16(zigzagenc16(e-expo))/*-(16-(16-MANTF16-1))*/; elb+=expo; expo = e;
                                                           m = MANT16(u); mant = ctz16(            m^mant)                     ;     mtb+=mant; mant = m;//ctz16(zigzagenc16(m-mant))
                                                          } break;
@@ -903,7 +903,7 @@ void fpstat(unsigned char *in, size_t n, unsigned char *out, int s, unsigned cha
 	else _fpquantd_(t_t, _ip_, _op[0]);\
 }
 
-  #if defined(FLT16_BUILTIN) 
+  #if defined(HAVE_FLOAT16) 
 size_t fpquant8e16( _Float16 *in, size_t inlen, uint8_t  *out, unsigned qmax, _Float16 *pfmin, _Float16 *pfmax, _Float16 zmin) { FPQUANTE8(_Float16, in, inlen, out, qmax, 16, pfmin, pfmax, zmin,_FPQUANTE); }
 size_t fpquant16e16(_Float16 *in, size_t inlen, uint16_t *out, unsigned qmax, _Float16 *pfmin, _Float16 *pfmax, _Float16 zmin) { FPQUANTE( _Float16, in, inlen, out, qmax, 16, pfmin, pfmax, zmin,_FPQUANTE);  return inlen; }
 //size_t fpquantv8e16(_Float16 *in, size_t inlen, uint8_t  *out, unsigned qmax, _Float16 *pfmin, _Float16 *pfmax, _Float16 zmin) { unsigned char *op = out; FPQUANTE(_Float16, in, inlen, op,  qmax, 16, pfmin, pfmax, zmin,_FPQUANTVE); return op - out; }
@@ -918,7 +918,7 @@ size_t fpquant16e64(   double *in, size_t inlen, uint16_t *out, unsigned qmax, d
 size_t fpquant32e64(   double *in, size_t inlen, uint32_t *out, unsigned qmax, double   *pfmin,   double *pfmax,  double zmin) { FPQUANTE(  double, in, inlen, out, qmax, 64, pfmin, pfmax, zmin,_FPQUANTE);  return inlen; }
 size_t fpquant64e64(   double *in, size_t inlen, uint64_t *out, unsigned qmax, double   *pfmin,   double *pfmax,  double zmin) { FPQUANTE(  double, in, inlen, out, qmax, 64, pfmin, pfmax, zmin,_FPQUANTE);  return inlen; }
 
-    #if defined(FLT16_BUILTIN) 
+    #if defined(HAVE_FLOAT16) 
 size_t fpquant8d16(  uint8_t  *in, size_t outlen, _Float16 *out, unsigned qmax, _Float16   fmin, _Float16   fmax, size_t inlen) { FPQUANTD8(_Float16, in, outlen, out, qmax, 16, fmin, fmax, _FPQUANTD); return outlen;}
 size_t fpquant16d16( uint16_t *in, size_t outlen, _Float16 *out, unsigned qmax, _Float16   fmin, _Float16   fmax) { FPQUANTD(_Float16, in, outlen, out, qmax,  fmin, fmax, _FPQUANTD); return outlen;}
 //size_t fpquantv8d16( uint8_t  *in, size_t outlen, _Float16 *out, unsigned qmax, _Float16   fmin, _Float16   fmax) { unsigned char *ip = in; FPQUANTD(_Float16, in, outlen, out, qmax, fmin, fmax, _FPQUANTVD); return ip - in; }
@@ -934,7 +934,7 @@ size_t fpquant32d64( uint32_t *in, size_t outlen, double   *out, unsigned qmax, 
 size_t fpquant64d64( uint64_t *in, size_t outlen, double   *out, unsigned qmax, double     fmin,   double   fmax) { FPQUANTD(  double, in, outlen, out, qmax,  fmin,  fmax, _FPQUANTD); return outlen;}
 
 //----------- Lossy floating point conversion: pad the trailing mantissa bits with zero bits according to the relative error e (ex. 0.00001)  ----------
-  #if defined(FLT16_BUILTIN) 
+  #if defined(HAVE_FLOAT16) 
 // https://clang.llvm.org/docs/LanguageExtensions.html#half-precision-floating-point
 _Float16 _fprazor16(_Float16 d, float e, int lg2e) {
   uint16_t du = ctou16(&d), sign, u;
