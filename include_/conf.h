@@ -27,9 +27,6 @@
 #define CONF_H_
 
 #include <stddef.h>
-#define __STDC_WANT_IEC_60559_TYPES_EXT__
-#include <float.h>
-
 #if defined(_MSC_VER) && (_MSC_VER < 1600)
   #if !defined(_STDINT) && !defined(_MSC_STDINT_H_)
 typedef unsigned char      uint8_t;
@@ -40,12 +37,14 @@ typedef unsigned long long uint64_t;
 #else
 #include <stdint.h>
 #endif
+#define __STDC_WANT_IEC_60559_TYPES_EXT__
+#include <float.h>
 
 #if defined(__clang__) && defined(__is_identifier)
   #if !__is_identifier(_Float16)
     #undef FLT16_BUILTIN
   #endif
-#elif defined(__HAVE_FLOAT16) || defined(FLT16_MAX)  
+#elif defined(FLT16_MAX) || defined(__HAVE_FLOAT16) 
 #define FLT16_BUILTIN
 #endif
 
