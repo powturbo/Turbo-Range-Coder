@@ -14,6 +14,8 @@ ANS=1
 #EXT=1
 #NOCOMP=1
 #AVX2=1
+#NZ=1
+#SF=1
 #TURBORLE=1
 TRANSPOSE=1
 #----------------------------------------------
@@ -23,7 +25,6 @@ CXX ?= g++
 #CXX=clang++
 
 #CC=powerpc64le-linux-gnu-gcc
-#CC=clang -target arm64-apple-darwin
 #CL = $(CC)
 #DEBUG=-DDEBUG -g
 DEBUG=-DNDEBUG -s
@@ -140,6 +141,7 @@ endif
 endif
 endif
 
+
 all: turborc
 
 ifneq ($(NOCOMP), 1)
@@ -198,7 +200,17 @@ endif
 
 ifeq ($(SF), 1)
 CFLAGS+=-D_SF
-LIB+=rc_sf.o rcqlfc_sf.o
+LIB+=rc_sf.o rccm_sf.o rcqlfc_sf.o
+endif
+
+ifeq ($(NZ), 1)
+LIB+=rc_nz.o rccm_nz.o rcqlfc_nz.o
+CFLAGS+=-D_NZ
+endif
+
+ifeq ($(SH), 1)
+LIB+=rc_sh.o
+CFLAGS+=-D_SH
 endif
 
 ifeq ($(EXT), 1)
