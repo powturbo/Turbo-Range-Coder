@@ -33,6 +33,16 @@ typedef unsigned long long uint64_t;
 #include <stdint.h>
 #endif
 #include <stddef.h>
+#define __STDC_WANT_IEC_60559_TYPES_EXT__
+#include <float.h>
+
+#if defined(__clang__) && defined(__is_identifier)
+  #if !__is_identifier(_Float16)
+    #undef FLT16_BUILTIN
+  #endif
+#elif defined(FLT16_MAX) || defined(__HAVE_FLOAT16) 
+#define FLT16_BUILTIN
+#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -86,14 +96,6 @@ void zzagdec32(   unsigned char *in, size_t inlen, unsigned char *out);
 void zzagenc64(   unsigned char *in, size_t inlen, unsigned char *out);
 void zzagdec64(   unsigned char *in, size_t inlen, unsigned char *out);
 
-
-#if defined(__clang__) && defined(__is_identifier)
-  #if !__is_identifier(_Float16)
-    #undef FLT16_BUILTIN
-  #endif
-#elif defined(FLT16_MAX)
-#define FLT16_BUILTIN
-#endif
 //------- Quantization [0..qmax] : qmax maximum quantized value in out ----------------
   #if defined(FLT16_BUILTIN) 
 size_t fpquant8e16( _Float16 *in, size_t inlen, uint8_t  *out, unsigned qmax, _Float16 *pfmin, _Float16 *pfmax, _Float16 zmin);
