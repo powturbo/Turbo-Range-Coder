@@ -27,13 +27,15 @@
   * TurboRC App for benchmarking all the functions and test allmost all byte, integer, floating point, date and timestamp file types.
     - read and convert text, csv or binary files to 8/16/32 bits before processing
     - set predictor and parameters at the command line
+  * Preprocessing:
+    - :new: Linear Quantization for 16/32/64 floating point to 8/16/32/64 integer (2023.08) 
 * **Asymmetric Numeral Systems**
-  * :new: Fastest Adaptive CDF rANS Asymmetric Numeral Systems / SSE,AVX2 (2023.05) 
+  * :new: Fastest Adaptive CDF rANS Asymmetric Numeral Systems / SSE, AVX2. (2023.05) 
   * :new: bitwise ANS (2023.05)
   * No other adaptive ANS encode or decode faster with better compression
 ###  LICENSE
 - GPL 3.0
-- A commercial license is available. Contact us at powturbo [AT] gmail.com for more information.
+- **A commercial license is available. Contact us at powturbo [AT] gmail.com for more information.**
 
 ## Usage examples
         ./turborc -e0   file           " benchmark all basic functions using the default simple predictor
