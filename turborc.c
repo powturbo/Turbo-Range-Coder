@@ -29,6 +29,7 @@
   #endif
 #define __STDC_WANT_IEC_60559_TYPES_EXT__
 #include <float.h>
+#include "include/turborc.h"
 
 #include "include_/rcutil.h"
 #include "include_/conf.h"
@@ -38,7 +39,6 @@
   #else
 #include <getopt.h> 
   #endif
-#include "include/turborc.h"
  
 #include "include_/conf.h"
 #include "include_/time_.h"
