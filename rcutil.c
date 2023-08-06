@@ -27,9 +27,10 @@
 #include <ctype.h>
 #include <math.h> //isnan
 #include "include_/conf.h"
+#include <float.h> //DBL_MAX
 #include "include/turborc.h"
 
-#include "include_/rcutil.h" // #include <float.h> //DBL_MAX
+#include "include_/rcutil.h" 
 #include "rcutil_.h"
 
 //-------------------------------- malloc ----------------------------------------
