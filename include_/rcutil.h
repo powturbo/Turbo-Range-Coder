@@ -46,10 +46,45 @@ size_t utf8enc(unsigned char *__restrict in, size_t inlen,  unsigned char *__res
 size_t utf8dec(unsigned char *__restrict in, size_t outlen, unsigned char *__restrict out);
 void memrev(unsigned char a[], unsigned n);
 
+//----------- 16 = 2x8,1x16 ----------------
+unsigned  delta8l16(uint8_t *in, size_t n);
+void      delta8e16(uint8_t *in, size_t n, uint8_t *out);
+void      delta8d16(uint8_t *in, size_t n, uint8_t *out);
+
+unsigned delta16l16(uint8_t *in, size_t n);
+void     delta16e16(uint8_t *in, size_t n, uint8_t *out);
+void     delta16d16(uint8_t *in, size_t n, uint8_t *out);
 //----------- 24 = 3x8 -----------------
 unsigned  delta8l24(uint8_t *in, size_t n);
 void      delta8e24(uint8_t *in, size_t n, uint8_t *out);
 void      delta8d24(uint8_t *in, size_t n, uint8_t *out);
+
+//----------- 32 = 8x4,4x16,1x32 ----------------
+unsigned  delta8l32(uint8_t *in, size_t n);
+void      delta8e32(uint8_t *in, size_t n, uint8_t *out);
+void      delta8d32(uint8_t *in, size_t n, uint8_t *out);
+
+unsigned delta16l32(uint8_t *in, size_t n);
+void     delta16e32(uint8_t *in, size_t n, uint8_t *out);
+void     delta16d32(uint8_t *in, size_t n, uint8_t *out);
+
+unsigned delta32l32(uint8_t *in, size_t n);
+void     delta32e32(uint8_t *in, size_t n, uint8_t *out);
+void     delta32d32(uint8_t *in, size_t n, uint8_t *out);
+
+void xorenc64(    unsigned char *in, size_t inlen, unsigned char *out);
+void xordec64(    unsigned char *in, size_t inlen, unsigned char *out);
+void xorenc32(    unsigned char *in, size_t inlen, unsigned char *out);
+void xordec32(    unsigned char *in, size_t inlen, unsigned char *out);
+void xorenc16(    unsigned char *in, size_t inlen, unsigned char *out);
+void xordec16(    unsigned char *in, size_t inlen, unsigned char *out);
+
+void zzagenc16(   unsigned char *in, size_t inlen, unsigned char *out);
+void zzagdec16(   unsigned char *in, size_t inlen, unsigned char *out);
+void zzagenc32(   unsigned char *in, size_t inlen, unsigned char *out);
+void zzagdec32(   unsigned char *in, size_t inlen, unsigned char *out);
+void zzagenc64(   unsigned char *in, size_t inlen, unsigned char *out);
+void zzagdec64(   unsigned char *in, size_t inlen, unsigned char *out);
 
 
 #if defined(__clang__) && defined(__is_identifier)
