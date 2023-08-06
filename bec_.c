@@ -65,7 +65,7 @@ unsigned T2(BECENC,USIZE)(uint_t *__restrict in, unsigned _inlen, unsigned char 
   #define OV 8 
   unsigned inlen = USIZE==16?((_inlen+1)/2):_inlen,len[(1 << USIZE)],i;         //TODO:better processing for 16bits
   sym_t stab[(1 << USIZE)] = {0};
-  bec_t t; t.lo = t._lo; t.hi = t._hi; bectabini(bectab);				    	stm_t *s = &t.s; stmeini(s, out, _inlen); stmseek(s, 0, OV);
+  bec_t t; t.lo = t._lo; t.hi = t._hi; bectabini(bectab);				    	stm_t *s = (stm_t *)&t.s; stmeini(s, out, _inlen); stmseek(s, 0, OV);
   uint_t *in_=in+inlen, *ip = in, c = *ip; while(ip < in_ && *ip == c) ip++; unsigned lor = ip - in; 	
   T2(BECENC_,USIZE)(&t, in, inlen, pow2next(inlen) >> 1, stab, lor);		    // encode
 																
