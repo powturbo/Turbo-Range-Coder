@@ -556,7 +556,7 @@ unsigned bench(unsigned char *in, unsigned n, unsigned char *out, unsigned char 
     case 85:l=n;     TM("85:tpenc 24 bits                        ",tpenc(in,n,out,3),                           n,l,     tpdec( out,n,cpy, 3)); break;
 	  #endif
 	  #ifndef _NQUANT
-		#if defined(FLT16_BUILTIN)
+		#if defined(HAVE_FLOAT16)
     case 86: { _Float16 fmin = -1.16, fmax = 1.4; if(gmin != FP_ZERO) fmin = gmin; if(gmax != FP_ZERO) fmax = gmax;
 	  if(!quantb || quantb > 8) quantb = 8;                                      
 	  size_t clen = fpquant8e16(in,n,out, BZMASK32(quantb), &fmin, &fmax, FLT16_EPSILON);  if(verbose>2) printf("\nlen:%u R:[%g/%g]=%g q=%u,%u ", clen, (double)fmin, (double)fmax, (double)fmax-(double)fmin, quantb, BZMASK32(quantb));	
@@ -947,7 +947,7 @@ int main(int argc, char* argv[]) {
           //case 16: delta24e24(in,n,out); memcpy(in, out, n); break;
             #endif
 			#ifndef _NQUANT
-			  #if defined(FLT16_BUILTIN)
+			  #if defined(HAVE_FLOAT16)
 		  case 7: { _Float16 fmin=0.0,fmax=0.0;	if(gmin != FP_ZERO) fmin = gmin; if(gmax != FP_ZERO) fmax = gmax;											
 	        if(!quantb || quantb > 8) quantb = 8;                                          printf("Quantization=%d\n", quantb);
 		    n = fpquant8e16(in,n,out,BZMASK32(quantb), &fmin,&fmax,FLT16_EPSILON); memcpy(in,out,n); 
@@ -1070,7 +1070,7 @@ int main(int argc, char* argv[]) {
         case 22: delta8e24(in,inlen,out); clen = inlen+1; break;
           #endif
 	      #ifndef _NQUANT
-	        #if defined(FLT16_BUILTIN)
+	        #if defined(HAVE_FLOAT16)
         case 24: { _Float16 fmin = -1.16, fmax = 1.4; if(gmin != FP_ZERO) fmin = gmin; if(gmax != FP_ZERO) fmax = gmax;
 		  if(quantb > 8) quantb = 8;                                     
 	      clen = fpquant8e16(in,inlen,out, BZMASK32(quantb), &fmin, &fmax, FLT16_EPSILON);  
@@ -1141,7 +1141,7 @@ int main(int argc, char* argv[]) {
         case 21: utf8dec(   in, outlen, out);        break;
         case 22: delta8d24(in,outlen,out); break; 
 	      #ifndef _NQUANT
-	        #if defined(FLT16_BUILTIN) 
+	        #if defined(HAVE_FLOAT16) 
 	    case 24: { _Float16 fmin = ctof16(in+inlen-5), fmax = ctof16(in+inlen-3); quantb = ctou8(in+inlen-1); if(verbose>3) printf("len = %u R:[%g - %g] q=%u ", outlen, (double)fmin, (double)fmax, quantb);
 	      fpquant8d16(in, outlen, out, BZMASK32(quantb), fmin, fmax, inlen-5); 
 	    } break;
