@@ -25,12 +25,11 @@
 #include <stdio.h>             
 #include <string.h>
 #include <ctype.h>
-#include <float.h> //DBL_MAX
 #include <math.h> //isnan
 #include "include/turborc.h"
 
 #include "include_/conf.h"
-#include "include_/rcutil.h"
+#include "include_/rcutil.h" // #include <float.h> //DBL_MAX
 #include "rcutil_.h"
 
 //-------------------------------- malloc ----------------------------------------
