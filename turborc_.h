@@ -173,20 +173,19 @@ struct _div32 { unsigned m; unsigned char s; } _PACKED; //divisor RC_BITS=15 -> 
 #define DIVS32(_d_)            (__bsr32(_d_) - powof2(_d_))
 #define DIVM32(_d_,_s_)        (((1ull << (_s_ + 32)) + _d_-1) / _d_)
 
-#define DIVDIV32(_x_, _m_,_s_) ((((_x_) * (unsigned long long)(_m_)) >> 32) >> (_s_))
+#define DIVDIV32(_x_, _m_,_s_) ( (((_x_) * (unsigned long long)(_m_)) >> 32) >> (_s_))
 #define DIVMOD32(_x_, _m_,_s_) ((_x_) -  DIVDIV32(_x_, _m_,_s_))
 
 #define DIVTDEF32(_n_)         struct _div32 _div32lut[(1<<(_n_))+1]; // LUT
 #define DIVTINI32(v, n)        { unsigned i; for(v[1].m = ~0u, v[1].s = 0,i = 2; i <= (1<<n); i++) { unsigned s = v[i].s = DIVS32(i); v[i].m = DIVM32(i,s); } }
 #define DIVTDIV32(_x_, _d_)    DIVDIV32(_x_, _div32lut[_d_].m, _div32lut[_d_].s)  // Division
-
   #ifndef _DIVTDEF32
 DIVTDEF32(DIV_BITS);
 #define _DIVTDEF32
   #else
 extern struct _div32 _div32lut[];
   #endif 
-
+//static ALWAYS_INLINE DIVTDIV32(unsigned _x_, unsigned _d_) { struct _div32 s = _div32lut[_d_]; return DIVDIV32(_x_, s.m, s.s); }
 static int _div32ini;
 static void div32init(void) { if(!_div32ini) { DIVTINI32(_div32lut, DIV_BITS); _div32ini++; } }
     #else   //------------------- hardware division ------------------------------------------------------------------------
@@ -251,7 +250,7 @@ static void div32init(void) { if(!_div32ini) { DIVTINI32(_div32lut, DIV_BITS); _
   __m512i _v0 = _mm512_cvtepu16_epi32(_v);\
           _v0 = _mm512_mullo_epi32(_v0, _mm512_set1_epi32(_rcrange_));\
   unsigned _m =  mm512_cmpgt_epu32_mask(_v0, _mm512_set1_epi32(rccode));\
-  _x_ =  ctz(_m+(1<<16)) - 1;\
+  _x_ =  ctz32(_m+(1<<16)) - 1;\
 }
   #elif defined(__AVX2__) && RC_SIZE == 32
 // avx2 symbol search  
