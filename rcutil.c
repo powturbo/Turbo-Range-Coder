@@ -25,6 +25,8 @@
 #include <stdio.h>             
 #include <string.h>
 #include <ctype.h>
+#include <float.h> //DBL_MAX
+#include <math.h> //isnan
 
 #include "include_/conf.h"
 #include "include_/turborc.h"
@@ -650,8 +652,81 @@ size_t bitdec(unsigned char *__restrict in, size_t outlen, unsigned char *__rest
   
   //----------- 24 -----------------
   #ifndef NCOMP
+//----------- 16 -----------------
+unsigned  delta8l16(uint8_t *in, size_t n) { size_t l=0;   uint8_t  u[2]={0},z; uint8_t *ip; for(ip = in; ip != in+(n&~1); ip+= 2        ) { EL(0, 8);EL(1,8); } ELE; }
+void      delta8e16(uint8_t *in, size_t n, uint8_t *out) { uint8_t  u[2]={0},z; uint8_t *ip; for(ip = in; ip != in+(n&~1); ip+= 2,out+= 2) { EC(0, 8);EC(1,8); } ECE; }
+void      delta8d16(uint8_t *in, size_t n, uint8_t *out) { uint8_t  u[2]={0},z; uint8_t *ip; for(ip = in; ip != in+(n&~1); ip+= 2,out+= 2) { ED(0, 8);ED(1,8); } EDE; }
+
+unsigned delta16l16(uint8_t *in, size_t n) { size_t l = 0; uint16_t u[1]={0},z; uint8_t *ip; for(ip = in; ip < in+(n&~1);  ip+= 2        )   EL(0,16); ELE; }
+void     delta16e16(uint8_t *in, size_t n, uint8_t *out) { uint16_t u[1]={0},z; uint8_t *ip; for(ip = in; ip < in+(n&~1);  ip+= 2,out+= 2)   EC(0,16); ECE; }
+void     delta16d16(uint8_t *in, size_t n, uint8_t *out) { uint16_t u[1]={0},z; uint8_t *ip; for(ip = in; ip < in+(n&~1);  ip+= 2,out+= 2)   ED(0,16); EDE; }
+
 unsigned  delta8l24(uint8_t *in, size_t n) { size_t l = 0; uint8_t  u[3]={0},z; uint8_t *ip; for(ip = in; ip < in+(n-3);   ip+= 3        ) { EL(0, 8);EL(1,8);EL(2,8); } ELE; }
 void      delta8e24(uint8_t *in, size_t n, uint8_t *out) { uint8_t  u[3]={0},z; uint8_t *ip; for(ip = in; ip < in+(n-3);   ip+= 3,out+= 3) { EC(0, 8);EC(1,8);EC(2,8); } ECE; }
+//----------- 32 ----------------
+unsigned  delta8l32(uint8_t *in, size_t n) { size_t l = 0; uint8_t  u[4]={0},z; uint8_t *ip; for(ip = in; ip != in+(n&~3); ip+= 4        ) { EL(0, 8);EL(1,8);EL(2,8);EL(3,8);} ELE; } //4D
+void      delta8e32(uint8_t *in, size_t n, uint8_t *out) { uint8_t  u[4]={0},z; uint8_t *ip; for(ip = in; ip != in+(n&~3); ip+= 4,out+= 4) { EC(0, 8);EC(1,8);EC(2,8);EC(3,8);} ECE; }
+void      delta8d32(uint8_t *in, size_t n, uint8_t *out) { uint8_t  u[4]={0},z; uint8_t *ip; for(ip = in; ip != in+(n&~3); ip+= 4,out+= 4) { ED(0, 8);ED(1,8);ED(2,8);ED(3,8);} EDE; }
+
+unsigned delta16l32(uint8_t *in, size_t n) { size_t l = 0; uint16_t u[2]={0},z; uint8_t *ip; for(ip = in; ip != in+(n&~3); ip+= 4        ) { EL(0,16);EL(1,16); } ELE; }
+void     delta16e32(uint8_t *in, size_t n, uint8_t *out) { uint16_t u[2]={0},z; uint8_t *ip; for(ip = in; ip != in+(n&~3); ip+= 4,out+= 4) { EC(0,16);EC(1,16); } ECE; }
+void     delta16d32(uint8_t *in, size_t n, uint8_t *out) { uint16_t u[2]={0},z; uint8_t *ip; for(ip = in; ip != in+(n&~3); ip+= 4,out+= 4) { ED(0,16);ED(1,16); } EDE; }
+
+unsigned delta32l32(uint8_t *in, size_t n) { size_t l = 0; uint32_t u[1]={0},z; uint8_t *ip; for(ip = in; ip != in+(n&~3); ip+= 4        )   EL(0,32); ELE; }
+void     delta32e32(uint8_t *in, size_t n, uint8_t *out) { uint32_t u[1]={0},z; uint8_t *ip; for(ip = in; ip != in+(n&~3); ip+= 4,out+= 4)   EC(0,32); ECE; }
+void     delta32d32(uint8_t *in, size_t n, uint8_t *out) { uint32_t u[1]={0},z; uint8_t *ip; for(ip = in; ip != in+(n&~3); ip+= 4,out+= 4)   ED(0,32); EDE; }
+
+void xorenc16(uint8_t *in, size_t inlen, uint8_t *out) {
+  uint16_t u0 = 0; uint8_t *ip;
+  for(ip = in; ip < in+(inlen&~1); ip+=2,out+=2) {
+    ctou16(out) = ctou16(ip) ^ u0; u0 = ctou16(ip);
+  }
+  while(ip < in+inlen) *out++ = *ip++; 
+}
+
+void xordec16(uint8_t *in, size_t inlen, uint8_t *out) {
+  uint16_t u0 = 0; uint8_t *ip;
+  for(ip = in; ip < in+(inlen&~1); ip += 2,out += 2) {
+    ctou16(out) = u0 ^= ctou16(ip);
+  }
+  while(ip < in+inlen) *out++ = *ip++; 
+}
+
+void zzagenc16(uint8_t *in, size_t inlen, uint8_t *out) {
+  int16_t s = 0,o; 
+  uint8_t *ip;
+  for(ip = in; ip < in+(inlen&~1); ip += 2, out += 2)
+    o = ctou16(ip), ctou16(out) = zigzagenc16((short)ctou16(ip) - s), s = o;
+  while(ip < in+inlen) *out++ = *ip++; 
+}
+
+void zzagdec16(uint8_t *in, size_t inlen, uint8_t *out) {
+  int16_t s = 0; uint8_t *ip;
+  for(ip = in; ip < in+(inlen&~1); ip += 2,out += 2) {
+    uint16_t x = ctou16(ip);  
+    ctou16(out) = (s += zigzagdec16(x));
+  }
+  while(ip < in+inlen) *out++ = *ip++; 
+}
+
+void nbenc16(uint8_t *in, size_t inlen, uint8_t *out) {
+  uint16_t u0 = 0,x; uint8_t *ip;
+  for(ip = in; ip < in+(inlen&~1); ip+=2,out+=2) {
+    x = (short)ctou16(ip)-(short)u0;
+    ctou16(out) = nb_enc16(x); u0 = ctou16(ip);	
+  }
+  while(ip < in+inlen) *out++ = *ip++; 
+}
+
+void nbdec16(uint8_t *in, size_t inlen, uint8_t *out) {
+  uint16_t u0 = 0,x; uint8_t *ip;
+  for(ip = in; ip < in+(inlen&~1); ip += 2,out += 2) {
+    x = ctou16(ip);  
+    ctou16(out) = (u0 += nb_dec16(x));
+  }
+  while(ip < in+inlen) *out++ = *ip++; 
+}
+
     #endif
     #ifndef NDECOMP  
 void      delta8d24(uint8_t *in, size_t n, uint8_t *out) { uint8_t  u[3]={0},z; uint8_t *ip; for(ip = in; ip < in+(n-3);   ip+= 3,out+= 3) { ED(0, 8);ED(1,8);ED(2,8); } EDE; }
@@ -791,7 +866,7 @@ void fpstat(unsigned char *in, size_t n, unsigned char *out, int s, unsigned cha
 
 #define FPQUANTE8(t_t, _in_, _inlen_, _out_, qmax, t_s, pfmin, pfmax, _zmin_, _fpquante_) {\
   t_t           fmin = *pfmin, fmax = *pfmax, *_ip;\
-  unsigned char *_op = _out_, *_ep_ = _out_ + _inlen_, *_ep = _ep_;              unsigned cm = 0,cx = 0;\
+  unsigned char *_op = _out_, *_ep_ = _out_ + _inlen_, *_ep = _ep_;              /*unsigned cm = 0,cx = 0;*/\
   if(fmin == 0.0 && fmax == 0.0) {\
 	fmax = _in_[0], fmin = _in_[0];\
     for(_ip = _in_; _ip < _in_ + (_inlen_/(t_s/8)); _ip++)\
@@ -802,14 +877,14 @@ void fpstat(unsigned char *in, size_t n, unsigned char *out, int s, unsigned cha
   \
   for(_ip = _in_; _ip < _in_+(_inlen_/(t_s/8)); _ip++) {\
     t_t _f = _ip[0];\
-    if(_f < fmin || _f > fmax) { *_op++ = qmax+1; _ep -= (t_s/8); T2(ctof,t_s)(_ep) = _f; _f > fmax?cx++:cm++; } /*store outliers w/o compression at the buffer end*/\
+    if(_f < fmin || _f > fmax) { *_op++ = qmax+1; _ep -= (t_s/8); T2(ctof,t_s)(_ep) = _f; /*_f > fmax?cx++:cm++;*/ } /*store outliers w/o compression at the buffer end*/\
     else _fpquante_(t_s, _op, _f, fmin, _delta); \
                                                                                 if(_op+8 >= _ep) goto ovr;\
-  }                                                                             if(verbose > 2) printf("qmax=%u outliers:%u+%u=%u ",qmax, cm, cx, cm+cx);\
+  }                                                                             /*if(verbose > 2) printf("qmax=%u outliers:%u+%u=%u ",qmax, cm, cx, cm+cx);*/\
   unsigned _l = _ep_ - _ep; 													if(_op+_l >= _ep_) goto ovr;\
   memcpy(_op, _ep, _l); _op += _l;\
   return _op - _out_;\
-  ovr:                                                                          if(verbose>2) printf("overflow:%u ", _inlen_); \
+  ovr:                                                                          if(verbose>2) printf("overflow:%zu ", _inlen_); \
     memcpy(_out_, _in_, _inlen_); return _inlen_;\
 }
 
