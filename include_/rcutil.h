@@ -33,7 +33,7 @@ typedef unsigned long long uint64_t;
 #include <stdint.h>
 #endif
 #include <stddef.h>
-#define __STDC_WANT_IEC_60559_TYPES_EXT__
+/*#define __STDC_WANT_IEC_60559_TYPES_EXT__
 #include <float.h>
 
 #if defined(__clang__) && defined(__is_identifier)
@@ -42,7 +42,7 @@ typedef unsigned long long uint64_t;
   #endif
 #elif defined(FLT16_MAX) || defined(__HAVE_FLOAT16) 
 #define FLT16_BUILTIN
-#endif
+#endif*/
 
 #ifdef __cplusplus
 extern "C" {
