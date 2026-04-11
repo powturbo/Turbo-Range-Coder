@@ -731,7 +731,7 @@ size_t T3(rcr,RC_PRD,dec32)(unsigned char *in, size_t _outlen, unsigned char *_o
 }
 
 //-- Rice + delta zigzag ------------------------------------
-size_t T3(rcrz,RC_PRD, enc8)(unsigned char *in, size_t inlen, unsigned char *out RCPRM) {
+size_t T3(rcrz,RC_PRD,enc8)(unsigned char *in, size_t inlen, unsigned char *out RCPRM) {
   uint8_t  *op = out, *ip, cx = 0; 
   unsigned  ema = 0;
   rcencdec(rcrange,rclow,rcilow);                       
