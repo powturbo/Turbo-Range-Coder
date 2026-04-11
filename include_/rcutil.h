@@ -132,6 +132,7 @@ size_t fpquant16d64( uint16_t *in, size_t outlen, double   *out, unsigned qmax, 
 size_t fpquant32d64( uint32_t *in, size_t outlen, double   *out, unsigned qmax, double     fmin,   double   fmax);
 size_t fpquant64d64( uint64_t *in, size_t outlen, double   *out, unsigned qmax, double     fmin,   double   fmax);
 
+void nbenc16(uint8_t *in, size_t inlen, uint8_t *out);
 //------- Lossy floating point transform: pad the trailing mantissa bits with zeros according to the error e (ex. e=0.00001)
 // must include float.h to use _Float16 (see icapp.c)
  #ifdef HAVE_FLOAT16
