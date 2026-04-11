@@ -26,6 +26,9 @@
 #ifndef CONF_H_
 #define CONF_H_
 
+#include <stdlib.h>             
+#include <string.h>             
+
   #if __HAVE_FLOAT16
 #define HAVE_FLOAT16 1
   #elif !defined(__HAVE_FLOAT16)  
