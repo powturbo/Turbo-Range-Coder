@@ -1,4 +1,4 @@
-# powturbo (c) Copyright 2013-2023
+# powturbo (c) Copyright 2013-2026
 # Download or clone TurboRC:
 # git clone git://github.com/powturbo/Turbo-Range-Coder.git
 
