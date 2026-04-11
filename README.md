@@ -240,4 +240,4 @@ See examples in "turborc.c"
 * **References:**
   * <a name="a"></a>[Entropy Coder Benchmark](https://sites.google.com/site/powturbo/entropy-coder) 
 
-Last update: 06 AUG 2023
+Last update: 12 APR 2026
