@@ -548,8 +548,8 @@ size_t rccdfvzdec16(unsigned char *in, size_t _outlen, unsigned char *_out);
 size_t rccdfvzenc32(unsigned char *_in, size_t _inlen, unsigned char *out);
 size_t rccdfvzdec32(unsigned char *in, size_t _outlen, unsigned char *_out);
 
-LIBAPI size_t ansbc(unsigned char *in,  size_t inlen, unsigned char *out);
-LIBAPI size_t ansbd(unsigned char *in, size_t outlen, unsigned char *out);
+size_t ansbc(unsigned char *in,  size_t inlen, unsigned char *out);
+size_t ansbd(unsigned char *in, size_t outlen, unsigned char *out);
 
 void trcini(void);
 //------ predictor ids (used in turborc.c)
