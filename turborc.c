@@ -23,7 +23,7 @@
 **/ 
 // TurboRC: Range Coder Benchmark and Compressor Application
 #include <stdio.h>
-#include <string.h>
+#include <ctype.h>
   #if !defined(_WIN32) && !defined(_WIN64)
 #include <sys/resource.h>
   #endif
