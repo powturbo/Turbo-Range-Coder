@@ -24,7 +24,6 @@
 // TurboRC: Range Coder - simple predictor (16 bits counters) 
 
 #include <stdio.h>
-#include <stdlib.h>             
 #include "include_/conf.h"   
 
 #define RC_MACROS
