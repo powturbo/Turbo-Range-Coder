@@ -23,6 +23,7 @@
 **/
 // TurboRC: Range Coder - CDF functions
 #include <stdlib.h>
+#include <string.h>
 #include "include/turborc.h"
 
 #include "include_/conf.h"
