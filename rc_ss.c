@@ -24,7 +24,6 @@
 // TurboRC: Range Coder encode/decode functions using dual speed predictor "ss" (two 16 bits counters) 
 
 #include <stdio.h>             
-#include <stdlib.h>             
 #include "include_/conf.h"   
 
 #define RC_MACROS
