@@ -1,5 +1,5 @@
 /**
-    Copyright (C) powturbo 2013-2023
+    Copyright (C) powturbo 2013-2026
     GPL v3 License
 
     This program is free software; you can redistribute it and/or modify
@@ -147,7 +147,7 @@ size_t rcrsdec16(   unsigned char *in, size_t outlen, unsigned char *out );
 size_t rcrsenc32(   unsigned char *in, size_t inlen,  unsigned char *out ); // 32 bits
 size_t rcrsdec32(   unsigned char *in, size_t outlen, unsigned char *out );
 
-size_t rcrzgsenc8(   unsigned char *in, size_t inlen,  unsigned char *out ); // 8 bits  zigzag delta
+size_t rcrzssenc8(   unsigned char *in, size_t inlen,  unsigned char *out ); // 8 bits  zigzag delta
 size_t rcrzsdec8(    unsigned char *in, size_t outlen, unsigned char *out );
 size_t rcrzsenc16(   unsigned char *in, size_t inlen,  unsigned char *out ); // 16 bits 
 size_t rcrzsdec16(   unsigned char *in, size_t outlen, unsigned char *out );
@@ -296,7 +296,7 @@ size_t rcrssdec16(   unsigned char *in, size_t outlen, unsigned char *out, unsig
 size_t rcrssenc32(   unsigned char *in, size_t inlen,  unsigned char *out, unsigned prm0, unsigned prm1 );  // 32 bits
 size_t rcrssdec32(   unsigned char *in, size_t outlen, unsigned char *out, unsigned prm0, unsigned prm1 ); 
 
-size_t rcrzgssenc8(   unsigned char *in, size_t inlen,  unsigned char *out, unsigned prm0, unsigned prm1 );  // 8 bits  zigzag delta
+size_t rcrzsssenc8(   unsigned char *in, size_t inlen,  unsigned char *out, unsigned prm0, unsigned prm1 );  // 8 bits  zigzag delta
 size_t rcrzssdec8(    unsigned char *in, size_t outlen, unsigned char *out, unsigned prm0, unsigned prm1 ); 
 size_t rcrzssenc16(   unsigned char *in, size_t inlen,  unsigned char *out, unsigned prm0, unsigned prm1 );  // 16 bits 
 size_t rcrzssdec16(   unsigned char *in, size_t outlen, unsigned char *out, unsigned prm0, unsigned prm1 ); 
