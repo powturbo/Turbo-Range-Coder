@@ -86,7 +86,7 @@ else
 MARCH=$(_SSE) 
 endif
 
-CFLAGS+= $(DEBUG) $(OPT) -w -Wall 
+CFLAGS+= $(DEBUG) $(OPT) -w -Wall -Wincompatible-pointer-types -fpermissive
 #-pedantic
 ifeq ($(PGO), 1)
 CFLAGS+=-fprofile-generate 
