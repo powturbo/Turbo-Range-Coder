@@ -518,6 +518,8 @@ size_t rccdfienc(   unsigned char *in, size_t inlen,  unsigned char *out);
 size_t rccdf4enc(   unsigned char *in, size_t inlen,  unsigned char *out); //Nibble
 size_t rccdf4dec(   unsigned char *in, size_t outlen, unsigned char *out); 
 
+size_t rccdfsmenc(unsigned char *in, size_t inlen, unsigned char *out, cdf_t *cdf, unsigned cdfnum);
+
 size_t rccdf4ienc(  unsigned char *in, size_t inlen,  unsigned char *out); //Nibble interleaved
 size_t rccdf4idec(  unsigned char *in, size_t outlen, unsigned char *out); 
 
@@ -525,6 +527,21 @@ size_t rccdfdec8(   unsigned char *in, size_t outlen, unsigned char *out); //int
 size_t rccdfenc8(   unsigned char *in, size_t inlen,  unsigned char *out); 
 size_t rccdfidec8(  unsigned char *in, size_t outlen, unsigned char *out);
 size_t rccdfienc8(  unsigned char *in, size_t inlen,  unsigned char *out); 
+
+size_t rccdfuenc16(unsigned char *_in, size_t _inlen, unsigned char *out);
+size_t rccdfudec16(unsigned char *in, size_t _outlen, unsigned char *_out);
+size_t rccdfuenc32(unsigned char *_in, size_t _inlen, unsigned char *out);
+size_t rccdfudec32(unsigned char *in, size_t _outlen, unsigned char *_out);
+
+size_t rccdfvenc16(unsigned char *_in, size_t _inlen, unsigned char *out);
+size_t rccdfvdec16(unsigned char *in, size_t _outlen, unsigned char *_out);
+size_t rccdfvenc32(unsigned char *_in, size_t _inlen, unsigned char *out);
+size_t rccdfvdec32(unsigned char *in, size_t _outlen, unsigned char *_out);
+
+size_t rccdfvzenc16(unsigned char *_in, size_t _inlen, unsigned char *out);
+size_t rccdfvzdec16(unsigned char *in, size_t _outlen, unsigned char *_out);
+size_t rccdfvzenc32(unsigned char *_in, size_t _inlen, unsigned char *out);
+size_t rccdfvzdec32(unsigned char *in, size_t _outlen, unsigned char *_out);
 
 void trcini(void);
 //------ predictor ids (used in turborc.c)
