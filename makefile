@@ -178,7 +178,7 @@ endif
 
 ifeq ($(TRANSPOSE), 1)
 transpose_avx2.o: transpose.c
-	$(CC) -O3 -w -mavx2 $(OPT) -c transpose.c -o transpose_avx2.o
+	$(CC) -O3 -w -mavx2 $(OPT) -Wincompatible-pointer-types -c transpose.c -o transpose_avx2.o
 
 CFLAGS+=-D_TRANSPOSE -D_NCPUISA
 LIB+=transpose.o transpose_.o 
