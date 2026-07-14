@@ -23,7 +23,6 @@
 **/
 // TurboRC: Range Coder - CDF functions
 #include "include/turborc.h"
-
 #include "include_/conf.h"
 
   #ifdef __AVX2__      
