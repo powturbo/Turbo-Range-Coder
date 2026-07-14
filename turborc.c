@@ -772,7 +772,7 @@ int main(int argc, char* argv[]) {
         printf("Option %s", long_options[optind].name);
         if(optarg) printf(" with arg %s", optarg);  printf ("\n");
         break;          
-      case 'b': bsize = argtol(optarg); if(bsize < 16) bsize = 16;else if(bsize > BLKMAX*Mb) bsize = BLKMAX*Mb; break;
+      case 'b': bsize = argtol(optarg, 'M'); if(bsize < 16) bsize = 16;else if(bsize > BLKMAX*Mb) bsize = BLKMAX*Mb; break;
       case 'e': scmd = optarg; dobench++; break;
       case 'f': xprep8=1; break;      
       case 'F': { char *s = optarg;    // Input format
