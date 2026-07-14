@@ -23,6 +23,8 @@
 **/ 
 // TurboRC: Range Coder - misc. functions
 #include <stdio.h>             
+#include <string.h>
+#include <stdlib.h>
 #include <ctype.h>
 #include <math.h> //isnan
 #include "include_/conf.h"
