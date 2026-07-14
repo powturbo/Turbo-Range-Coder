@@ -28,26 +28,6 @@
 #include <malloc.h>
   #endif
 
-  #ifdef __AVX2__  								// SIMD includes
-#include <immintrin.h>
-  #elif defined(__AVX__)
-#include <immintrin.h>
-  #elif defined(__SSE4_1__)
-#include <smmintrin.h>
-  #elif defined(__SSSE3__)
-    #ifdef __powerpc64__
-#define __SSE__   1
-#define __SSE2__  1
-#define __SSE3__  1
-#define NO_WARN_X86_INTRINSICS 1
-    #endif
-#include <tmmintrin.h>
-  #elif defined(__SSE2__)
-#include <emmintrin.h>
-  #elif defined(__ARM_NEON)
-#include <arm_neon.h>
-#include "include_/sse_neon.h"
-  #endif
 #include "include_/conf.h"
 
   #ifdef __ARM_NEON                                                 // memory prefetch
@@ -59,7 +39,7 @@
 //-------------------------- mtf: move to front (8 bits) -----------------------------------------------------------
   #ifdef __AVX2__ // Get position of existing c
 #define MEMGET8(_in_,_ip_,_cv_,_c_) do { for(;;) { unsigned m = _mm256_movemask_epi8(_mm256_cmpeq_epi8(_mm256_loadu_si256((__m256i*)_ip_), _cv_)); if(m) { _ip_ += ctz32(m); break; } _ip_ += 32;} while(*_ip_ != _c_) _ip_++; } while(0)
-  #elif defined(__SSE__)
+  #elif defined(__SSE2__) || defined(__ARM_NEON) || defined(__riscv_vector) || defined(__powerpc64__) || defined(__loongarch_sx)
 #define MEMGET8(_in_,_ip_,_cv_,_c_) do { for(;;) { uint16_t m =    _mm_movemask_epi8(   _mm_cmpeq_epi8(   _mm_loadu_si128((__m128i*)_ip_), _cv_)); if(m) { _ip_ += ctz16(m); break; } _ip_ += 16;} while(*_ip_ != _c_) _ip_++; } while(0)
   #else
 #define MEMGET8(_in_,_ip_,_cv_,_c_) while(*_ip_ != _c_) _ip_++;		   
@@ -67,7 +47,7 @@
   
   #ifdef __AVX2__ // move to front. declaration c2r (symbol c to rank): uint8_t _c2r2[256+32], *c2r = _c2r+32
 #define MTF8(_c2r_, _p_, _c_) do { for(q = _p_; q > _c2r_; ) { q -= 32; _mm256_storeu_si256(q+1,_mm256_loadu_si256((__m256i*)q)); } _c2r_[0] = _c_; } while(0)
-  #elif defined(__SSE__) 
+  #elif defined(__SSE2__) || defined(__ARM_NEON) || defined(__riscv_vector) || defined(__powerpc64__) || defined(__loongarch_sx)
 #define MTF8(_c2r_, _p_, _c_) do { for(q = _p_; q > _c2r_; ) { q -= 16; _mm_storeu_si128(q+1,   _mm_loadu_si128((__m128i*)q));    } _c2r_[0] = _c_; } while(0)
   #else
 #define MTF8(_c2r_, _p_, _c_) do { for(q = _p_; q > _c2r_; ) { q -= 16; ctou64(q+1+8) = ctou64(q+8); ctou64(q+1) = ctou64(q); } _c2r_[0] = _c_; } while(0)
@@ -92,7 +72,7 @@
 //------------------------- run length determination ----------------------------------------------------------
   #ifdef __AVX2__                                                   // declaration
 #define MEMDEC8(_cv_, _c_) __m256i _cv_ = _mm256_set1_epi8(_c_);
-  #elif defined(__SSE__)
+  #elif defined(__SSE2__) || defined(__ARM_NEON) || defined(__riscv_vector) || defined(__powerpc64__) || defined(__loongarch_sx)
 #define MEMDEC8(_cv_, _c_) __m128i _cv_ = _mm_set1_epi8(_c_);
   #else
 #define MEMDEC8(_cv_, _c_)	  
@@ -104,9 +84,9 @@ for(; ip >= _in_+sizeof(_cv_);) { unsigned msk; ip -= 32; msk = _mm256_movemask_
   if(msk != 0xffffffffu) { ip += 32 - clz32(~msk); _goto_; }\
 }\
 for(; ip > _in_ && ip[-1] == _c_; ip--); } while(0)
-  #elif defined(__SSE__)
+  #elif defined(__SSE2__) || defined(__ARM_NEON) || defined(__riscv_vector) || defined(__powerpc64__) || defined(__loongarch_sx)
 #define MEMRUNR8(_in_,ip,_cv_,_c_,_goto_) do {\
-for(; ip >= _in_+sizeof(_cv_);) { unsigned msk; ip -= 16;  msk =   _mm_movemask_epi8(   _mm_cmpeq_epi8(   _mm_loadu_si128((__m128i*)ip), _cv_));\
+for(; ip >= _in_+16;) { unsigned msk; ip -= 16;  msk =   _mm_movemask_epi8(   _mm_cmpeq_epi8(   _mm_loadu_si128((__m128i*)ip), _cv_));\
   if(msk != 0xffffu    ) { ip += 32 - clz32(msk ^ 0xffff); _goto_; }\
 }\
 for(; ip > _in_ && ip[-1] == _c_; ip--); } while(0)
