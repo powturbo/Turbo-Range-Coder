@@ -65,7 +65,7 @@
   _st_ = STATEUPD((_mb_), _st_,_x_);\
 }
 
-  #elif defined(__SSE2__) || defined(__powerpc64__) || defined(__ARM_NEON)
+  #elif defined(__SSE2__) || defined(__ARM_NEON) || defined(__riscv_vector) || defined(__powerpc64__) || defined(__loongarch_sx)
 #define CDF16DEF __m128i _cmv  = _mm_set1_epi16(MIXD),                              /*adaptive CDF*/\
                          _crv0 = _mm_set_epi16( 7*IC,  6*IC,  5*IC,  4*IC,  3*IC,  2*IC, 1*IC, 0   ), \
                          _crv1 = _mm_set_epi16(15*IC, 14*IC, 13*IC, 12*IC, 11*IC, 10*IC, 9*IC, 8*IC)
@@ -129,7 +129,7 @@
 #define CDF8DEC0(_mb_)     CDFDEC0(_mb_,      8)
 #define CDF8DEC1(_mb_,_n_) CDFDEC1(_mb_, _n_, 8)
 
-  #if defined(__SSE2__) || defined(__powerpc64__) || defined(__ARM_NEON)
+  #if defined(__SSE2__) || defined(__ARM_NEON) || defined(__riscv_vector) || defined(__powerpc64__) || defined(__loongarch_sx)
 #define CDF8DEF __m128i _cmv  = _mm_set1_epi16(MIXD),\
                         _crv0 = _mm_set_epi16( 7*IC,  6*IC,  5*IC,  4*IC,  3*IC,  2*IC, 1*IC, 0)
 
