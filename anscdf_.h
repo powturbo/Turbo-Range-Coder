@@ -28,21 +28,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
-
-#ifdef __AVX2__
-#include <immintrin.h>
-  #elif defined(__AVX__)
-#include <immintrin.h>
-  #elif defined(__SSE4_1__)
-#include <smmintrin.h>
-  #elif defined(__SSSE3__)
-#include <tmmintrin.h>
-  #elif defined(__SSE2__)
-#include <emmintrin.h>
-  #elif defined(__ARM_NEON)
-#include <arm_neon.h>
-  #endif
-#include "include_/sse_neon.h"
 #include "include_/conf.h"
 
 #define ANS_BITS 15  // maximum = 15
