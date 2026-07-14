@@ -22,32 +22,7 @@
     - email    : powturbo [_AT_] gmail [_DOT_] com
 **/
 // TurboRC: Range Coder - CDF include
-  #ifdef __AVX2__
-#include <immintrin.h>
-  #elif defined(__AVX__)
-#include <immintrin.h>
-  #elif defined(__SSE4_1__)
-#include <smmintrin.h>
-  #elif defined(__SSSE3__)
-    #ifdef __powerpc64__
-#define __SSE__   1
-#define __SSE2__  1
-#define __SSE3__  1
-#define NO_WARN_X86_INTRINSICS 1
-    #endif
-#include <tmmintrin.h>
-  #elif defined(__SSE2__)
-#include <emmintrin.h>
-  #elif defined(__ARM_NEON)
-#include <arm_neon.h>
-#define __m128i uint32x4_t
-#define _mm_loadu_si128(  _ip_)                 vld1q_u32(_ip_)
-#define _mm_add_epi16(  _a_,_b_)                (__m128i)vaddq_u16((uint16x8_t)(_a_), (uint16x8_t)(_b_))
-#define _mm_srai_epi16( _a_,_m_)                (__m128i)vshrq_n_s16((int16x8_t)(_a_), _m_)
-#define _mm_sub_epi16(  _a_,_b_)                (__m128i)vsubq_u16((uint16x8_t)(_a_), (uint16x8_t)(_b_))
-#define _mm_storeu_si128(_ip_,_a_)              vst1q_u32((__m128i *)(_ip_),_a_)
-  #endif
-
+#include "include_/conf.h"
 #include "cdf_.h"
 
 #define cdf4e(_rcrange_,_rclow_,_rcilow_,_cdf_,_x_,_op_) { cdfenc(_rcrange_,_rclow_,_rcilow_, _cdf_, _x_, _op_); cdf16upd(_cdf_,_x_); }
