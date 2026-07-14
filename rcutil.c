@@ -194,17 +194,17 @@ uint8_t *rcqlfc(uint8_t *__restrict in, size_t n, uint8_t *__restrict out, uint8
     } 
       #else	  
 	uint8_t *pb=NULL,*q=NULL; p = r2c; // search
-        #ifdef __AVX2__
-	for(;;) { unsigned m = _mm256_movemask_epi8(_mm256_cmpeq_epi8(_mm256_loadu_si256((__m256i*)p), cv)); if(m) { p += ctz32(m); break; } p += 32;}
-        #elif defined(__SSE__)
+      #ifdef __AVX2__
+    for(;;) { unsigned m = _mm256_movemask_epi8(_mm256_cmpeq_epi8(_mm256_loadu_si256((__m256i*)p), cv)); if(m) { p += ctz32(m); break; } p += 32;}
+      #elif defined(__SSE2__) || defined(__ARM_NEON) || defined(__riscv_vector) || defined(__powerpc64__) || defined(__loongarch_sx)
     for(;;) { uint16_t m =    _mm_movemask_epi8(   _mm_cmpeq_epi8(   _mm_loadu_si128((__m128i*)p), cv)); if(m) { p += ctz16(m); break; } p += 16; }
-        #else
-	while(*p != c) p++;
-        #endif
-	for(q = p; q > r2c; ) { // move to front 	
+      #else
+    while(*p != c) p++;
+      #endif
+    for(q = p; q > r2c; ) { // move to front 	
 		  #ifdef __AVX2__ 
       q -= 32; _mm256_storeu_si256(q+1,_mm256_loadu_si256((__m256i*)q)); 
-          #elif defined(__SSE__)
+          #elif defined(__SSE2__) || defined(__ARM_NEON) || defined(__riscv_vector) || defined(__powerpc64__) || defined(__loongarch_sx)
       q -= 16; _mm_storeu_si128(q+1,   _mm_loadu_si128((__m128i*)q));
 		  #else
 	  q -= 16; ctou64(q+1+8) = ctou64(q+8); ctou64(q+1) = ctou64(q); 
