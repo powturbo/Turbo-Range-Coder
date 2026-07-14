@@ -20,73 +20,112 @@ ANS=1
 TRANSPOSE=1
 #----------------------------------------------
 CC ?= gcc
+#CC ?= clang
 CXX ?= g++
-#CC=clang
-#CXX=clang++
+CX ?= clang
+#CX ?= gcc
+#CC = clang
 
-#CC=powerpc64le-linux-gnu-gcc
-#CL = $(CC)
 #DEBUG=-DDEBUG -g
-DEBUG=-DNDEBUG -s
-
+DEBUG=-DNDEBUG
+JAVA_HOME ?= /usr/lib/jvm/java-8-openjdk-amd64
 PREFIX ?= /usr/local
 DIRBIN ?= $(PREFIX)/bin
 DIRINC ?= $(PREFIX)/include
 DIRLIB ?= $(PREFIX)/lib
-
-OPT=-fstrict-aliasing 
-ifeq (,$(findstring clang, $(CC)))
-OPT+=-falign-loops
-endif
+SRC ?= lib/
 
 #------- OS/ARCH -------------------
 ifneq (,$(filter Windows%,$(OS)))
   OS := Windows
   CC=gcc
+# CC=clang
+# CX=gcc
+  CX=clang
   CXX=g++
-#  CC=clang
   ARCH=x86_64
-  LDFLAGS=-Wl,--stack,33554432
 else
   OS := $(shell uname -s)
   ARCH := $(shell uname -m)
+endif
+#$(info OS="$(OS)")
 
-ifneq (,$(findstring aarch64,$(CC)))
+ifndef CROSS
+else
+ifeq ($(OS), Windows)
+CP=$(CROSS)-unknown-elf
+else
+CP=$(CROSS)-linux-gnu
+endif
+
+CXX:=$(CP)-g++
+ifeq ($(CX),clang)
+CX=clang --target=$(CP) --sysroot=/usr/$(CP) -fuse-ld=lld
+ifeq ($(CC),clang)
+CC=$(CX)
+else
+CC:=$(CP)-gcc
+endif
+else
+CC:=$(CP)-gcc
+CX=$(CC)
+endif
+CROSS=$(CC)
+endif
+
+ifneq (,$(or $(findstring aarch64,$(CC) $(ARCH)),$(findstring arm64,$(CC) $(ARCH))))
   ARCH = aarch64
-else ifneq (,$(findstring arm64,$(ARCH)))
+else ifneq (,$(findstring riscv64,$(CC) $(ARCH)))
+  ARCH = riscv64
+else ifneq (,$(findstring iPhone,$(ARCH)))
   ARCH = aarch64
-else ifneq (,$(findstring powerpc64le,$(CC)))
+  CFLAGS=-DHAVE_MALLOC_MALLOC
+else ifneq (,$(findstring powerpc64le,$(CC) $(ARCH)))
   ARCH = ppc64le
-endif
+else ifneq (,$(findstring loongarch64,$(CC) $(ARCH)))
+  ARCH = loongarch64
+else ifneq (,$(findstring x86_64,$(CC) $(ARCH)))
+  ARCH = x86_64
 endif
 
-ifeq ($(ARCH),ppc64le)
-  _SSE=-D__SSSE3__
-  MARCH=-mcpu=power9 -mtune=power9 $(_SSE)
-  CFLAGS+=-D_NAVX2 -D_NSCALAR
-else ifeq ($(ARCH),aarch64)
-  MARCH=-march=armv8-a
-  CFLAGS+=-D_NAVX2 -D_NSCALAR
-ifneq (,$(findstring clang, $(CC)))
-  OPT+=-fomit-frame-pointer 
-#-fmacro-backtrace-limit=0
-endif
+ifeq ($(ARCH),aarch64)
   _SSE=-march=armv8-a
-else ifeq ($(ARCH),$(filter $(ARCH),x86_64))
-  _SCALAR=-mno-sse2 
-# set minimum arch sandy bridge SSE4.1 + AVX
-  _SSE=-march=corei7-avx -mtune=corei7-avx 
+  CFLAGS=$(_SSE)
+else ifeq ($(ARCH),riscv64)
+#  CFLAGS=-march=rv64gcv -mabi=lp64d
+  CFLAGS=-march=rv64gcv_zvbb -mabi=lp64d
+else ifeq ($(ARCH),ppc64le)
+  _SSE=-D__SSE4_1__
+  CFLAGS=-mcpu=power9 -mtune=power9 $(_SSE)
+else ifeq ($(ARCH),loongarch64)
+  _SSE=-mlsx
+  CFLAGS=$(_SSE)
+else ifeq ($(ARCH),x86_64)
+# _SSE=-mssse3 
 # _SSE+=-mno-avx -mno-aes
+# _SSE=-march=corei7-avx -mtune=corei7-avx
+# _SSE=-march=ivybridge -mavx
+  _SSE=-mavx -mpopcnt
+
+# _AVX2=-march=skylake-avx512 -mavx512vbmi -mavx512f -mavx512vl
   _AVX2=-march=haswell
 endif
 
-ifeq ($(AVX2),1)
-MARCH=$(_AVX2) 
-else
-MARCH=$(_SSE) 
+ifeq ($(OS),Windows)
+  LDFLAGS=-Wl,--stack,33554432
 endif
 
-CFLAGS+= $(DEBUG) $(OPT) -w -Wall -Wincompatible-pointer-types -fpermissive
+CFLAGS+=$(_SSE) -w -Wall $(DDEBUG) -std=gnu99 -fpermissive -Wimplicit-function-declaration -Wno-incompatible-pointer-types 
+CXXFLAGS+=$(DDEBUG) -w -Wall -fpermissive  -fno-rtti
+
+ifeq ($(OS),$(filter $(OS),Linux GNU/kFreeBSD GNU OpenBSD FreeBSD DragonFly NetBSD MSYS_NT Haiku))
+LDFLAGS+=-lrt -lpthread
+endif
+
+ifdef STATIC
+LDFLAGS+=-static
+endif
+
 #-pedantic
 ifeq ($(PGO), 1)
 CFLAGS+=-fprofile-generate 
@@ -103,10 +142,6 @@ endif
 
 ifeq ($(EXTRC), 1)
 CFLAGS+=-DEXTRC
-endif
-
-ifeq ($(STATIC),1)
-LDFLAGS+=-static
 endif
 
 #-------- bwt --------------------------
@@ -145,7 +180,8 @@ endif
 all: turborc
 
 ifneq ($(NOCOMP), 1)
-LIB=rc_ss.o rc_s.o rccdf.o rcutil.o bec_b.o rccm_s.o rccm_ss.o rcqlfc_s.o rcqlfc_ss.o rcqlfc_sf.o 
+LIB=rc_ss.o rc_s.o rccdf.o rcutil.o bec_b.o rccm_s.o rccm_ss.o rcqlfc_s.o rcqlfc_ss.o rcqlfc_sf.o cpu.o
+
 
 #ifeq ($(DELTA), 1)
 #CFLAGS+=-D_DELTA
@@ -168,6 +204,8 @@ $(L)anscdfx.o: $(L)anscdf.c $(L)anscdf_.h
 
 LIB+=$(L)anscdfx.o 
 #$(L)anscdf0.o
+else
+CFLAGS+=-D_NAVX2
 endif
 endif
 
@@ -177,9 +215,14 @@ LIB+=trlec.o trled.o
 endif
 
 ifeq ($(TRANSPOSE), 1)
+ifeq ($(ARCH),x86_64)
 transpose_avx2.o: transpose.c
-	$(CC) -O3 -w -mavx2 $(OPT) -Wincompatible-pointer-types -c transpose.c -o transpose_avx2.o
+	$(CC) -O3 $(CFLAGS) $(_AVX2) -c transpose.c -o transpose_avx2.o
 
+#transpose_.o: transpose_.c
+#	$(CC) -O3 $(CFLAGS) $(_SSE) -c transpose_.c -o transpose_.o
+	
+endif
 CFLAGS+=-D_TRANSPOSE -D_NCPUISA
 LIB+=transpose.o transpose_.o 
 
