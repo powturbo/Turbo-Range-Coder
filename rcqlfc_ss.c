@@ -24,6 +24,8 @@
 // TurboRC: Range Coder - dual speed predictor (two 16 bits counters) 
 // Reference: http://cbloomrants.blogspot.com/2017/01/order-0-estimators-for-data-compression.html
 #include <stdio.h>             
+#include <string.h>
+#include <stdlib.h>
 #include "include_/conf.h"   
 
 #define RC_MACROS
