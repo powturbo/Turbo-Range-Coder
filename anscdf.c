@@ -39,7 +39,8 @@
  
   #ifdef __AVX2__
 #define FSUFFIX x
-  #elif defined(__SSE2__) || defined(__ARM_NEON) || defined(__powerpc64__)
+  #elif defined(__SSE2__) || defined(__ARM_NEON) || defined(__riscv_vector) || defined(__powerpc64__) || defined(__loongarch_sx)
+  
 #define FSUFFIX s
   #else
 #define FSUFFIX 0
@@ -644,7 +645,6 @@ LIBAPI size_t T2(anscdf1dec,FSUFFIX)(unsigned char *in, size_t outlen, unsigned 
 }
 #endif
 
-//#if !defined(__SSE3__) && !defined(__ARM_NEON)
 #if !defined(__AVX2__)
 typedef unsigned short mbu; 
 #define mbu_q(_p_)          (_p_)
@@ -763,7 +763,7 @@ void anscdfini(unsigned id) {
     #endif
   anscdfset = 1;
   id = id?id:cpuisa();          //printf("cpu=id=%d,%s\n", id, cpustr(id) );
-    #ifndef _NAVX2
+    #ifdef __AVX2__
   if(id >= 0x60) {
     _anscdf4senc   = anscdf4sencx;   _anscdf4sdec   = anscdf4sdecx;
     _anscdf4enc    = anscdf4encx;    _anscdf4dec    = anscdf4decx;
@@ -777,7 +777,7 @@ void anscdfini(unsigned id) {
     _anscdfvzenc32 = anscdfvzenc32x; _anscdfvzdec32 = anscdfvzdec32x;
   }  else
     #endif
-    #ifndef _NSSE
+    #if defined(__SSSE3__) || defined(__ARM_NEON) || defined(__riscv_vector) 
   if(id >= 0x20) {
     _anscdf4senc   = anscdf4sencs;   _anscdf4sdec   = anscdf4sdecs;
     _anscdf4enc    = anscdf4encs;    _anscdf4dec    = anscdf4decs;
