@@ -12,16 +12,16 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest]
+        os: [ubuntu-latest, ubuntu-24.04-arm]
         compiler: ["gcc", "clang"]
     env:      
       CC: ${{ matrix.compiler }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v6
         with:
           submodules: 'true'     
       - run: git submodule update --init --recursive
-      - run: make
+      - run: make STATIC=1
       - run: lscpu
       - run: ./turborc -e0 turborc -V2
 
@@ -35,7 +35,7 @@ jobs:
     env:      
       CC: ${{ matrix.compiler }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v6
         with:
           submodules: 'true'
       - run: git submodule update --init --recursive
@@ -49,7 +49,7 @@ jobs:
       run:
         shell: msys2 {0}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v6
         with:
           submodules: 'true'
       - uses: msys2/setup-msys2@v2
@@ -58,7 +58,6 @@ jobs:
           install: git make mingw-w64-x86_64-gcc
           update: true
       - run: git submodule update --init --recursive
-      - run: make
-      - run: ./turborc -e0 turborc.exe -V2
+      - run: make STATIC=1
+      - run: ./turborc -e0 turborc -V2
 
- 
