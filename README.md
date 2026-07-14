@@ -4,7 +4,7 @@
 ======================================
 * **Fastest (Branchless) Range Coder / Arithmetic Coder**
   * 100% C (C++ headers). 
-  * OS/Arch: Linux amd/intel, arm, PowerPC, s390x, MacOs+Apple M1. Windows: Mingw, visual c++
+  * OS/Arch: Linux amd/intel, arm, RISC-V, PowerPC, s390x, MacOs+Apple M4. Windows: Mingw, visual c++
   * No other Range Coder / Arithmetic Coder encode or decode faster with better compression
   * Up to 3 times faster than the next fastest range coder with similar compression ratio
   * Can work as bitwise or/and as multisymbol range coder
@@ -240,4 +240,4 @@ See examples in "turborc.c"
 * **References:**
   * <a name="a"></a>[Entropy Coder Benchmark](https://sites.google.com/site/powturbo/entropy-coder) 
 
-Last update: 12 APR 2026
+Last update: 15 JUL 2026
