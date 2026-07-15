@@ -166,7 +166,7 @@ static tm_t   tminit()                      { tm_t t0,ts; tps = __builtin_readcy
 // The number of runs can be adjusted via options -I and -J (use -I15 -J15 for better precision).
 
 // sleep after each 8 runs to avoid cpu throttling.
-#define TMSLEEP do { tm_T = tmtime(); if(tmiszero(tm_0)) tm_0 = tm_T; else if(tmdiff(tm_0, tm_T) > tm_TX) { if(tm_verbose>2) { printf("S \b\b");fflush(stdout); } sleep(tm_slp); tm_0=tmtime();} } while(0)
+#define TMSLEEP do { tm_T = tmtime(); if(tmiszero(tm_0)) tm_0 = tm_T; else if(tmdiff(tm_0, tm_T) > tm_TX) { if(tm_verbose>1) { printf("S \b\b");fflush(stdout); } sleep(tm_slp); tm_0=tmtime();} } while(0)
 
 #define TM_BACK(_n_) { for(int i=0; i < (_n_); i++) printf("\b");fflush(stdout); }
 
@@ -185,37 +185,37 @@ static tm_t   tminit()                      { tm_t t0,ts; tps = __builtin_readcy
     if(_tm_t < tm_tm) { if(tm_tm == DBL_MAX) { tm_rm = _tm_r; _tm_Rn = tm_TX/_tm_t; _tm_Rn = _tm_Rn<_tm_Rx?_tm_Rn:_tm_Rx; /*printf("repeats=%u,%u,%.4f ", _tm_Rn, _tm_Rx, _tm_t);*/ } \
 	  tm_tm = _tm_t; _tm_c++;\
     } else if(_tm_t > tm_tm*1.15) TMSLEEP;/*force sleep at 15% divergence*/\
-    if(tm_verbose>2) { printf("%*.*f %2d_%.2d\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b", TM_MAN,TM_PRE, TMBS(_size_, tm_tm/tm_rm),_tm_R+1,_tm_c); fflush(stdout);  }\
+    if(tm_verbose>1) { printf("%*.*f %2d_%.2d\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b", TM_MAN,TM_PRE, TMBS(_size_, tm_tm/tm_rm),_tm_R+1,_tm_c); fflush(stdout);  }\
     if((_tm_R & 7)==7) sleep(tm_slp); /*pause 20 secs after each 8 runs to avoid cpu throttling*/\
   }\
 }
 
-static unsigned tm_rep = 1u<<30, tm_Rep = 3, tm_Rep2 = 3, tm_rm, tm_RepMin = 1, tm_slp = 20, tm_verbose = 3;
+static unsigned tm_rep = 1u<<30, tm_Rep = 3, tm_Rep2 = 3, tm_rm, tm_RepMin = 1, tm_slp = 20, tm_verbose = 2;
 static tm_t tm_0, tm_T;
 static double tm_tm, tm_tx = 1.0*TM_M, tm_TX = 60.0*TM_M;
 
 static void tm_init(int _tm_Rep, int _tm_verbose) { tm_verbose = _tm_verbose; if(_tm_Rep) tm_Rep = _tm_Rep; }
 
 #define TM(_name_, _efunc_, _size_, _len_, _dfunc_) do {\
-  TMBEG(tm_Rep) _efunc_; if(_size_ && !(_tm_R|_tm_r) ) pr(_len_,_size_); TMEND(_size_);\
+  TMBEG(tm_Rep) _efunc_; if(_size_ && !(_tm_R|_tm_r) && tm_verbose) pr(_len_,_size_); TMEND(_size_);\
   double dm = tm_tm, dr = tm_rm; \
-  if(tm_verbose>2)    { printf("%*.*f      \b\b\b\b\b", TM_MAN, TM_PRE, TMBS(_size_, dm/dr) ); fflush(stdout); }\
+  if(tm_verbose>1)    { printf("%*.*f      \b\b\b\b\b", TM_MAN, TM_PRE, TMBS(_size_, dm/dr) ); fflush(stdout); }\
   else if(tm_verbose) { printf("%*.*f      ",  TM_MAN, TM_PRE, TMBS(_size_, dm/dr) );          fflush(stdout); }\
   \
   TMBEG(tm_Rep2) _dfunc_; TMEND(_size_);\
   dm = tm_tm; dr = tm_rm; \
-if(tm_verbose>2)      { printf("%*.*f      \b\b\b\b\b", TM_MAN, TM_PRE, TMBS(_size_, dm/dr) ); fflush(stdout); }\
+  if(tm_verbose>1)    { printf("%*.*f      \b\b\b\b\b", TM_MAN, TM_PRE, TMBS(_size_, dm/dr) ); fflush(stdout); }\
   else if(tm_verbose) { printf("%*.*f      ", TM_MAN, TM_PRE,TMBS(_size_, dm/dr) );            fflush(stdout); }\
-  if(tm_verbose>3) { printf("%s ", _name_?_name_:#_efunc_); fflush(stdout); }\
+  if(tm_verbose)    { printf("%s ", _name_?_name_:#_efunc_); fflush(stdout); }\
 } while(0)
 
 #define TM0(_name_, _efunc_, _size_, _len_) do {\
-  TMBEG(tm_Rep) _efunc_; if(_size_ && !(_tm_R|_tm_r) ) pr(_len_,_size_); TMEND(_size_);\
+  TMBEG(tm_Rep) _efunc_; if(_size_ && !(_tm_R|_tm_r) && tm_verbose) pr(_len_,_size_); TMEND(_size_);\
   double dm = tm_tm, dr = tm_rm; \
-  if(tm_verbose>2)    { printf("%*.*f      \b\b\b\b\b", TM_MAN, TM_PRE, TMBS(_size_, dm/dr) ); fflush(stdout); }\
+  if(tm_verbose>1)    { printf("%*.*f      \b\b\b\b\b", TM_MAN, TM_PRE, TMBS(_size_, dm/dr) ); fflush(stdout); }\
   else if(tm_verbose) { printf("%*.*f      ", TM_MAN, TM_PRE, TMBS(_size_, dm/dr) );           fflush(stdout); }\
   \
-  if(tm_verbose>3) { printf("%s ", _name_?_name_:#_efunc_); fflush(stdout); }\
+  if(tm_verbose) { printf("%s ", _name_?_name_:#_efunc_); fflush(stdout); }\
 } while(0)
 
 static void pr(size_t l, size_t n) {
