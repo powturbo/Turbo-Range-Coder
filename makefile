@@ -115,7 +115,7 @@ ifeq ($(OS),Windows)
   LDFLAGS=-Wl,--stack,33554432
 endif
 
-CFLAGS+=$(_SSE) -w -Wall $(DDEBUG) -std=gnu99 -fpermissive -Wimplicit-function-declaration -Wno-incompatible-pointer-types 
+CFLAGS+=$(_SSE) -w -Wall $(DDEBUG) -Wno-incompatible-pointer-types 
 CXXFLAGS+=$(DDEBUG) -w -Wall -fpermissive  -fno-rtti
 
 ifeq ($(OS),$(filter $(OS),Linux GNU/kFreeBSD GNU OpenBSD FreeBSD DragonFly NetBSD MSYS_NT Haiku))
