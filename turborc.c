@@ -581,9 +581,9 @@ unsigned bench(unsigned char *in, unsigned n, unsigned char *out, unsigned char 
  
 static void usage(char *pgm) {
     #ifdef _BWTSATAN
-  fprintf(stderr, "\nBwtSatan 23.05 Copyright (c) 2018-2023 Powturbo %s\n", __DATE__);
+  fprintf(stderr, "\nBwtSatan 23.05 Copyright (c) 2018-2026 Powturbo %s\n", __DATE__);
     #else
-  fprintf(stderr, "\nTurboRC 23.05 Copyright (c) 2018-2023 Powturbo %s\n", __DATE__);
+  fprintf(stderr, "\nTurboRC 23.05 Copyright (c) 2018-2026 Powturbo %s\n", __DATE__);
         #endif
   fprintf(stderr, "\n Usage: %s <options> <infile1> <outfile>\n", pgm);
   fprintf(stderr, "<options>\n");
@@ -975,7 +975,7 @@ int main(int argc, char* argv[]) {
                   
         if(tid) { 
           uint64_t l; 
-          if(l = bench(in, n, out, cpy, tid, prdid, osize)) printf("\t%s\n", finame);  
+          if(l = bench(in, n, out, cpy, tid, prdid, osize)) if(tm_verbose) printf("\t%s\n", finame);  
           clen += l;
         } else do { 
           int id = strtoul(p, &p, 10),idx = id, i;
@@ -985,7 +985,7 @@ int main(int argc, char* argv[]) {
             if(*p == '-') { if((idx = strtoul(p+1, &p, 10)) < id) idx = id; if(idx > ID_LAST) idx = ID_LAST; } //printf("ID=%d,%d ", id, idx);
             for(i = id; i <= idx; i++) {
               if(l = bench(in, n, out, cpy, i, prdid, osize)) {
-                printf("\t%s\n", finame);  
+                if(tm_verbose) printf("\t%s\n", finame);  
                 clen        += l;
                 lens[i].id   = i;
                 lens[i].len  = l;
