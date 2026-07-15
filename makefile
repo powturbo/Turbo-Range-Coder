@@ -140,10 +140,11 @@ LDFLAGS+=-lm
 #-Wl,--stack_size -Wl,20971520
 endif
 
+all: turborc
+
 ifeq ($(EXTRC), 1)
 CFLAGS+=-DEXTRC
 endif
-
 #-------- bwt --------------------------
 ifeq ($(BWTSATAN), 1)
 CFLAGS+=-D_BWTSATAN
@@ -175,9 +176,6 @@ endif
 endif
 endif
 endif
-
-
-all: turborc
 
 ifneq ($(NOCOMP), 1)
 LIB=rc_ss.o rc_s.o rccdf.o rcutil.o bec_b.o rccm_s.o rccm_ss.o rcqlfc_s.o rcqlfc_ss.o rcqlfc_sf.o cpu.o
@@ -267,7 +265,6 @@ endif
 ifeq ($(NOCOMP), 1)
 CFLAGS+=-DNO_COMP
 endif
-
 
 #librc.a: $(LIB)
 #	ar cr $@ $+
