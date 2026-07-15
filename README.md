@@ -4,7 +4,7 @@
 ======================================
 * **Fastest (Branchless) Range Coder / Arithmetic Coder**
   * 100% C (C++ headers). 
-  * OS/Arch: Linux amd/intel, arm, RISC-V, PowerPC, s390x, MacOs+Apple M4. Windows: Mingw, visual c++
+  * OS/Arch: Linux amd/intel, arm, RISC-V, PowerPC, s390x, Apple M1-M5 MacOs. Windows: MSYS2, Mingw, visual c++
   * No other Range Coder / Arithmetic Coder encode or decode faster with better compression
   * Up to 3 times faster than the next fastest range coder with similar compression ratio
   * Can work as bitwise or/and as multisymbol range coder
@@ -28,10 +28,10 @@
     - read and convert text, csv or binary files to 8/16/32 bits before processing
     - set predictor and parameters at the command line
   * Preprocessing:
-    - :new: Linear Quantization for 16/32/64 floating point to 8/16/32/64 integer (2023.08) 
+    - Linear Quantization for 16/32/64 floating point to 8/16/32/64 integer 
 * **Asymmetric Numeral Systems**
-  * :new: Fastest Adaptive CDF rANS Asymmetric Numeral Systems / SSE, AVX2. (2023.05) 
-  * :new: bitwise ANS (2023.05)
+  * Fastest Adaptive CDF rANS Asymmetric Numeral Systems / SSE, AVX2 / Arm NEON / RISC-V RVV 
+  * bitwise ANS
   * No other adaptive ANS encode or decode faster with better compression
 ###  LICENSE
 - GPL 3.0
@@ -63,37 +63,37 @@
         
 |C Size   |ratio% |C MB/s  |D MB/s  |Name       |Description                  |
 |--------:|------:|-------:|-------:|-----------|-----------------------------|
-| 23334248| 23.33%|   88.20|   88.54| 1:rc      |  o0                         |         
-| 22394444| 22.39%|   82.46|   86.35| 2:rcc     |  o1                         |         
-| 23116048| 23.12%|   74.11|   79.26| 3:rcc2    |  o2                         |         
-| 22500640| 22.50%|   64.96|   67.81| 4:rcx     |  o8b =o1 context slide      |         
-| 23213968| 23.21%|   55.70|   61.45| 5:rcx2    |  o16b=o2 context slide      |         
-| 21605020| 21.61%|   25.48|   26.98| 9:rcms    |  o1 mixer/sse               |         
-| 21550184| 21.55%|   21.82|   22.74|10:rcm2    |  o2 mixer/sse               |         
-| 20814372| 20.81%|   23.06|   24.77|11:rcmr    |  o2 8b mixer/sse run        |         
-| 20789560| 20.79%|   22.68|   24.70|12:rcmrr   |  o2 8b mixer/sse run > 2    |         
-| 23170048| 23.17%|  156.61|  129.94|13:rcrle   |  RLE o0                     |         
-| 22004856| 22.00%|  128.43|  114.98|14:rcrle1  |  RLE o1                     |         
-| 23412436| 23.41%|   73.08|   70.74|17:rcu3    |  varint8 3/5/8 bits         |         
-| 21088368| 21.09%|   79.78|   93.89|18:rcqlfc  |  QLFC                       |         
-| 22275484| 22.28%|   91.81|   96.60|19:bec     |  Bit EC                     |         
-| 32703468| 32.70%|   54.48|   58.27|26:rcg-8   |  gamma                      |         
-| 32271396| 32.27%|  124.84|  110.15|27:rcgz-8  |  gamma zigzag               |         
-| 34195068| 34.20%|   66.13|   65.23|28:rcr-8   |  rice                       |         
-| 36864024| 36.86%|   78.31|   70.00|29:rcrz-8  |  rice zigzag                |         
-| 63541712| 63.54%|  552.28|   87.84|42:cdfsb   |  static/decode search       |         
-| 63541712| 63.54%|  552.38|  115.42|43:cdfsv   |  static/decode division     |         
-| 63976686| 63.98%|  479.38|  104.09|44:cdfsm   |  static/decode division lut |         
-| 63541720| 63.54%|  628.18|   92.24|45:cdfsb   |  static interlv/dec. search |         
-| 24811052| 24.81%|  177.39|  104.30|46:cdf     |  byte   adaptive            |         
-| 24811060| 24.81%|  191.80|   98.96|47:cdfi    |  byte   adaptive interleaved|         
-| 31004892| 31.00%|  158.06|   72.18|48:cdf-8   |  vnibble                    |         
-| 31004896| 31.00%|  159.56|   73.53|49:cdfi-8  |  vnibble interleaved        |         
-| 24848864| 24.85%|  116.76|  202.27|56:ans auto|                             |         
-| 24848864| 24.85%|  126.57|  175.43|57:ans sse |                             |         
-| 23068372| 23.07%|  128.06|   83.57|64:ans auto|  o1                         |         
-| 23521656| 23.52%|   50.43|   82.32|66:ansb    |  bitwise ans                |         
-|100000012|100.00%|16495.29|16050.82|79:memcpy  |                             |         
+| 23334248| 23.33%|   88.20|   88.54| 1:rc      |  o0                         |
+| 22394444| 22.39%|   82.46|   86.35| 2:rcc     |  o1                         |
+| 23116048| 23.12%|   74.11|   79.26| 3:rcc2    |  o2                         |
+| 22500640| 22.50%|   64.96|   67.81| 4:rcx     |  o8b =o1 context slide      |
+| 23213968| 23.21%|   55.70|   61.45| 5:rcx2    |  o16b=o2 context slide      |
+| 21605020| 21.61%|   25.48|   26.98| 9:rcms    |  o1 mixer/sse               |
+| 21550184| 21.55%|   21.82|   22.74|10:rcm2    |  o2 mixer/sse               |
+| 20814372| 20.81%|   23.06|   24.77|11:rcmr    |  o2 8b mixer/sse run        |
+| 20789560| 20.79%|   22.68|   24.70|12:rcmrr   |  o2 8b mixer/sse run > 2    |
+| 23170048| 23.17%|  156.61|  129.94|13:rcrle   |  RLE o0                     |
+| 22004856| 22.00%|  128.43|  114.98|14:rcrle1  |  RLE o1                     |
+| 23412436| 23.41%|   73.08|   70.74|17:rcu3    |  varint8 3/5/8 bits         |
+| 21088368| 21.09%|   79.78|   93.89|18:rcqlfc  |  QLFC                       |
+| 22275484| 22.28%|   91.81|   96.60|19:bec     |  Bit EC                     |
+| 32703468| 32.70%|   54.48|   58.27|26:rcg-8   |  gamma                      |
+| 32271396| 32.27%|  124.84|  110.15|27:rcgz-8  |  gamma zigzag               |
+| 34195068| 34.20%|   66.13|   65.23|28:rcr-8   |  rice                       |
+| 36864024| 36.86%|   78.31|   70.00|29:rcrz-8  |  rice zigzag                |
+| 63541712| 63.54%|  552.28|   87.84|42:cdfsb   |  static/decode search       |
+| 63541712| 63.54%|  552.38|  115.42|43:cdfsv   |  static/decode division     |
+| 63976686| 63.98%|  479.38|  104.09|44:cdfsm   |  static/decode division lut |
+| 63541720| 63.54%|  628.18|   92.24|45:cdfsb   |  static interlv/dec. search |
+| 24811052| 24.81%|  177.39|  104.30|46:cdf     |  byte   adaptive            |
+| 24811060| 24.81%|  191.80|   98.96|47:cdfi    |  byte   adaptive interleaved|
+| 31004892| 31.00%|  158.06|   72.18|48:cdf-8   |  vnibble                    |
+| 31004896| 31.00%|  159.56|   73.53|49:cdfi-8  |  vnibble interleaved        |
+| 24848864| 24.85%|  116.76|  202.27|56:ans auto|                             |
+| 24848864| 24.85%|  126.57|  175.43|57:ans sse |                             |
+| 23068372| 23.07%|  128.06|   83.57|64:ans auto|  o1                         |
+| 23521656| 23.52%|   50.43|   82.32|66:ansb    |  bitwise ans                |
+|100000012|100.00%|16495.29|16050.82|79:memcpy  |                             |
 
 ## BWT Benchmark: TurboRC vs the best BWT compressors (2023.04)
 - [bsc](https://github.com/IlyaGrebnov/libbsc)
