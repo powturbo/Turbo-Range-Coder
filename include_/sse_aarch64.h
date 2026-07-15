@@ -182,7 +182,7 @@ static inline __m128  _mm_castsi128_ps(__m128i v) {  return (__m128 )(v); }
 #define _mm_srai_epi16(  _v_,_m_)               (__m128i)vshlq_s16(i16v(_v_), vdupq_n_s16(-(_m_)))
 #define _mm_srai_epi32(  _v_,_m_)               vshlq_s32(_v_, vdupq_n_s32(-(_m_)))
 #define _mm_srai_epi64(  _v_,_m_)               (__m128i)vshlq_s64(i64v(_v_), vdupq_n_s64(-(_m_)))
-#define mm_srai_epi64_63(_v_, _s_)              _mm_srai_epi64(_v_,63) 
+#define mm_srai_epi64_63(_v_)                   _mm_srai_epi64(_v_,63) 
 #define _mm_sll_epi8(    _u_,_v_)               (__m128i)vshlq_s8( i8v( _u_), i8v( _v_))    // _v_:same value in all lanes
 #define _mm_sll_epi16(   _u_,_v_)               (__m128i)vshlq_s16(i16v(_u_), i16v(_v_))
 #define _mm_sll_epi32(   _u_,_v_)               vshlq_s32(_u_, _v_)
