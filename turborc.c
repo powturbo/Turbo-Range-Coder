@@ -32,21 +32,19 @@
   #endif
 #define __STDC_WANT_IEC_60559_TYPES_EXT__
 #include <float.h>
-#include "include/turborc.h"
-
-#include "include_/rcutil.h"
-#include "include_/conf.h"
-
   #ifdef _MSC_VER
 #include "vs/getopt.h"
   #else
 #include <getopt.h> 
   #endif
- 
+
+#include "include/turborc.h"
+#include "include_/rcutil.h"
 #include "include_/conf.h"
-#include "include_/time_.h"
 #include "include_/bec.h"
 #include "rcutil_.h"
+#include "include_/time_.h"
+
   #ifdef _TRANSPOSE
 #include "include_/transpose.h"
   #endif
@@ -67,6 +65,7 @@
   #ifdef _EXT
 #include "xturborc.h"
   #endif
+
 
 #ifdef _BWTSATAN  
 #define NO_BENCH
