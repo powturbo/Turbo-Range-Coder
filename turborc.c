@@ -458,7 +458,7 @@ unsigned bench(unsigned char *in, unsigned n, unsigned char *out, unsigned char 
             else    {TM("19:bec       Bit EC                     ",l=becenc8(    in,n,out),   n,l, CCPY:becdec8(    out,n,cpy  )); } break;
           #ifdef _BWT
     case 20:if(n > BLKBWTMAX*MB) printf("blocksize too big for bwt.max=%d\n", BLKBWTMAX);
-                    else {   TM("20:bwt                                  ",l=rcbwtenc(in,n,out,lev,thnum,flag), n,l, l>=n?memcpy(cpy,out,n):rcbwtdec(  out,n,cpy,lev, thnum));} break;
+            else {   TM("20:bwt                                  ",l=rcbwtenc(in,n,out,lev,thnum,flag), n,l, CCPY:rcbwtdec(  out,n,cpy,lev, thnum));} break;
       #endif
     case 26:if(z==1){TM("26:rcg-8     gamma                      ",l=rcgenc8(    in,n,out,r), n,l, CCPY:rcgdec8(    out,n,cpy,r));   break;}
             if(z==2){TM("26:rcg-16    gamma                      ",l=rcgenc16(   in,n,out,r), n,l, CCPY:rcgdec16(   out,n,cpy,r));   break;}
