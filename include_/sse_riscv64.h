@@ -179,6 +179,7 @@ static inline __m128i _mm_slli_si128(__m128i v, int imm) {
 #define  mm_srai_epi16(  _v_,_c_)               _mm_srai_epi16(_v_,_c_)
 #define  mm_srai_epi32(  _v_,_c_)               _mm_srai_epi32(_v_,_c_) 
 #define  mm_srai_epi64(  _v_,_c_)               _mm_srai_epi64(_v_,_c_) 
+#define mm_srai_epi64_63(_v_)                   _mm_srai_epi64(_v_,63) 
 								
 #define _mm_sll_epi8(    _u_,_v_)               i8v( __riscv_vsll_vv_i8m1(  vi8( _u_), vi8( _v_),16))
 #define _mm_sll_epi16(   _u_,_v_)               i16v(__riscv_vsll_vv_i16m1( vi16(_u_), vi16(_v_), 8))
