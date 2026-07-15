@@ -1,4 +1,5 @@
 // Turbo Range Coder bwt: templates include
+#include <string.h>
 #include "include/turborc.h"
 #include "include_/conf.h"
 #include "include_/rcutil.h"
