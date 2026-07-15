@@ -145,6 +145,8 @@ double _fprazor64(double d, double e, int lg2e);
 void   fprazor32( float  *in, unsigned n, float  *out, float  e);
 void   fprazor64(double  *in, unsigned n, double *out, double e);
 
+void fpstat(unsigned char *in, size_t n, unsigned char *out, int s, unsigned char *_tmp); 
+
 #ifdef __cplusplus
 }
 #endif
