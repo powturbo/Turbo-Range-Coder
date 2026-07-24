@@ -201,7 +201,7 @@
 
   #if defined(__AVX2__)
     #ifdef VINI256
-void T3(TP, enc256v, ESIZE)(unsigned char *in, unsigned n, unsigned char *out) {
+void T3(TP, enc256v, ESIZE)(unsigned char *__restrict in, unsigned n, unsigned char *__restrict out) {
   unsigned      v = n&~(ESIZE*32-1);
   unsigned      stride = v/STRIDE;
   unsigned char *op,*ip;
@@ -278,12 +278,12 @@ void T3(TP, enc256v, ESIZE)(unsigned char *in, unsigned n, unsigned char *out) {
   for(ip = in,op = out; ip != in+v; ip += ESIZE*32, op += ESIZE*32/STRIDE) {
     unsigned char *p = op;                                                      PREFETCH(ip+ESIZE*192,0);
     __m256i iv0, iv1, ov0, ov1;
-	  #if ESIZE >= 2
+      #if ESIZE >= 2
     __m256i iv2, iv3, ov2, ov3;
-	    #if ESIZE > 4
+        #if ESIZE > 4
     __m256i iv4, iv5, iv6, iv7, ov4, ov5, ov6, ov7;
-	    #endif
-	#endif
+        #endif
+    #endif
       #if   ESIZE == 2
     ov0 = LD256((__m256i *) ip    ); VE256(ov0,vs); ov0 = _mm256_shuffle_epi8(ov0, sv0);
     ov1 = LD256((__m256i *)(ip+32)); VE256(ov1,vs); ov1 = _mm256_shuffle_epi8(ov1, sv1);
@@ -391,57 +391,63 @@ void T3(TP, enc256v, ESIZE)(unsigned char *in, unsigned n, unsigned char *out) {
     #endif 
 
     #ifdef VINI256
-#define NBL0(x,y) ov##x = _mm256_permute4x64_epi64(_mm256_castsi128_si256(_mm_loadu_si128((__m128i *)(p       ))),_MM_SHUFFLE(3, 1, 2, 0));\
+#define NBL0(x,y) ov##x = _mm256_permute4x64_epi64(_mm256_castsi128_si256(_mm_loadu_si128((__m128i *)(p        ))),_MM_SHUFFLE(3, 1, 2, 0));\
                   ov##y = _mm256_permute4x64_epi64(_mm256_castsi128_si256(_mm_loadu_si128((__m128i *)(p+=stride))),_MM_SHUFFLE(3, 1, 2, 0));
 
 #define NBL(x,y)  ov##x = _mm256_permute4x64_epi64(_mm256_castsi128_si256(_mm_loadu_si128((__m128i *)(p+=stride))),_MM_SHUFFLE(3, 1, 2, 0));\
                   ov##y = _mm256_permute4x64_epi64(_mm256_castsi128_si256(_mm_loadu_si128((__m128i *)(p+=stride))),_MM_SHUFFLE(3, 1, 2, 0));
 
+#define NBLxx(x,y)  ov##x = _mm256_castsi128_si256(_mm_loadu_si128((__m128i *)(p+=stride)));\
+                  ov##y = _mm256_castsi128_si256(_mm_loadu_si128((__m128i *)(p+=stride)));\
+                  ov##x = _mm256_permute4x64_epi64(ov##x,_MM_SHUFFLE(3, 1, 2, 0));\
+                  ov##y = _mm256_permute4x64_epi64(ov##y,_MM_SHUFFLE(3, 1, 2, 0));
+
 #define NB(x,y,_v_) {\
   ov##x = _mm256_and_si256(_mm256_unpacklo_epi8(ov##x, _mm256_srli_epi16(ov##x,4)), cl);\
   ov##y = _mm256_and_si256(_mm256_unpacklo_epi8(ov##y, _mm256_srli_epi16(ov##y,4)), cl);\
-  _v_  = _mm256_or_si256(_mm256_slli_epi16(ov##y,4), ov##x); \
+  _v_  = _mm256_or_si256(_mm256_slli_epi16(ov##y,4), ov##x);\
 }
 
-void T3(TP, dec256v, ESIZE)(unsigned char *in, unsigned n, unsigned char *out) {
+void T3(TP, dec256v, ESIZE)(unsigned char *__restrict in, unsigned n, unsigned char *__restrict out) {
   unsigned      v      = n&~(ESIZE*32-1);
   unsigned      stride = v/STRIDE;
-  unsigned char *op,*ip;
+  unsigned char *__restrict op, *__restrict ip;
   VINI256;
 
     #if STRIDE > ESIZE
   __m256i cl = _mm256_set1_epi8(0x0f), ch=_mm256_set1_epi8(0xf0), cb = _mm256_set1_epi16(0xff);
     #endif
 
-  for(op = out,ip = in; op != out+v; ip += ESIZE*32/STRIDE, op += ESIZE*32) { unsigned char *p = ip;    PREFETCH(ip+ESIZE*192,0);
+  const unsigned char * __restrict out_ = out + v;
+  for(op = out,ip = in; op != out_; ip += ESIZE*32/STRIDE, op += ESIZE*32) { unsigned char *__restrict p = ip; PREFETCH((const char*)(ip + 3*stride + 256),0);//PREFETCH(ip+ESIZE*192,0);
     __m256i iv0, iv1, ov0, ov1;
-	  #if ESIZE >= 2
+      #if ESIZE >= 2
     __m256i iv2, iv3, ov2, ov3;
-	    #if ESIZE > 4
+        #if ESIZE > 4
     __m256i iv4, iv5, iv6, iv7, ov4, ov5, ov6, ov7;
-	    #endif
-	#endif
+        #endif
+    #endif
 
       #if STRIDE > ESIZE
-    NBL0(0,1); NBL( 2,3); NB(0,1,iv0); NB(2,3,iv1);
+    NBL0(0,1); NBL(2,3); NB(0,1,iv0); NB(2,3,iv1);
         #if ESIZE > 2
-    NBL( 0,1); NBL( 2,3); NB(0,1,iv2); NB(2,3,iv3);
+    NBL(0,1);  NBL(2,3); NB(0,1,iv2); NB(2,3,iv3);
           #if ESIZE > 4
-    NBL(4,5); NBL( 6,7); NB(4,5,iv4); NB(6,7,iv5);
-    NBL(4,5); NBL( 6,7); NB(4,5,iv6); NB(6,7,iv7);
+    NBL(4,5);  NBL(6,7); NB(4,5,iv4); NB(6,7,iv5);
+    NBL(4,5);  NBL(6,7); NB(4,5,iv6); NB(6,7,iv7);
           #endif
         #endif
       #else
     iv0 = _mm256_loadu_si256((__m256i *) p        );
-    iv1 = _mm256_loadu_si256((__m256i *)(p+=stride));
+    iv1 = _mm256_loadu_si256((__m256i *)(p + stride));
         #if ESIZE > 2
-    iv2 = _mm256_loadu_si256((__m256i *)(p+=stride));
-    iv3 = _mm256_loadu_si256((__m256i *)(p+=stride));
+    iv2 = _mm256_loadu_si256((__m256i *)(p + stride*2));
+    iv3 = _mm256_loadu_si256((__m256i *)(p + stride*3));
           #if ESIZE > 4
-    iv4 = _mm256_loadu_si256((__m256i *)(p+=stride));
-    iv5 = _mm256_loadu_si256((__m256i *)(p+=stride));
-    iv6 = _mm256_loadu_si256((__m256i *)(p+=stride));
-    iv7 = _mm256_loadu_si256((__m256i *)(p+=stride));
+    iv4 = _mm256_loadu_si256((__m256i *)(p + stride*4));
+    iv5 = _mm256_loadu_si256((__m256i *)(p + stride*5));
+    iv6 = _mm256_loadu_si256((__m256i *)(p + stride*6));
+    iv7 = _mm256_loadu_si256((__m256i *)(p + stride*7));
           #endif
         #endif
       #endif
@@ -454,11 +460,15 @@ void T3(TP, dec256v, ESIZE)(unsigned char *in, unsigned n, unsigned char *out) {
     _mm256_storeu_si256((__m256i *)op,      iv0);
     _mm256_storeu_si256((__m256i *)(op+32), iv1);
       #elif ESIZE == 4
-    ov0 = _mm256_unpacklo_epi8( iv0, iv1); ov1 = _mm256_unpackhi_epi8( iv0, iv1);
-    ov2 = _mm256_unpacklo_epi8( iv2, iv3); ov3 = _mm256_unpackhi_epi8( iv2, iv3);
-
-    iv0 = _mm256_unpacklo_epi16(ov0, ov2); iv1 = _mm256_unpackhi_epi16(ov0, ov2);
-    iv2 = _mm256_unpacklo_epi16(ov1, ov3); iv3 = _mm256_unpackhi_epi16(ov1, ov3);
+    ov0 = _mm256_unpacklo_epi8( iv0, iv1); 
+    ov1 = _mm256_unpackhi_epi8( iv0, iv1);
+    ov2 = _mm256_unpacklo_epi8( iv2, iv3); 
+    ov3 = _mm256_unpackhi_epi8( iv2, iv3);
+    
+    iv0 = _mm256_unpacklo_epi16(ov0, ov2); 
+    iv1 = _mm256_unpackhi_epi16(ov0, ov2);
+    iv2 = _mm256_unpacklo_epi16(ov1, ov3); 
+    iv3 = _mm256_unpackhi_epi16(ov1, ov3);
 
     ov0 = _mm256_permute2x128_si256(iv0, iv1, (2 << 4) | 0);
     ov1 = _mm256_permute2x128_si256(iv2, iv3, (2 << 4) | 0);
@@ -470,15 +480,19 @@ void T3(TP, dec256v, ESIZE)(unsigned char *in, unsigned n, unsigned char *out) {
     _mm256_storeu_si256((__m256i *)(op+64), ov2);
     _mm256_storeu_si256((__m256i *)(op+96), ov3);
      #else
-    ov0 = _mm256_unpacklo_epi8(iv0, iv1); ov1 = _mm256_unpackhi_epi8(iv0, iv1);
-    ov2 = _mm256_unpacklo_epi8(iv2, iv3); ov3 = _mm256_unpackhi_epi8(iv2, iv3);
+    ov0 = _mm256_unpacklo_epi8(iv0, iv1); 
+    ov1 = _mm256_unpackhi_epi8(iv0, iv1);
+    ov2 = _mm256_unpacklo_epi8(iv2, iv3); 
+    ov3 = _mm256_unpackhi_epi8(iv2, iv3);
     iv0 = _mm256_permute4x64_epi64(_mm256_unpacklo_epi16(ov0, ov2), _MM_SHUFFLE(3, 1, 2, 0));
     iv1 = _mm256_permute4x64_epi64(_mm256_unpackhi_epi16(ov0, ov2), _MM_SHUFFLE(3, 1, 2, 0));
     iv2 = _mm256_permute4x64_epi64(_mm256_unpacklo_epi16(ov1, ov3), _MM_SHUFFLE(3, 1, 2, 0));
     iv3 = _mm256_permute4x64_epi64(_mm256_unpackhi_epi16(ov1, ov3), _MM_SHUFFLE(3, 1, 2, 0));
 
-    ov4 = _mm256_unpacklo_epi8(iv4, iv5); ov5 = _mm256_unpackhi_epi8(iv4, iv5);
-    ov6 = _mm256_unpacklo_epi8(iv6, iv7); ov7 = _mm256_unpackhi_epi8(iv6, iv7);
+    ov4 = _mm256_unpacklo_epi8(iv4, iv5); 
+    ov5 = _mm256_unpackhi_epi8(iv4, iv5);
+    ov6 = _mm256_unpacklo_epi8(iv6, iv7); 
+    ov7 = _mm256_unpackhi_epi8(iv6, iv7);
     iv4 = _mm256_permute4x64_epi64(_mm256_unpacklo_epi16(ov4, ov6), _MM_SHUFFLE(3, 1, 2, 0));
     iv5 = _mm256_permute4x64_epi64(_mm256_unpackhi_epi16(ov4, ov6), _MM_SHUFFLE(3, 1, 2, 0));
     iv6 = _mm256_permute4x64_epi64(_mm256_unpacklo_epi16(ov5, ov7), _MM_SHUFFLE(3, 1, 2, 0));
@@ -511,11 +525,11 @@ void T3(TP, dec256v, ESIZE)(unsigned char *in, unsigned n, unsigned char *out) {
     #endif
   #else //__AVX2__
 
-	#if (defined(__SSE3__) || defined(__ARM_NEON) || defined(__riscv_vector) || defined(__loongarch_sx)) && (ESIZE == 2 || ESIZE == 4 || ESIZE == 8)
+    #if (defined(__SSE3__) || defined(__ARM_NEON) || defined(__riscv_vector) || defined(__loongarch_sx)) && (ESIZE == 2 || ESIZE == 4 || ESIZE == 8)
 #define ST(_p_,_v_,_i_)  _mm_storeu_si128((__m128i *)SIE(_p_,_i_), _v_)
 #define ST0(_p_,_v_)  _mm_storeu_si128((__m128i *)(_p_), _v_)
 
-void T3(TP, enc128v, ESIZE)(unsigned char *in, unsigned n, unsigned char *out) {
+void T3(TP, enc128v, ESIZE)(unsigned char *__restrict in, unsigned n, unsigned char *__restrict out) {
   unsigned           v = n&~(ESIZE*32-1);
   unsigned      stride = v/STRIDE;
   unsigned char *op,*ip;
@@ -547,13 +561,13 @@ void T3(TP, enc128v, ESIZE)(unsigned char *in, unsigned n, unsigned char *out) {
 
   for(ip = in, op = out; ip != in+v; ip+=ESIZE*16,op += ESIZE*16/STRIDE) { unsigned char *p = op;   PREFETCH(ip+(ESIZE*16)*ESIZE,0);
     __m128i iv0, iv1, ov0, ov1;
-	  #if ESIZE >= 2
+      #if ESIZE >= 2
     __m128i iv2, iv3, ov2, ov3;
-	    #if ESIZE > 4
+        #if ESIZE > 4
     __m128i iv4, iv5, iv6, iv7, ov4, ov5, ov6, ov7;
-	    #endif
-	#endif
-	
+        #endif
+    #endif
+    
       #if defined(__SSSE3__) || defined(__ARM_NEON) || defined(__riscv_vector) || defined(__loongarch_sx)
         #if   ESIZE == 2
           #ifdef __ARM_NEON
@@ -818,7 +832,7 @@ void T3(TP, enc128v, ESIZE)(unsigned char *in, unsigned n, unsigned char *out) {
   T2(tpenc,ESIZE)(in+v, n-v, out+v);
 }
 
-void T3(TP, dec128v, ESIZE)(unsigned char *in, unsigned n, unsigned char *out) {
+void T3(TP, dec128v, ESIZE)(unsigned char *__restrict in, unsigned n, unsigned char *__restrict out) {
   unsigned           v = n&~(ESIZE*32-1);
   unsigned      stride = v/STRIDE;
   unsigned char *op,*ip;
@@ -830,12 +844,12 @@ void T3(TP, dec128v, ESIZE)(unsigned char *in, unsigned n, unsigned char *out) {
   for(op = out,ip = in; op != out+v; op+=ESIZE*16,ip += ESIZE*16/STRIDE) {
     unsigned char *p=ip;                                                        PREFETCH(ip+(ESIZE*16/STRIDE)*ESIZE,0);
     __m128i iv0, iv1, ov0, ov1;
-	  #if ESIZE >= 2
+      #if ESIZE >= 2
     __m128i iv2, iv3, ov2, ov3;
-	    #if ESIZE > 4
+        #if ESIZE > 4
     __m128i iv4, iv5, iv6, iv7, ov4, ov5, ov6, ov7;
-	    #endif
-	#endif
+        #endif
+    #endif
 
       #if STRIDE > ESIZE //------------ Nibble transpose -------------------
     ov0 = _mm_loadl_epi64((__m128i *)    p   );
@@ -966,7 +980,7 @@ void T3(TP, dec128v, ESIZE)(unsigned char *in, unsigned n, unsigned char *out) {
 
 #define ODX2 (x + y * nx)
 #define O2D(_i_) (x + (y+_i_) * nx)
-void T2(tp2denc,ESIZE)(unsigned char *in, unsigned nx, unsigned ny, unsigned char *out) {
+void T2(tp2denc,ESIZE)(unsigned char *__restrict in, unsigned nx, unsigned ny, unsigned char *__restrict out) {
   unsigned x,y;
   uint_t *op = (uint_t *)out, *ip = (uint_t *)in;
 
@@ -975,7 +989,7 @@ void T2(tp2denc,ESIZE)(unsigned char *in, unsigned nx, unsigned ny, unsigned cha
       op[ODX2] = *ip++;
 }
 
-void T2(tp2ddec,ESIZE)(unsigned char *in, unsigned nx, unsigned ny, unsigned char *out) {
+void T2(tp2ddec,ESIZE)(unsigned char *__restrict in, unsigned nx, unsigned ny, unsigned char *__restrict out) {
   unsigned x, y;
   uint_t   *op = (uint_t *)out, *ip = (uint_t *)in;
 
@@ -986,7 +1000,7 @@ void T2(tp2ddec,ESIZE)(unsigned char *in, unsigned nx, unsigned ny, unsigned cha
 #undef ODX2
 
 #define ODX3 (x + y * nx + z * ny * nx)
-void T2(tp3denc,ESIZE)(unsigned char *in, unsigned nx, unsigned ny, unsigned nz, unsigned char *out) {
+void T2(tp3denc,ESIZE)(unsigned char *__restrict in, unsigned nx, unsigned ny, unsigned nz, unsigned char *__restrict out) {
   unsigned x, y, z;
   uint_t   *op = (uint_t *)out, *ip = (uint_t *)in;
 
@@ -996,7 +1010,7 @@ void T2(tp3denc,ESIZE)(unsigned char *in, unsigned nx, unsigned ny, unsigned nz,
         op[ODX3] = *ip++;
 }
 
-void T2(tp3ddec,ESIZE)(unsigned char *in, unsigned nx, unsigned ny, unsigned nz, unsigned char *out) {
+void T2(tp3ddec,ESIZE)(unsigned char *__restrict in, unsigned nx, unsigned ny, unsigned nz, unsigned char *__restrict out) {
   unsigned x,y,z;
   uint_t   *op = (uint_t *)out, *ip = (uint_t *)in;
 
@@ -1008,7 +1022,7 @@ void T2(tp3ddec,ESIZE)(unsigned char *in, unsigned nx, unsigned ny, unsigned nz,
 #undef ODX3
 
 #define ODX4 (w + x * nw + y * nx * nw + z * nx * ny * nw)
-void T2(tp4denc,ESIZE)(unsigned char *in, unsigned nw, unsigned nx, unsigned ny, unsigned nz, unsigned char *out) {
+void T2(tp4denc,ESIZE)(unsigned char *__restrict in, unsigned nw, unsigned nx, unsigned ny, unsigned nz, unsigned char *__restrict out) {
   unsigned w,x,y,z;
   uint_t *op = (uint_t *)out, *ip = (uint_t *)in;
 
@@ -1019,7 +1033,7 @@ void T2(tp4denc,ESIZE)(unsigned char *in, unsigned nw, unsigned nx, unsigned ny,
           op[ODX4] = *ip++;
 }
 
-void T2(tp4ddec,ESIZE)(unsigned char *in, unsigned nw, unsigned nx, unsigned ny, unsigned nz, unsigned char *out) {
+void T2(tp4ddec,ESIZE)(unsigned char *__restrict in, unsigned nw, unsigned nx, unsigned ny, unsigned nz, unsigned char *__restrict out) {
   unsigned w,x,y,z;
   uint_t *op = (uint_t *)out, *ip = (uint_t *)in;
 
@@ -1032,7 +1046,7 @@ void T2(tp4ddec,ESIZE)(unsigned char *in, unsigned nw, unsigned nx, unsigned ny,
 #undef ODX4
       #endif // ISDELTA
 
-void T3(TP, enc, ESIZE)(unsigned char *in, unsigned n, unsigned char *out) {
+void T3(TP, enc, ESIZE)(unsigned char *__restrict in, unsigned n, unsigned char *__restrict out) {
   unsigned char *op,*ip,*e;
   unsigned stride = n/STRIDE;
 
@@ -1073,7 +1087,7 @@ void T3(TP, enc, ESIZE)(unsigned char *in, unsigned n, unsigned char *out) {
     *op++ = *ip++;
 }
 
-void T3(TP, dec, ESIZE)(unsigned char *in, unsigned n, unsigned char *out) {
+void T3(TP, dec, ESIZE)(unsigned char *__restrict in, unsigned n, unsigned char *__restrict out) {
   unsigned char *op,*ip,*e;
   unsigned      stride = n/STRIDE;
 
