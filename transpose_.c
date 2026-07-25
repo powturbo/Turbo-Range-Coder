@@ -27,7 +27,7 @@
 #include "include_/cpu.h"
 #include "include_/transpose.h"
 
-typedef void (*TPFUNC)( unsigned char *in, unsigned n, unsigned char *out);
+typedef void (*TPFUNC)( unsigned char *__restrict in, unsigned n, unsigned char *__restrict out);
 
                         // 0  1       2       3       4      5  6  7       8   9                    16
 static TPFUNC _tpe[]   = { 0, 0, tpenc2,  tpenc3,  tpenc4,   0, 0, 0, tpenc8,  0, 0, 0, 0, 0, 0, 0, tpenc16 }; //  byte
@@ -105,7 +105,7 @@ void tpini(int id) {
   ;
 }
 
-void tpenc(unsigned char *in, unsigned n, unsigned char *out, unsigned esize) {
+void tpenc(unsigned char *__restrict in, unsigned n, unsigned char *__restrict out, unsigned esize) {
   TPFUNC f;
   if(!tpset) tpini(0);
   if(esize <= 16 && (f = _tpe[esize])) f(in,n,out);
@@ -120,7 +120,7 @@ void tpenc(unsigned char *in, unsigned n, unsigned char *out, unsigned esize) {
   }
 }
 
-void tpdec(unsigned char *in, unsigned n, unsigned char *out, unsigned esize) {
+void tpdec(unsigned char *__restrict in, unsigned n, unsigned char *__restrict out, unsigned esize) {
   TPFUNC f;
   if(!tpset) tpini(0);
   if(esize <= 16 && (f = _tpd[esize])) f(in,n,out);
@@ -135,14 +135,14 @@ void tpdec(unsigned char *in, unsigned n, unsigned char *out, unsigned esize) {
   }
 }
 
-void tp4enc(unsigned char *in, unsigned n, unsigned char *out, unsigned esize) {
+void tp4enc(unsigned char *__restrict in, unsigned n, unsigned char *__restrict out, unsigned esize) {
   TPFUNC f;
   if(!tpset) tpini(0);
   if(esize <= 16 && (f = _tp4e[esize])) f(in,n,out);
   else tpenc(in,n,out,esize);
 }
 
-void tp4dec(unsigned char *in, unsigned n, unsigned char *out, unsigned esize) {
+void tp4dec(unsigned char *__restrict in, unsigned n, unsigned char *__restrict out, unsigned esize) {
   TPFUNC f;
   if(!tpset) tpini(0);
   if(esize <= 16 && (f = _tp4d[esize])) f(in,n,out);
@@ -150,7 +150,7 @@ void tp4dec(unsigned char *in, unsigned n, unsigned char *out, unsigned esize) {
 }
 
 //-- zigzag
-void tpzenc(unsigned char *in, unsigned n, unsigned char *out, unsigned esize) {
+void tpzenc(unsigned char *__restrict in, unsigned n, unsigned char *__restrict out, unsigned esize) {
   TPFUNC f;
   if(!tpset) tpini(0);
   if(esize <= 16 && (f = _tpze[esize])) f(in,n,out);
@@ -165,7 +165,7 @@ void tpzenc(unsigned char *in, unsigned n, unsigned char *out, unsigned esize) {
   }
 }
 
-void tpzdec(unsigned char *in, unsigned n, unsigned char *out, unsigned esize) {
+void tpzdec(unsigned char *__restrict in, unsigned n, unsigned char *__restrict out, unsigned esize) {
   TPFUNC f;
   if(!tpset) tpini(0);
   if(esize <= 16 && (f = _tpzd[esize])) f(in,n,out);
@@ -180,14 +180,14 @@ void tpzdec(unsigned char *in, unsigned n, unsigned char *out, unsigned esize) {
   }
 }
 
-void tp4zenc(unsigned char *in, unsigned n, unsigned char *out, unsigned esize) {
+void tp4zenc(unsigned char *__restrict in, unsigned n, unsigned char *__restrict out, unsigned esize) {
   TPFUNC f;
   if(!tpset) tpini(0);
   if(esize <= 16 && (f = _tp4ze[esize])) f(in,n,out);
   else tpzenc(in,n,out,esize);
 }
 
-void tp4zdec(unsigned char *in, unsigned n, unsigned char *out, unsigned esize) {
+void tp4zdec(unsigned char *__restrict in, unsigned n, unsigned char *__restrict out, unsigned esize) {
   TPFUNC f;
   if(!tpset) tpini(0);
   if(esize <= 16 && (f = _tp4zd[esize])) f(in,n,out);
@@ -195,7 +195,7 @@ void tp4zdec(unsigned char *in, unsigned n, unsigned char *out, unsigned esize) 
 }
 
 //-- xor
-void tpxenc(unsigned char *in, unsigned n, unsigned char *out, unsigned esize) {
+void tpxenc(unsigned char *__restrict in, unsigned n, unsigned char *__restrict out, unsigned esize) {
   TPFUNC f;
   if(!tpset) tpini(0);
   if(esize <= 16 && (f = _tpxe[esize])) f(in,n,out);
@@ -210,7 +210,7 @@ void tpxenc(unsigned char *in, unsigned n, unsigned char *out, unsigned esize) {
   }
 }
 
-void tpxdec(unsigned char *in, unsigned n, unsigned char *out, unsigned esize) {
+void tpxdec(unsigned char *__restrict in, unsigned n, unsigned char *__restrict out, unsigned esize) {
   TPFUNC f;
   if(!tpset) tpini(0);
   if(esize <= 16 && (f = _tpxd[esize])) f(in,n,out);
@@ -225,14 +225,14 @@ void tpxdec(unsigned char *in, unsigned n, unsigned char *out, unsigned esize) {
   }
 }
 
-void tp4xenc(unsigned char *in, unsigned n, unsigned char *out, unsigned esize) {
+void tp4xenc(unsigned char *__restrict in, unsigned n, unsigned char *__restrict out, unsigned esize) {
   TPFUNC f;
   if(!tpset) tpini(0);
   if(esize <= 16 && (f = _tp4xe[esize])) f(in,n,out);
   else tpxenc(in,n,out,esize);
 }
 
-void tp4xdec(unsigned char *in, unsigned n, unsigned char *out, unsigned esize) {
+void tp4xdec(unsigned char *__restrict in, unsigned n, unsigned char *__restrict out, unsigned esize) {
   TPFUNC f;
   if(!tpset) tpini(0);
   if(esize <= 16 && (f = _tp4xd[esize])) f(in,n,out);
@@ -241,7 +241,7 @@ void tp4xdec(unsigned char *in, unsigned n, unsigned char *out, unsigned esize) 
 
 #define E for(e = esize-1; e >= 0; e--)
 #define ODX2 (x + y * nx) * esize + e
-void tp2denc(unsigned char *in, unsigned nx, unsigned ny, unsigned char *out, unsigned esize) {
+void tp2denc(unsigned char *__restrict in, unsigned nx, unsigned ny, unsigned char *__restrict out, unsigned esize) {
   switch(esize) {
 	case 2: tp2denc2(in,nx,ny,out); break;
 	case 4: tp2denc4(in,nx,ny,out); break;
@@ -257,7 +257,7 @@ void tp2denc(unsigned char *in, unsigned nx, unsigned ny, unsigned char *out, un
   }
 }
 
-void tp2ddec(unsigned char *in, unsigned nx, unsigned ny, unsigned char *out, unsigned esize) {
+void tp2ddec(unsigned char *__restrict in, unsigned nx, unsigned ny, unsigned char *__restrict out, unsigned esize) {
   switch(esize) {
 	case 2: tp2ddec2(in,nx,ny,out); break;
 	case 4: tp2ddec4(in,nx,ny,out); break;
@@ -274,7 +274,7 @@ void tp2ddec(unsigned char *in, unsigned nx, unsigned ny, unsigned char *out, un
 #undef ODX2
 
 #define ODX3 (x + y * nx + z * ny * nx) * esize + e
-void tp3denc(unsigned char *in, unsigned nx, unsigned ny, unsigned nz, unsigned char *out, unsigned esize) {
+void tp3denc(unsigned char *__restrict in, unsigned nx, unsigned ny, unsigned nz, unsigned char *__restrict out, unsigned esize) {
   switch(esize) {
 	case 2: tp3denc2(in,nx,ny,nz,out); break;
 	case 4: tp3denc4(in,nx,ny,nz,out); break;
@@ -290,7 +290,7 @@ void tp3denc(unsigned char *in, unsigned nx, unsigned ny, unsigned nz, unsigned 
   }
 }
 
-void tp3ddec(unsigned char *in, unsigned nx, unsigned ny, unsigned nz, unsigned char *out, unsigned esize) {
+void tp3ddec(unsigned char *__restrict in, unsigned nx, unsigned ny, unsigned nz, unsigned char *__restrict out, unsigned esize) {
   switch(esize) {
 	case 2: tp3ddec2(in,nx,ny,nz,out); break;
 	case 4: tp3ddec4(in,nx,ny,nz,out); break;
@@ -308,7 +308,7 @@ void tp3ddec(unsigned char *in, unsigned nx, unsigned ny, unsigned nz, unsigned 
 #undef ODX3
 
 #define ODX4 (w + x * nw + y * nx * nw + z * nx * ny * nw) * esize + e
-void tp4denc(unsigned char *in, unsigned nw, unsigned nx, unsigned ny, unsigned nz, unsigned char *out, unsigned esize) {
+void tp4denc(unsigned char *__restrict in, unsigned nw, unsigned nx, unsigned ny, unsigned nz, unsigned char *__restrict out, unsigned esize) {
   switch(esize) {
 	case 2: tp4denc2(in,nw,nx,ny,nz,out); break;
 	case 4: tp4denc4(in,nw,nx,ny,nz,out); break;
@@ -326,7 +326,7 @@ void tp4denc(unsigned char *in, unsigned nw, unsigned nx, unsigned ny, unsigned 
   }
 }
 
-void tp4ddec(unsigned char *in, unsigned nw, unsigned nx, unsigned ny, unsigned nz, unsigned char *out, unsigned esize) {
+void tp4ddec(unsigned char *__restrict in, unsigned nw, unsigned nx, unsigned ny, unsigned nz, unsigned char *__restrict out, unsigned esize) {
   switch(esize) {
 	case 2: tp4ddec2(in,nw,nx,ny,nz,out); break;
 	case 4: tp4ddec4(in,nw,nx,ny,nz,out); break;
