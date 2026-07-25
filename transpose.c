@@ -712,7 +712,7 @@ void T3(TP, enc128v, ESIZE)(unsigned char *__restrict in, unsigned n, unsigned c
     ov5 = LD128(ip+ 80); 
     ov6 = LD128(ip+ 96); 
     ov7 = LD128(ip+112); 
-    VE128(ov4,ov5,ov6,ov7,vs); // VE128(ov4,vs);  VE128(ov5,vs);  VE128(ov6,vs);  VE128(ov7,vs); 
+    VEQ128(ov4,ov5,ov6,ov7,vs); // VE128(ov4,vs);  VE128(ov5,vs);  VE128(ov6,vs);  VE128(ov7,vs); 
     ov4 = _mm_shuffle_epi8(ov4, sf);
     ov5 = _mm_shuffle_epi8(ov5, sf);
     ov6 = _mm_shuffle_epi8(ov6, sf);
