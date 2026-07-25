@@ -51,6 +51,11 @@ static ALWAYS_INLINE __m256i mm256_bsr_epi32(__m256i v) { // bsr
    _v_ = _mm256_cvtepu32_epi64(_mm256_extracti128_si256(_v_, 1));\
 }
 
+static inline __m256i mm256_shuffle_epi8(__m256i a, __m256i b) {
+  __m256i vl = _mm256_permute2x128_si256(a, a, 0x00),
+          vh = _mm256_permute2x128_si256(a, a, 0x11);
+  return _mm256_blendv_epi8(_mm256_shuffle_epi8(vl, b), _mm256_shuffle_epi8(vh, b), _mm256_slli_epi32(b, 3));
+}
 static ALWAYS_INLINE __m256i mm256_cvt64_epu32(__m256i _vh_, __m256i _vl_) { // 64 -> 32
   return _mm256_permute4x64_epi64(_mm256_castps_si256(_mm256_shuffle_ps(_mm256_castsi256_ps(_vl_), _mm256_castsi256_ps(_vh_), _MM_SHUFFLE(2, 0, 2, 0))), _MM_SHUFFLE(3, 1, 2, 0));
 }
@@ -83,7 +88,8 @@ static ALWAYS_INLINE __m256i mm256_zzagd_epi64(__m256i v) { return MM256_ZZAGD_E
 
 static ALWAYS_INLINE __m256i mm256_delta_epi16(__m256i v, __m256i vs) { return _mm256_sub_epi16(v, _mm256_alignr_epi8(v, _mm256_permute2x128_si256(vs, v, 0x21), 14)); }
 static ALWAYS_INLINE __m256i mm256_delta_epi32(__m256i v, __m256i vs) { const __m256i _idx = _mm256_setr_epi32(7,0,1,2,3,4,5,6); return _mm256_sub_epi32(v, _mm256_permutevar8x32_epi32(_mm256_blend_epi32(v,vs,0x80), _idx)); }
-static ALWAYS_INLINE __m256i mm256_delta_epi64(__m256i v, __m256i vs) { return _mm256_sub_epi64(v, _mm256_alignr_epi8(v, _mm256_permute2x128_si256(vs, v, _MM_SHUFFLE(0, 2, 0, 1)),  8)); }
+static ALWAYS_INLINE __m256i mm256_delta_epi64(__m256i v, __m256i vs) { const __m256i _idx = _mm256_setr_epi32(6, 7, 0, 1, 2, 3, 4, 5);  return _mm256_sub_epi64(v, _mm256_permutevar8x32_epi32(_mm256_blend_epi32(v, vs, 0xC0), _idx)); }
+//static ALWAYS_INLINE __m256i mm256_delta_epi64(__m256i v, __m256i vs) { return _mm256_sub_epi64(v, _mm256_alignr_epi8(v, _mm256_permute2x128_si256(vs, v, _MM_SHUFFLE(0, 2, 0, 1)),  8)); }
 
 #define _MM256_SCAN_EPI8(_v_,_vs_,_ho_) {\
   _v_ = _ho_(_v_, _mm256_slli_si256(_v_, 1));\
@@ -249,7 +255,7 @@ static ALWAYS_INLINE __m256i mm256_scani_epi32(__m256i v, __m256i vs, __m256i vi
    v3 = _mm256_xor_si256(v3, _v3);\
 }
 
-#define MM256_DELTAQ_EPI32(v0, v1, v2, v3, vs) {\
+#define MM256_DELTAQ_EPI32OLD(v0, v1, v2, v3, vs) {\
   __m256i _v0 = _mm256_permute2x128_si256(vs, v0, 0x21),\
           _v1 = _mm256_permute2x128_si256(v0, v1, 0x21),\
           _v2 = _mm256_permute2x128_si256(v1, v2, 0x21),\
@@ -258,6 +264,68 @@ static ALWAYS_INLINE __m256i mm256_scani_epi32(__m256i v, __m256i vs, __m256i vi
   v1 = _mm256_sub_epi32(v1, _mm256_alignr_epi8(v1, _v1, 12));\
   v2 = _mm256_sub_epi32(v2, _mm256_alignr_epi8(v2, _v2, 12));\
   v3 = _mm256_sub_epi32(v3, _mm256_alignr_epi8(v3, _v3, 12));\
+}
+
+#define MM256_DELTAQ_EPI32(v0, v1, v2, v3, vs) {\
+  const __m256i _idx = _mm256_setr_epi32(7,0,1,2,3,4,5,6);\
+ __m256i _v0 =  _mm256_blend_epi32(v0,vs,0x80),\
+         _v1 =  _mm256_blend_epi32(v1,v0,0x80),\
+         _v2 =  _mm256_blend_epi32(v2,v1,0x80),\
+         _v3 =  _mm256_blend_epi32(v3,v2,0x80); vs = v3;\
+ _v0 =  _mm256_permutevar8x32_epi32(_v0, _idx); \
+ _v1 =  _mm256_permutevar8x32_epi32(_v1, _idx); \
+ _v2 =  _mm256_permutevar8x32_epi32(_v2, _idx); \
+ _v3 =  _mm256_permutevar8x32_epi32(_v3, _idx); \
+ v0 = _mm256_sub_epi32(v0, _v0);\
+ v1 = _mm256_sub_epi32(v1, _v1);\
+ v2 = _mm256_sub_epi32(v2, _v2);\
+ v3 = _mm256_sub_epi32(v3, _v3);\
+}
+
+#define MM256_DELTAQ_EPI64(v0, v1, v2, v3, vs) {\
+  const __m256i _idx = _mm256_setr_epi32(6,7,0,1,2,3,4,5);\
+ __m256i _v0 =  _mm256_blend_epi32(v0,vs,0xC0), \
+         _v1 =  _mm256_blend_epi32(v1,v0,0xC0), \
+         _v2 =  _mm256_blend_epi32(v2,v1,0xC0),\
+         _v3 =  _mm256_blend_epi32(v3,v2,0xC0); vs = v3;\
+ _v0 =  _mm256_permutevar8x32_epi32(_v0, _idx); \
+ _v1 =  _mm256_permutevar8x32_epi32(_v1, _idx); \
+ _v2 =  _mm256_permutevar8x32_epi32(_v2, _idx); \
+ _v3 =  _mm256_permutevar8x32_epi32(_v3, _idx); \
+ v0 = _mm256_sub_epi64(v0, _v0); \
+ v1 = _mm256_sub_epi64(v1, _v1); \
+ v2 = _mm256_sub_epi64(v2, _v2); \
+ v3 = _mm256_sub_epi64(v3, _v3); \
+}
+
+#define MM256_XOREQ_EPI32(v0, v1, v2, v3, vs) {\
+  __m256i _v0 = _mm256_permute2f128_si256(vs, v0, _MM_SHUFFLE(0, 2, 0, 1)),\
+          _v1 = _mm256_permute2f128_si256(v0, v1, _MM_SHUFFLE(0, 2, 0, 1)),\
+          _v2 = _mm256_permute2f128_si256(v1, v2, _MM_SHUFFLE(0, 2, 0, 1)),\
+          _v3 = _mm256_permute2f128_si256(v2, v3, _MM_SHUFFLE(0, 2, 0, 1)); vs = v3;\
+  _v0 = _mm256_alignr_epi8(v0, _v0, 12);\
+  _v1 = _mm256_alignr_epi8(v1, _v1, 12);\
+  _v2 = _mm256_alignr_epi8(v2, _v2, 12);\
+  _v3 = _mm256_alignr_epi8(v3, _v3, 12);\
+  v0 = _mm256_xor_si256(v0, _v0);\
+  v1 = _mm256_xor_si256(v1, _v1);\
+  v2 = _mm256_xor_si256(v2, _v2);\
+  v3 = _mm256_xor_si256(v3, _v3);\
+}
+
+#define MM256_XOREQ_EPI64(v0, v1, v2, v3, vs) {\
+  __m256i _v0 = _mm256_permute2f128_si256(vs, v0, _MM_SHUFFLE(0, 2, 0, 1)),\
+          _v1 = _mm256_permute2f128_si256(v0, v1, _MM_SHUFFLE(0, 2, 0, 1)),\
+          _v2 = _mm256_permute2f128_si256(v1, v2, _MM_SHUFFLE(0, 2, 0, 1)),\
+          _v3 = _mm256_permute2f128_si256(v2, v3, _MM_SHUFFLE(0, 2, 0, 1)); vs = v3;\
+  _v0 = _mm256_alignr_epi8(v0, _v0, 8);\
+  _v1 = _mm256_alignr_epi8(v1, _v1, 8);\
+  _v2 = _mm256_alignr_epi8(v2, _v2, 8);\
+  _v3 = _mm256_alignr_epi8(v3, _v3, 8);\
+  v0 = _mm256_xor_si256(v0, _v0);\
+  v1 = _mm256_xor_si256(v1, _v1);\
+  v2 = _mm256_xor_si256(v2, _v2);\
+  v3 = _mm256_xor_si256(v3, _v3);\
 }
 
 #define MM256_DELTA1Q_EPI32(v0, v1, v2, v3, vs) {\
@@ -515,6 +583,75 @@ static ALWAYS_INLINE __m128i mm_bsr_epi32(__m128i v) {
   return e;
 }
 
+/*static inline __m128i mm_shuffle256_epi8(__m128i a, __m128i sa, __m128i sb) {
+    __m128i mask_0f = _mm_set1_epi8(0x0F);
+    __m128i al      = _mm_and_si128(a, mask_0f);
+    __m128i ah      = _mm_and_si128(_mm_srli_epi16(a,  4), mask_0f);
+    __m128i idx_sa  = _mm_and_si128(_mm_srli_epi16(sa, 1), mask_0f);
+    __m128i idx_sb  = _mm_and_si128(_mm_srli_epi16(sb, 1), mask_0f);
+    __m128i sa_vl   = _mm_shuffle_epi8(al, idx_sa);
+    __m128i sa_vh   = _mm_shuffle_epi8(ah, idx_sa);    
+    __m128i sb_vl   = _mm_shuffle_epi8(al, idx_sb);
+    __m128i sb_vh   = _mm_shuffle_epi8(ah, idx_sb);
+    __m128i mask1   = _mm_set1_epi8(1);
+    __m128i sa_odd  = _mm_cmpeq_epi8(_mm_and_si128(sa, mask1), mask1);
+    __m128i sb_odd  = _mm_cmpeq_epi8(_mm_and_si128(sb, mask1), mask1);
+    #if defined(__SSE4_1__)
+  __m128i v_sa = _mm_blendv_epi8(sa_vl, sa_vh, sa_odd);
+  __m128i v_sb = _mm_blendv_epi8(sb_vl, sb_vh, sb_odd);
+    #else
+  __m128i v_sa = _mm_or_si128( _mm_andnot_si128(sa_odd, sa_vl), _mm_and_si128(sa_odd, sa_vh) );
+  __m128i v_sb = _mm_or_si128( _mm_andnot_si128(sb_odd, sb_vl), _mm_and_si128(sb_odd, sb_vh) );
+    #endif
+    __m128i sa_combined = _mm_or_si128(v_sa, _mm_srli_epi16(v_sa, 4));
+    __m128i sb_combined = _mm_or_si128(v_sb, _mm_srli_epi16(v_sb, 4));
+    __m128i mask_ff = _mm_set1_epi16(0x00FF);
+    __m128i sa_masked = _mm_and_si128(sa_combined, mask_ff);
+    __m128i sb_masked = _mm_and_si128(sb_combined, mask_ff);
+    return _mm_packus_epi16(sa_masked, sb_masked);
+}*/
+
+  #ifdef __SSE4_1__
+static inline __m128i mm_shuffle256_epi8(__m128i a, __m128i sa, __m128i sb) {
+    const __m128i mask0F   = _mm_set1_epi8(0x0F);
+    const __m128i maskB4   = _mm_set1_epi8(0x10);      /* isolates bit4 */
+    const __m128i maskLo16 = _mm_set1_epi16(0x00FF);
+    __m128i evenNib = _mm_and_si128(a, mask0F);
+    __m128i oddNib  = _mm_and_si128(_mm_srli_epi16(a, 4), mask0F);
+    __m128i tblLo = _mm_unpacklo_epi8(evenNib, oddNib);   /* nibbles  0..15 */
+    __m128i tblHi = _mm_unpackhi_epi8(evenNib, oddNib);   /* nibbles 16..31 */
+    __m128i selA = _mm_slli_epi16(_mm_and_si128(sa, maskB4), 3); __m128i outA = _mm_blendv_epi8(_mm_shuffle_epi8(tblLo, sa), _mm_shuffle_epi8(tblHi, sa), selA);           /* values for output 0..15  */
+    __m128i selB = _mm_slli_epi16(_mm_and_si128(sb, maskB4), 3); __m128i outB = _mm_blendv_epi8(_mm_shuffle_epi8(tblLo, sb), _mm_shuffle_epi8(tblHi, sb), selB);           /* values for output 16..31 */
+    __m128i packA = _mm_or_si128(_mm_srli_epi16(outA, 4),  _mm_and_si128(outA, maskLo16));
+    __m128i packB = _mm_or_si128(_mm_srli_epi16(outB, 4),  _mm_and_si128(outB, maskLo16));
+    return _mm_packus_epi16(packA, packB);  /* low byte of each lane -> final byte */
+}
+  #else
+static inline __m128i mm_shuffle256_epi8(__m128i a, __m128i sa, __m128i sb) {
+    __m128i zero_sa = _mm_cmpgt_epi8(_mm_setzero_si128(), sa);
+    __m128i zero_sb = _mm_cmpgt_epi8(_mm_setzero_si128(), sb);
+    __m128i idx_sa = _mm_and_si128(_mm_srli_epi16(sa, 1), _mm_set1_epi8(0x0F));
+    __m128i idx_sb = _mm_and_si128(_mm_srli_epi16(sb, 1), _mm_set1_epi8(0x0F));
+    __m128i bytes_sa = _mm_shuffle_epi8(a, idx_sa);
+    __m128i bytes_sb = _mm_shuffle_epi8(a, idx_sb);
+    __m128i upper_sa = _mm_and_si128(_mm_srli_epi16(bytes_sa, 4), _mm_set1_epi8(0x0F));  __m128i lower_sa = _mm_and_si128(bytes_sa, _mm_set1_epi8(0x0F));
+    __m128i upper_sb = _mm_and_si128(_mm_srli_epi16(bytes_sb, 4), _mm_set1_epi8(0x0F));  __m128i lower_sb = _mm_and_si128(bytes_sb, _mm_set1_epi8(0x0F));
+    __m128i mask_sa = _mm_cmpeq_epi8(_mm_and_si128(sa, _mm_set1_epi8(1)), _mm_set1_epi8(1));
+    __m128i mask_sb = _mm_cmpeq_epi8(_mm_and_si128(sb, _mm_set1_epi8(1)), _mm_set1_epi8(1));
+    __m128i nibs_sa = _mm_or_si128(_mm_and_si128(mask_sa, upper_sa), _mm_andnot_si128(mask_sa, lower_sa));
+    __m128i nibs_sb = _mm_or_si128(_mm_and_si128(mask_sb, upper_sb), _mm_andnot_si128(mask_sb, lower_sb));
+    nibs_sa = _mm_andnot_si128(zero_sa, nibs_sa);
+    nibs_sb = _mm_andnot_si128(zero_sb, nibs_sb);
+    __m128i even_sa = _mm_and_si128(nibs_sa, _mm_set1_epi16(0x00FF));
+    __m128i odd_sa  = _mm_srli_epi16(nibs_sa, 8);
+    __m128i packed_sa = _mm_or_si128(even_sa, _mm_slli_epi16(odd_sa, 4));
+    __m128i even_sb = _mm_and_si128(nibs_sb, _mm_set1_epi16(0x00FF));
+    __m128i odd_sb  = _mm_srli_epi16(nibs_sb, 8);
+    __m128i packed_sb = _mm_or_si128(even_sb, _mm_slli_epi16(odd_sb, 4));
+    return _mm_packus_epi16(packed_sa, packed_sb);
+}
+  #endif
+
 // --- 32 <-> 64 ----
 #if defined(__SSE4_1__) || defined(__ARM_NEON) || defined(__riscv_vector) || defined(__loongarch_sx)
 #define mm_cvt32_epu64(_v_, _vl_) { _vl_ = _mm_cvtepu32_epi64(_v_); _v_  = _mm_cvtepu32_epi64(_mm_srli_si128(_v_, 8)); }
@@ -743,6 +880,40 @@ static ALWAYS_INLINE __m128i mm_xord_epi64(__m128i v, __m128i vs) { MM_XORD_EPI6
   v3 = _mm_sub_epi32(v3, _v3);\
 }
 
+#define MM_DELTAQ_EPI64(v0, v1, v2, v3, vs) {\
+  __m128i _v0 = _mm_alignr_epi8(v0, vs, 8),\
+          _v1 = _mm_alignr_epi8(v1, v0, 8),\
+          _v2 = _mm_alignr_epi8(v2, v1, 8),\
+          _v3 = _mm_alignr_epi8(v3, v2, 8);\
+  v0 = _mm_sub_epi64(v0, _v0);\
+  v1 = _mm_sub_epi64(v1, _v1);\
+  v2 = _mm_sub_epi64(v2, _v2); vs = v3;\
+  v3 = _mm_sub_epi64(v3, _v3);\
+}
+
+#define MM_XOREQ_EPI32(v0, v1, v2, v3, vs) {\
+  __m128i _v0 = _mm_alignr_epi8(v0, vs, 12),\
+          _v1 = _mm_alignr_epi8(v1, v0, 12),\
+          _v2 = _mm_alignr_epi8(v2, v1, 12),\
+          _v3 = _mm_alignr_epi8(v3, v2, 12);\
+  v0 = _mm_xor_si128(v0, _v0);\
+  v1 = _mm_xor_si128(v1, _v1);\
+  v2 = _mm_xor_si128(v2, _v2); vs = v3;\
+  v3 = _mm_xor_si128(v3, _v3);\
+}
+
+#define MM_XOREQ_EPI64(v0, v1, v2, v3, vs) {\
+  __m128i _v0 = _mm_alignr_epi8(v0, vs, 8),\
+          _v1 = _mm_alignr_epi8(v1, v0, 8),\
+          _v2 = _mm_alignr_epi8(v2, v1, 8),\
+          _v3 = _mm_alignr_epi8(v3, v2, 8);\
+  v0 = _mm_xor_si128(v0, _v0);\
+  v1 = _mm_xor_si128(v1, _v1);\
+  v2 = _mm_xor_si128(v2, _v2); vs = v3;\
+  v3 = _mm_xor_si128(v3, _v3);\
+}
+
+
 #define MM_DELTA1Q_EPI16(v0, v1, v2, v3, vs) {\
   const __m128i _cv = _mm_set1_epi16(1);\
   __m128i _v0 = _mm_alignr_epi8(v0, vs, 14),\
@@ -945,6 +1116,7 @@ static ALWAYS_INLINE void mm_storeuq_si128(__m128i *op, __m128i v0, __m128i v1, 
   _mm_storeu_si128(op, v3); op = (char*)op+16;
 }
 #endif // SSE
+
 
 //--------- memset -----------------------------------------
 #define BITFORSET_(_out_, _n_, _start_, _mindelta_) do { unsigned _i;\
