@@ -55,9 +55,9 @@
 #include "transpose.c"
 
 // ### SIMD ################################################################################################ 
-#define LD128(_ip_)         _mm_loadu_si128((__m128i *)(_ip_))
+#define LD128(_ip_)      _mm_loadu_si128((__m128i *)(_ip_))
 #define LD256(_ip_)      _mm256_loadu_si256((__m256i *)(_ip_))
-#define ST128(_op_,_v_)     _mm_storeu_si128((__m128i *)(_op_),_v_)
+#define ST128(_op_,_v_)  _mm_storeu_si128((__m128i *)(_op_),_v_)
 #define ST256(_op_,_v_)  _mm256_storeu_si256((__m128i *)(_op_),_v_)
 
 // *** 16 bits *******************************************************
@@ -114,6 +114,8 @@
 
 #define VE128(_v_,_vs_)
 #define VE256(_v_,_vs_)
+#define VEQ128(_v0_,_v1_,_v2_,_v3_,_vs_) 
+#define VEQ256(_v0_,_v1_,_v2_,_v3_,_vs_) 
 #define VDQ128(_v0_,_v1_,_v2_,_v3_,_vs_) 
 #define VDQ256(_v0_,_v1_,_v2_,_v3_,_vs_) 
 #define STRIDE ESIZE
@@ -129,6 +131,8 @@
 
 #define VE128(_v_,_vs_) { __m128i _v = _v_; _v_ =    mm_delta_epi32(_v_,_vs_); _v_ =    mm_zzage_epi32(_v_); _vs_ = _v; }
 #define VE256(_v_,_vs_) { __m256i _v = _v_; _v_ = mm256_delta_epi32(_v_,_vs_); _v_ = mm256_zzage_epi32(_v_); _vs_ = _v; }
+#define VEQ128(_v0_,_v1_,_v2_,_v3_,_vs_)    MM_DELTAZQ_EPI32(_v0_,_v1_,_v2_,_v3_,_vs_)
+#define VEQ256(_v0_,_v1_,_v2_,_v3_,_vs_) MM256_DELTAZQ_EPI32(_v0_,_v1_,_v2_,_v3_,_vs_)
 #define VDQ128(_v0_,_v1_,_v2_,_v3_,_vs_)    MM_SCANZQ_EPI32(_v0_,_v1_,_v2_,_v3_,_vs_)
 #define VDQ256(_v0_,_v1_,_v2_,_v3_,_vs_) MM256_SCANZQ_EPI32(_v0_,_v1_,_v2_,_v3_,_vs_)
 #define STRIDE ESIZE
@@ -140,6 +144,8 @@
 
 #define VE128(_v_,_vs_) { __m128i _v = _v_; _v_ =    mm_xore_epi32(_v_,_vs_); _vs_ = _v; }
 #define VE256(_v_,_vs_) { __m256i _v = _v_; _v_ = mm256_xore_epi32(_v_,_vs_); _vs_ = _v; }
+#define VEQ128(_v0_,_v1_,_v2_,_v3_,_vs_)    MM_XOREQ_EPI32(_v0_,_v1_,_v2_,_v3_,_vs_)
+#define VEQ256(_v0_,_v1_,_v2_,_v3_,_vs_) MM256_XOREQ_EPI32(_v0_,_v1_,_v2_,_v3_,_vs_)
 #define VDQ128(_v0_,_v1_,_v2_,_v3_,_vs_)    MM_XORDQ_EPI32(_v0_,_v1_,_v2_,_v3_,_vs_)
 #define VDQ256(_v0_,_v1_,_v2_,_v3_,_vs_) MM256_XORDQ_EPI32(_v0_,_v1_,_v2_,_v3_,_vs_)
 #define STRIDE ESIZE
@@ -159,6 +165,8 @@
 
 #define VE128(_v_,_vs_)
 #define VE256(_v_,_vs_)
+#define VEQ128(_v0_,_v1_,_v2_,_v3_,_vs_) 
+#define VEQ256(_v0_,_v1_,_v2_,_v3_,_vs_) 
 #define VDQ128(_v0_,_v1_,_v2_,_v3_,_vs_) 
 #define VDQ256(_v0_,_v1_,_v2_,_v3_,_vs_) 
 #define STRIDE ESIZE
@@ -174,6 +182,8 @@
 
 #define VE128(_v_,_vs_)  { __m128i _v = mm_delta_epi64(_v_,_vs_); _vs_ = _v_; _v_ = mm_zzage_epi64(_v); }
 #define VE256(_v_,_vs_)  { __m256i _v = mm256_delta_epi64(_v_,_vs_); _vs_ = _v_; _v_ = mm256_zzage_epi64(_v); }
+#define VEQ128(_v0_,_v1_,_v2_,_v3_,_vs_)    MM_DELTAQ_EPI64(_v0_,_v1_,_v2_,_v3_,_vs_)
+#define VEQ256(_v0_,_v1_,_v2_,_v3_,_vs_) MM256_DELTAQ_EPI64(_v0_,_v1_,_v2_,_v3_,_vs_)
 #define VDQ128(_v0_,_v1_,_v2_,_v3_,_vs_)    MM_SCANZQ_EPI64(_v0_,_v1_,_v2_,_v3_,_vs_)
 #define VDQ256(_v0_,_v1_,_v2_,_v3_,_vs_) MM256_SCANZQ_EPI64(_v0_,_v1_,_v2_,_v3_,_vs_)
 #define STRIDE ESIZE
@@ -185,6 +195,8 @@
 
 #define VE128(_v_,_vs_) { __m128i _v = _v_; _v_ =    mm_xore_epi64(_v_,_vs_); _vs_ = _v; }  
 #define VE256(_v_,_vs_) { __m256i _v = _v_; _v_ = mm256_xore_epi64(_v_,_vs_); _vs_ = _v; } 
+#define VEQ128(_v0_,_v1_,_v2_,_v3_,_vs_)    MM_XOREQ_EPI64(_v0_,_v1_,_v2_,_v3_,_vs_)
+#define VEQ256(_v0_,_v1_,_v2_,_v3_,_vs_) MM256_XOREQ_EPI64(_v0_,_v1_,_v2_,_v3_,_vs_)
 #define VDQ128(_v0_,_v1_,_v2_,_v3_,_vs_)    MM_XORDQ_EPI64(_v0_,_v1_,_v2_,_v3_,_vs_)
 #define VDQ256(_v0_,_v1_,_v2_,_v3_,_vs_) MM256_XORDQ_EPI64(_v0_,_v1_,_v2_,_v3_,_vs_)
 #define STRIDE ESIZE
@@ -204,7 +216,7 @@
 void T3(TP, enc256v, ESIZE)(unsigned char *__restrict in, unsigned n, unsigned char *__restrict out) {
   unsigned      v = n&~(ESIZE*32-1);
   unsigned      stride = v/STRIDE;
-  unsigned char *op,*ip;
+  unsigned char *__restrict op, *__restrict ip;
   VINI256;
     #if ESIZE == 2
   __m256i sf = _mm256_set_epi8( 15, 13, 11, 9, 7, 5, 3, 1,
@@ -270,13 +282,13 @@ void T3(TP, enc256v, ESIZE)(unsigned char *__restrict in, unsigned n, unsigned c
       #endif
     #endif
     #if STRIDE > ESIZE // ------------------ byte transpose ----------------------------------
-  __m256i cl = _mm256_set1_epi8( 0x0f),
+  const __m256i cl = _mm256_set1_epi8( 0x0f),
           ch = _mm256_set1_epi8( 0xf0),
           cb = _mm256_set1_epi16(0xff);
     #endif
 
   for(ip = in,op = out; ip != in+v; ip += ESIZE*32, op += ESIZE*32/STRIDE) {
-    unsigned char *p = op;                                                      PREFETCH(ip+ESIZE*192,0);
+    unsigned char *__restrict p = op;                                                      PREFETCH(ip+ESIZE*192,0);
     __m256i iv0, iv1, ov0, ov1;
       #if ESIZE >= 2
     __m256i iv2, iv3, ov2, ov3;
@@ -285,16 +297,25 @@ void T3(TP, enc256v, ESIZE)(unsigned char *__restrict in, unsigned n, unsigned c
         #endif
     #endif
       #if   ESIZE == 2
-    ov0 = LD256((__m256i *) ip    ); VE256(ov0,vs); ov0 = _mm256_shuffle_epi8(ov0, sv0);
-    ov1 = LD256((__m256i *)(ip+32)); VE256(ov1,vs); ov1 = _mm256_shuffle_epi8(ov1, sv1);
+    ov0 = LD256((__m256i *) ip    ); 
+    ov1 = LD256((__m256i *)(ip+32)); 
+    VE256(ov0,vs); 
+    VE256(ov1,vs); 
+    ov0 = _mm256_shuffle_epi8(ov0, sv0);
+    ov1 = _mm256_shuffle_epi8(ov1, sv1);
     iv0 = _mm256_permute4x64_epi64(_mm256_blend_epi32(ov0, ov1,0b11001100),_MM_SHUFFLE(3, 1, 2, 0));
     iv1 = _mm256_blend_epi32(ov0, ov1,0b00110011);
     iv1 = _mm256_permute4x64_epi64(_mm256_shuffle_epi32(iv1,_MM_SHUFFLE(1, 0, 3, 2)),_MM_SHUFFLE(3, 1, 2, 0));
       #elif ESIZE == 4
-    iv0 = LD256((__m256i *) ip    ); VE256(iv0,vs); iv0 = _mm256_shuffle_epi8(iv0, sv0);
-    iv1 = LD256((__m256i *)(ip+32)); VE256(iv1,vs); iv1 = _mm256_shuffle_epi8(iv1, sv1);
-    iv2 = LD256((__m256i *)(ip+64)); VE256(iv2,vs); iv2 = _mm256_shuffle_epi8(iv2, sv0);
-    iv3 = LD256((__m256i *)(ip+96)); VE256(iv3,vs); iv3 = _mm256_shuffle_epi8(iv3, sv1);
+    iv0 = LD256((__m256i *) ip    ); 
+    iv1 = LD256((__m256i *)(ip+32)); 
+    iv2 = LD256((__m256i *)(ip+64)); 
+    iv3 = LD256((__m256i *)(ip+96)); 
+    VEQ256(iv0,iv1,iv2,iv3,vs);            //    VE256(iv0,vs);  VE256(iv1,vs);  VE256(iv2,vs);  VE256(iv3,vs); 
+    iv0 = _mm256_shuffle_epi8(iv0, sv0);
+    iv1 = _mm256_shuffle_epi8(iv1, sv1);
+    iv2 = _mm256_shuffle_epi8(iv2, sv0);
+    iv3 = _mm256_shuffle_epi8(iv3, sv1);
 
     ov0 = _mm256_blend_epi32(iv0, iv1,0b10101010);
     ov1 = _mm256_shuffle_epi32(_mm256_blend_epi32(iv0, iv1,0b01010101),_MM_SHUFFLE(2, 3, 0, 1));
@@ -306,22 +327,31 @@ void T3(TP, enc256v, ESIZE)(unsigned char *__restrict in, unsigned n, unsigned c
     iv2 = _mm256_permutevar8x32_epi32(_mm256_unpacklo_epi64(ov1, ov3), pv);
     iv3 = _mm256_permutevar8x32_epi32(_mm256_unpackhi_epi64(ov1, ov3), pv);
       #else
-    ov0 = LD256((__m256i *) ip    ); VE256(ov0,vs); ov0 = _mm256_shuffle_epi8(ov0, sf);
-    ov1 = LD256((__m256i *)(ip+32)); VE256(ov1,vs); ov1 = _mm256_shuffle_epi8(ov1, sf);
-    ov2 = LD256((__m256i *)(ip+64)); VE256(ov2,vs); ov2 = _mm256_shuffle_epi8(ov2, sf);
-    ov3 = LD256((__m256i *)(ip+96)); VE256(ov3,vs); ov3 = _mm256_shuffle_epi8(ov3, sf);
+    ov0 = LD256((__m256i *) ip    ); 
+    ov1 = LD256((__m256i *)(ip+32)); 
+    ov2 = LD256((__m256i *)(ip+64)); 
+    ov3 = LD256((__m256i *)(ip+96)); 
+    VEQ256(ov0,ov1,ov2,ov3,vs);  //    VE256(ov0,vs); VE256(ov1,vs); VE256(ov2,vs); VE256(ov3,vs); 
+    ov0 = _mm256_shuffle_epi8(ov0, sf);
+    ov1 = _mm256_shuffle_epi8(ov1, sf);
+    ov2 = _mm256_shuffle_epi8(ov2, sf);
+    ov3 = _mm256_shuffle_epi8(ov3, sf);
 
     iv0 = _mm256_unpacklo_epi16(ov0, ov1); iv1 = _mm256_unpackhi_epi16(ov0, ov1);
     iv2 = _mm256_unpacklo_epi16(ov2, ov3); iv3 = _mm256_unpackhi_epi16(ov2, ov3);
-
+    
     ov0 = _mm256_unpacklo_epi32(iv0, iv2); ov1 = _mm256_unpackhi_epi32(iv0, iv2);
     ov2 = _mm256_unpacklo_epi32(iv1, iv3); ov3 = _mm256_unpackhi_epi32(iv1, iv3);
 
-
-    ov4 = LD256((__m256i *)(ip+128)); VE256(ov4,vs); ov4 = _mm256_shuffle_epi8(ov4, sf);
-    ov5 = LD256((__m256i *)(ip+160)); VE256(ov5,vs); ov5 = _mm256_shuffle_epi8(ov5, sf);
-    ov6 = LD256((__m256i *)(ip+192)); VE256(ov6,vs); ov6 = _mm256_shuffle_epi8(ov6, sf);
-    ov7 = LD256((__m256i *)(ip+224)); VE256(ov7,vs); ov7 = _mm256_shuffle_epi8(ov7, sf);
+    ov4 = LD256((__m256i *)(ip+128)); 
+    ov5 = LD256((__m256i *)(ip+160)); 
+    ov6 = LD256((__m256i *)(ip+192)); 
+    ov7 = LD256((__m256i *)(ip+224)); 
+    VEQ256(ov4,ov5,ov6,ov7,vs);  // VE256(ov4,vs); VE256(ov5,vs); VE256(ov6,vs); VE256(ov7,vs); 
+    ov4 = _mm256_shuffle_epi8(ov4, sf);
+    ov5 = _mm256_shuffle_epi8(ov5, sf);
+    ov6 = _mm256_shuffle_epi8(ov6, sf);
+    ov7 = _mm256_shuffle_epi8(ov7, sf);
 
     iv4 = _mm256_unpacklo_epi16(ov4, ov5); iv5 = _mm256_unpackhi_epi16(ov4, ov5);
     iv6 = _mm256_unpacklo_epi16(ov6, ov7); iv7 = _mm256_unpackhi_epi16(ov6, ov7);
@@ -341,16 +371,16 @@ void T3(TP, enc256v, ESIZE)(unsigned char *__restrict in, unsigned n, unsigned c
       #endif
 
       #if STRIDE <= ESIZE
-    _mm256_storeu_si256((__m256i *) p,          iv0);
-    _mm256_storeu_si256((__m256i *)(p+=stride), iv1);
+    _mm256_storeu_si256((__m256i *) p,           iv0);
+    _mm256_storeu_si256((__m256i *)(p+stride),   iv1);
         #if ESIZE > 2
-    _mm256_storeu_si256((__m256i *)(p+=stride), iv2);
-    _mm256_storeu_si256((__m256i *)(p+=stride), iv3);
+    _mm256_storeu_si256((__m256i *)(p+stride*2), iv2);
+    _mm256_storeu_si256((__m256i *)(p+stride*3), iv3);
           #if ESIZE > 4
-    _mm256_storeu_si256((__m256i *)(p+=stride), iv4);
-    _mm256_storeu_si256((__m256i *)(p+=stride), iv5);
-    _mm256_storeu_si256((__m256i *)(p+=stride), iv6);
-    _mm256_storeu_si256((__m256i *)(p+=stride), iv7);
+    _mm256_storeu_si256((__m256i *)(p+stride*4), iv4);
+    _mm256_storeu_si256((__m256i *)(p+stride*5), iv5);
+    _mm256_storeu_si256((__m256i *)(p+stride*6), iv6);
+    _mm256_storeu_si256((__m256i *)(p+stride*7), iv7);
           #endif
         #endif
 
@@ -391,21 +421,20 @@ void T3(TP, enc256v, ESIZE)(unsigned char *__restrict in, unsigned n, unsigned c
     #endif 
 
     #ifdef VINI256
-#define NBL0(x,y) ov##x = _mm256_permute4x64_epi64(_mm256_castsi128_si256(_mm_loadu_si128((__m128i *)(p        ))),_MM_SHUFFLE(3, 1, 2, 0));\
-                  ov##y = _mm256_permute4x64_epi64(_mm256_castsi128_si256(_mm_loadu_si128((__m128i *)(p+=stride))),_MM_SHUFFLE(3, 1, 2, 0));
-
-#define NBL(x,y)  ov##x = _mm256_permute4x64_epi64(_mm256_castsi128_si256(_mm_loadu_si128((__m128i *)(p+=stride))),_MM_SHUFFLE(3, 1, 2, 0));\
-                  ov##y = _mm256_permute4x64_epi64(_mm256_castsi128_si256(_mm_loadu_si128((__m128i *)(p+=stride))),_MM_SHUFFLE(3, 1, 2, 0));
-
-#define NBLxx(x,y)  ov##x = _mm256_castsi128_si256(_mm_loadu_si128((__m128i *)(p+=stride)));\
+#define NBL0(x,y) ov##x = _mm256_castsi128_si256(_mm_loadu_si128((__m128i *)(p        )));\
                   ov##y = _mm256_castsi128_si256(_mm_loadu_si128((__m128i *)(p+=stride)));\
-                  ov##x = _mm256_permute4x64_epi64(ov##x,_MM_SHUFFLE(3, 1, 2, 0));\
-                  ov##y = _mm256_permute4x64_epi64(ov##y,_MM_SHUFFLE(3, 1, 2, 0));
+                  ov##x = _mm256_permute4x64_epi64(ov##x, _MM_SHUFFLE(3, 1, 2, 0));\
+                  ov##y = _mm256_permute4x64_epi64(ov##y, _MM_SHUFFLE(3, 1, 2, 0));
+
+#define NBL(x,y)  ov##x = _mm256_castsi128_si256(_mm_loadu_si128((__m128i *)(p+=stride)));\
+                  ov##y = _mm256_castsi128_si256(_mm_loadu_si128((__m128i *)(p+=stride)));\
+                  ov##x = _mm256_permute4x64_epi64(ov##x, _MM_SHUFFLE(3, 1, 2, 0));\
+                  ov##y = _mm256_permute4x64_epi64(ov##y, _MM_SHUFFLE(3, 1, 2, 0));
 
 #define NB(x,y,_v_) {\
   ov##x = _mm256_and_si256(_mm256_unpacklo_epi8(ov##x, _mm256_srli_epi16(ov##x,4)), cl);\
   ov##y = _mm256_and_si256(_mm256_unpacklo_epi8(ov##y, _mm256_srli_epi16(ov##y,4)), cl);\
-  _v_  = _mm256_or_si256(_mm256_slli_epi16(ov##y,4), ov##x);\
+  _v_   = _mm256_or_si256(_mm256_slli_epi16(ov##y,4), ov##x);\
 }
 
 void T3(TP, dec256v, ESIZE)(unsigned char *__restrict in, unsigned n, unsigned char *__restrict out) {
@@ -530,9 +559,9 @@ void T3(TP, dec256v, ESIZE)(unsigned char *__restrict in, unsigned n, unsigned c
 #define ST0(_p_,_v_)  _mm_storeu_si128((__m128i *)(_p_), _v_)
 
 void T3(TP, enc128v, ESIZE)(unsigned char *__restrict in, unsigned n, unsigned char *__restrict out) {
-  unsigned           v = n&~(ESIZE*32-1);
+  unsigned      v = n&~(ESIZE*32-1);
   unsigned      stride = v/STRIDE;
-  unsigned char *op,*ip;
+  unsigned char *__restrict op, *__restrict ip;
 
     #if defined(__SSE3__) || defined(__ARM_NEON) || defined(__riscv_vector) || defined(__loongarch_sx)
       #if ESIZE == 2
@@ -578,8 +607,12 @@ void T3(TP, enc128v, ESIZE)(unsigned char *__restrict in, unsigned n, unsigned c
     iv0 = (__m128i)w.val[0]; iv1 = (__m128i)w.val[1];
             #endif
           #else
-    ov0 = LD128(ip);    VE128(ov0,vs); ov0 = _mm_shuffle_epi8(ov0, sf);
-    ov1 = LD128(ip+16); VE128(ov1,vs); ov1 = _mm_shuffle_epi8(ov1, sf);
+    ov0 = LD128(ip);    
+    ov1 = LD128(ip+16); 
+    VE128(ov0,vs); 
+    VE128(ov1,vs); 
+    ov0 = _mm_shuffle_epi8(ov0, sf);
+    ov1 = _mm_shuffle_epi8(ov1, sf);
 
     iv0 = _mm_unpacklo_epi64(ov0, ov1); iv1 = _mm_unpackhi_epi64(ov0, ov1);
             #if STRIDE <= ESIZE
@@ -596,10 +629,15 @@ void T3(TP, enc128v, ESIZE)(unsigned char *__restrict in, unsigned n, unsigned c
     iv0 = (__m128i)w.val[0]; iv1 = (__m128i)w.val[1]; iv2 = (__m128i)w.val[2]; iv3 = (__m128i)w.val[3];
             #endif
           #else
-    iv0 = LD128(ip   ); VE128(iv0,vs); iv0 = _mm_shuffle_epi8(iv0, sf);
-    iv1 = LD128(ip+16); VE128(iv1,vs); iv1 = _mm_shuffle_epi8(iv1, sf);
-    iv2 = LD128(ip+32); VE128(iv2,vs); iv2 = _mm_shuffle_epi8(iv2, sf);
-    iv3 = LD128(ip+48); VE128(iv3,vs); iv3 = _mm_shuffle_epi8(iv3, sf);
+    iv0 = LD128(ip   ); 
+    iv1 = LD128(ip+16); 
+    iv2 = LD128(ip+32); 
+    iv3 = LD128(ip+48); 
+    VEQ128(iv0,iv1,iv2,iv3,vs);   //VE128(iv0,vs); VE128(iv1,vs); VE128(iv2,vs);  VE128(iv3,vs); 
+    iv0 = _mm_shuffle_epi8(iv0, sf);
+    iv1 = _mm_shuffle_epi8(iv1, sf);
+    iv2 = _mm_shuffle_epi8(iv2, sf);
+    iv3 = _mm_shuffle_epi8(iv3, sf);
 
     ov0 = _mm_unpacklo_epi32(iv0, iv1); ov1 = _mm_unpackhi_epi32(iv0, iv1);
     ov2 = _mm_unpacklo_epi32(iv2, iv3); ov3 = _mm_unpackhi_epi32(iv2, iv3);
@@ -625,14 +663,16 @@ void T3(TP, enc128v, ESIZE)(unsigned char *__restrict in, unsigned n, unsigned c
     uint32x4x2_t v32[4];   //uint64x2x2_t v64[4];
             #endif
             #ifdef VQ
-    ov0 = LD128(ip    ); VE128(ov0,vs); //ov0 = _mm_shuffle_epi8(ov0, vs);
-    ov1 = LD128(ip+ 16); VE128(ov1,vs); //ov1 = _mm_shuffle_epi8(ov1, vs);
-    ov2 = LD128(ip+ 32); VE128(ov2,vs); //ov2 = _mm_shuffle_epi8(ov2, vs);
-    ov3 = LD128(ip+ 48); VE128(ov3,vs); //ov3 = _mm_shuffle_epi8(ov3, vs);
-    ov4 = LD128(ip+ 64); VE128(ov4,vs); //ov4 = _mm_shuffle_epi8(ov4, vs);
-    ov5 = LD128(ip+ 80); VE128(ov5,vs); //ov5 = _mm_shuffle_epi8(ov5, vs);
-    ov6 = LD128(ip+ 96); VE128(ov6,vs); //ov6 = _mm_shuffle_epi8(ov6, vs);
-    ov7 = LD128(ip+112); VE128(ov7,vs); //ov7 = _mm_shuffle_epi8(ov7, vs);
+    ov0 = LD128(ip    ); 
+    ov1 = LD128(ip+ 16); 
+    ov2 = LD128(ip+ 32); 
+    ov3 = LD128(ip+ 48); 
+    VEQ128(ov0,ov1,ov2,ov3,vs); //  VE128(ov0,vs); VE128(ov1,vs); VE128(ov2,vs); VE128(ov3,vs); 
+    ov4 = LD128(ip+ 64);
+    ov5 = LD128(ip+ 80); 
+    ov6 = LD128(ip+ 96); 
+    ov7 = LD128(ip+112); 
+    VE128(ov4,ov5,ov6,ov7,vs); //  VE128(ov4,vs); VE128(ov5,vs);  VE128(ov6,vs);  VE128(ov7,vs); 
 
     v8[0]  = vzipq_u8((uint8x16_t)ov0, (uint8x16_t)ov1);
     v8[1]  = vzipq_u8((uint8x16_t)ov2, (uint8x16_t)ov3);
@@ -658,14 +698,25 @@ void T3(TP, enc128v, ESIZE)(unsigned char *__restrict in, unsigned n, unsigned c
     iv4 = _mm_unpacklo_epi64(v32[1].val[0], v32[3].val[0]); iv5 = _mm_unpackhi_epi64(v32[1].val[0], v32[3].val[0]);
     iv6 = _mm_unpacklo_epi64(v32[1].val[1], v32[3].val[1]); iv7 = _mm_unpackhi_epi64(v32[1].val[1], v32[3].val[1]);
             #else
-    ov0 = LD128(ip    ); VE128(ov0,vs); ov0 = _mm_shuffle_epi8(ov0, sf);
-    ov1 = LD128(ip+ 16); VE128(ov1,vs); ov1 = _mm_shuffle_epi8(ov1, sf);
-    ov2 = LD128(ip+ 32); VE128(ov2,vs); ov2 = _mm_shuffle_epi8(ov2, sf);
-    ov3 = LD128(ip+ 48); VE128(ov3,vs); ov3 = _mm_shuffle_epi8(ov3, sf);
-    ov4 = LD128(ip+ 64); VE128(ov4,vs); ov4 = _mm_shuffle_epi8(ov4, sf);
-    ov5 = LD128(ip+ 80); VE128(ov5,vs); ov5 = _mm_shuffle_epi8(ov5, sf);
-    ov6 = LD128(ip+ 96); VE128(ov6,vs); ov6 = _mm_shuffle_epi8(ov6, sf);
-    ov7 = LD128(ip+112); VE128(ov7,vs); ov7 = _mm_shuffle_epi8(ov7, sf);
+    ov0 = LD128(ip    ); 
+    ov1 = LD128(ip+ 16); 
+    ov3 = LD128(ip+ 48); 
+    ov2 = LD128(ip+ 32); 
+    VEQ128(ov0,ov1,ov2,ov3,vs); //    VE128(ov0,vs); VE128(ov1,vs); VE128(ov2,vs); VE128(ov3,vs); 
+    ov0 = _mm_shuffle_epi8(ov0, sf);
+    ov1 = _mm_shuffle_epi8(ov1, sf);
+    ov2 = _mm_shuffle_epi8(ov2, sf);
+    ov3 = _mm_shuffle_epi8(ov3, sf);
+
+    ov4 = LD128(ip+ 64); 
+    ov5 = LD128(ip+ 80); 
+    ov6 = LD128(ip+ 96); 
+    ov7 = LD128(ip+112); 
+    VE128(ov4,ov5,ov6,ov7,vs); // VE128(ov4,vs);  VE128(ov5,vs);  VE128(ov6,vs);  VE128(ov7,vs); 
+    ov4 = _mm_shuffle_epi8(ov4, sf);
+    ov5 = _mm_shuffle_epi8(ov5, sf);
+    ov6 = _mm_shuffle_epi8(ov6, sf);
+    ov7 = _mm_shuffle_epi8(ov7, sf);
     v16[0] = vzipl_u16(ov0, ov1); v16[1] = vziph_u16(ov0, ov1);
     v16[2] = vzipl_u16(ov2, ov3); v16[3] = vziph_u16(ov2, ov3);
     v16[4] = vzipl_u16(ov4, ov5); v16[5] = vziph_u16(ov4, ov5);
@@ -694,10 +745,15 @@ void T3(TP, enc128v, ESIZE)(unsigned char *__restrict in, unsigned n, unsigned c
     ST0(p,iv0); ST(p,iv1,1); ST(p,iv2,2); ST(p,iv3,3); ST(p,iv4,4); ST(p,iv5,5); ST(p,iv6,6); ST(p,iv7,7);
             #endif
           #else // SSE
-    ov0 = LD128(ip   ); VE128(ov0,vs); ov0 = _mm_shuffle_epi8(ov0, sf);
-    ov1 = LD128(ip+16); VE128(ov1,vs); ov1 = _mm_shuffle_epi8(ov1, sf);
-    ov2 = LD128(ip+32); VE128(ov2,vs); ov2 = _mm_shuffle_epi8(ov2, sf);
-    ov3 = LD128(ip+48); VE128(ov3,vs); ov3 = _mm_shuffle_epi8(ov3, sf);
+    ov0 = LD128(ip   ); 
+    ov1 = LD128(ip+16); 
+    ov2 = LD128(ip+32); 
+    ov3 = LD128(ip+48); 
+    VEQ128(ov0,ov1,ov2,ov3,vs); //   VE128(ov0,vs); VE128(ov1,vs); VE128(ov2,vs); VE128(ov3,vs); 
+    ov0 = _mm_shuffle_epi8(ov0, sf);
+    ov1 = _mm_shuffle_epi8(ov1, sf);
+    ov2 = _mm_shuffle_epi8(ov2, sf);
+    ov3 = _mm_shuffle_epi8(ov3, sf);
 
     iv0 = _mm_unpacklo_epi16(ov0, ov1); iv1 = _mm_unpackhi_epi16(ov0, ov1);
     iv2 = _mm_unpacklo_epi16(ov2, ov3); iv3 = _mm_unpackhi_epi16(ov2, ov3);
@@ -705,10 +761,15 @@ void T3(TP, enc128v, ESIZE)(unsigned char *__restrict in, unsigned n, unsigned c
     ov0 = _mm_unpacklo_epi32(iv0, iv2); ov1 = _mm_unpackhi_epi32(iv0, iv2);
     ov2 = _mm_unpacklo_epi32(iv1, iv3); ov3 = _mm_unpackhi_epi32(iv1, iv3);
 
-    ov4 = LD128(ip+ 64); VE128(ov4,vs); ov4 = _mm_shuffle_epi8(ov4, sf);
-    ov5 = LD128(ip+ 80); VE128(ov5,vs); ov5 = _mm_shuffle_epi8(ov5, sf);
-    ov6 = LD128(ip+ 96); VE128(ov6,vs); ov6 = _mm_shuffle_epi8(ov6, sf);
-    ov7 = LD128(ip+112); VE128(ov7,vs); ov7 = _mm_shuffle_epi8(ov7, sf);
+    ov4 = LD128(ip+ 64); 
+    ov5 = LD128(ip+ 80); 
+    ov6 = LD128(ip+ 96); 
+    ov7 = LD128(ip+112); 
+    VEQ128(ov4,ov5,ov6,ov7,vs); //  VE128(ov4,vs); VE128(ov5,vs);  VE128(ov6,vs);  VE128(ov7,vs); 
+    ov4 = _mm_shuffle_epi8(ov4, sf);
+    ov5 = _mm_shuffle_epi8(ov5, sf);
+    ov6 = _mm_shuffle_epi8(ov6, sf);
+    ov7 = _mm_shuffle_epi8(ov7, sf);
 
     iv4 = _mm_unpacklo_epi16(ov4, ov5); iv5 = _mm_unpackhi_epi16(ov4, ov5);
     iv6 = _mm_unpacklo_epi16(ov6, ov7); iv7 = _mm_unpackhi_epi16(ov6, ov7);
@@ -745,7 +806,7 @@ void T3(TP, enc128v, ESIZE)(unsigned char *__restrict in, unsigned n, unsigned c
     iv1 = LD128(ip+16); 
     iv2 = LD128(ip+32); 
     iv3 = LD128(ip+48); 
-    VE128(iv0,vs); VE128(iv1,vs); VE128(iv2,vs); VE128(iv3,vs);
+    VEQ128(iv0,iv1,iv2,iv3,vs); //    VE128(iv0,vs); VE128(iv1,vs); VE128(iv2,vs); VE128(iv3,vs);
 
     ov0 = _mm_unpacklo_epi8( iv0, iv1); ov1 = _mm_unpackhi_epi8( iv0, iv1);
     iv0 = _mm_unpacklo_epi8( ov0, ov1); iv1 = _mm_unpackhi_epi8( ov0, ov1);
@@ -764,12 +825,12 @@ void T3(TP, enc128v, ESIZE)(unsigned char *__restrict in, unsigned n, unsigned c
     iv1 = LD128(ip+16); 
     iv2 = LD128(ip+32); 
     iv3 = LD128(ip+48); 
-    VE128(iv0,vs); VE128(iv1,vs); VE128(iv2,vs); VE128(iv2,vs);
+    VEQ128(iv0,iv1,iv2,iv3,vs); // VE128(iv0,vs); VE128(iv1,vs); VE128(iv2,vs); VE128(iv3,vs);
     iv4 = LD128(ip+64); 
     iv5 = LD128(ip+80); 
     iv6 = LD128(ip+96); 
     iv7 = LD128(ip+112);
-    VE128(iv4,vs); VE128(iv5,vs); VE128(iv6,vs); VE128(iv7,vs);
+    VEQ128(iv4,iv5,iv6,iv7,vs);  //VE128(iv4,vs); VE128(iv5,vs); VE128(iv6,vs); VE128(iv7,vs);
 
     ov0 = _mm_unpacklo_epi8( iv0, iv1); ov1 = _mm_unpackhi_epi8( iv0, iv1);
     ov2 = _mm_unpacklo_epi8( iv2, iv3); ov3 = _mm_unpackhi_epi8( iv2, iv3);
