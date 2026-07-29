@@ -21,16 +21,16 @@
     - twitter  : https://twitter.com/powturbo
     - email    : powturbo [_AT_] gmail [_DOT_] com
 **/
-// TurboRC: Range Coder - simple predictor (16 bits counters) 
+// TurboRC: Range Coder - simple predictor (16 bits counters)
 
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include "include_/conf.h"   
+#include "include_/conf.h"
 
 #define RC_MACROS
-#define RC_BITS 15     	    // RC_SIZE + RC_IO: set in turborc_.h
+#define RC_BITS 15          // RC_SIZE + RC_IO: set in turborc_.h
 #include "turborc_.h"
 
-#include "mbc_s.h"       	// simple predictor
-#include "rc_.c"            // template functions 
+#include "mbc_s.h"          // simple predictor
+#include "rc_.c"            // template functions
