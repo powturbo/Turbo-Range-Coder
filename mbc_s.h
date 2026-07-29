@@ -30,7 +30,7 @@
 #define mbu_p(_mb_,_prm0_) (*(_mb_))
   #else
 typedef unsigned short mbu;
-static inline int mbu_p(mbu *mb, int _prm0_) { return (*mb); } // get probability 
+static inline int mbu_p(mbu *mb, int _prm0_) { return (*mb); } // get probability
   #endif
 
 #define mbu_probinit()      (1<<(RC_BITS-1))       // initial probability 0.5
