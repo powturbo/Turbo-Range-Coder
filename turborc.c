@@ -561,11 +561,11 @@ unsigned bench(unsigned char *in, unsigned n, unsigned char *out, unsigned char 
         #if defined(HAVE_FLOAT16)
     case 86: { _Float16 fmin = -1.16, fmax = 1.4; if(gmin != FP_ZERO) fmin = gmin; if(gmax != FP_ZERO) fmax = gmax;
       if(!quantb || quantb > 8) quantb = 8;
-      size_t clen = fpquant8e16(in,n,out, BZMASK32(quantb), &fmin, &fmax, FLT16_EPSILON);  if(verbose>2) printf("\nlen:%u R:[%g/%g]=%g q=%u,%u ", clen, (double)fmin, (double)fmax, (double)fmax-(double)fmin, quantb, BZMASK32(quantb));
-      fpquant8d16(out, n, cpy, BZMASK32(quantb), fmin, fmax, clen);
+      size_t clen = fpquant8e16((_Float16 *)in,n,out, BZMASK32(quantb), &fmin, &fmax, FLT16_EPSILON);  if(verbose>2) printf("\nlen:%u R:[%g/%g]=%g q=%u,%u ", clen, (double)fmin, (double)fmax, (double)fmax-(double)fmin, quantb, BZMASK32(quantb));
+      fpquant8d16(out, n, (_Float16 *)cpy, BZMASK32(quantb), fmin, fmax, clen);
       fpstat(in, n/2, cpy, -2, NULL);
     } break;
-    case 87: if(zerrlim>DBL_EPSILON) { l=n; TM0("", fprazor16(in, n/2, out,zerrlim), n, l);                                          memcpy(cpy,in,n); if(verbose>1) fpstat(in, n/2, out, -2, NULL); } break;
+    case 87: if(zerrlim>DBL_EPSILON) { l=n; TM0("", fprazor16((_Float16 *)in, n/2, out,zerrlim), n, l);                                          memcpy(cpy,in,n); if(verbose>1) fpstat(in, n/2, out, -2, NULL); } break;
         #endif
       #endif
 
@@ -952,11 +952,11 @@ int main(int argc, char* argv[]) {
               #if defined(HAVE_FLOAT16)
           case 7: { _Float16 fmin=0.0,fmax=0.0; if(gmin != FP_ZERO) fmin = gmin; if(gmax != FP_ZERO) fmax = gmax;
             if(!quantb || quantb > 8) quantb = 8;                                          printf("Quantization=%d\n", quantb);
-            n = fpquant8e16(in,n,out,BZMASK32(quantb), &fmin,&fmax,FLT16_EPSILON); memcpy(in,out,n);
+            n = fpquant8e16((_Float16 *)in,n,out,BZMASK32(quantb), &fmin,&fmax,FLT16_EPSILON); memcpy(in,out,n);
           } break;
           case 8: { _Float16 fmin=0.0,fmax=0.0; if(gmin != FP_ZERO) fmin = gmin; if(gmax != FP_ZERO) fmax = gmax;
             if(!quantb || quantb > 16) quantb = 16;                                             printf("Quantization=%d\n", quantb);
-            fpquant16e16(in,n/2,out,BZMASK32(quantb), &fmin,&fmax,FLT16_EPSILON); tpenc(out, n, in, 2);
+            fpquant16e16((_Float16 *)in,n/2,out,BZMASK32(quantb), &fmin,&fmax,FLT16_EPSILON); tpenc(out, n, in, 2);
           } break;
               #endif
           case 9 : { float fmin=0.0, fmax=0.0;  if(gmin != FP_ZERO) fmin = gmin; if(gmax != FP_ZERO) fmax = gmax;
@@ -1075,7 +1075,7 @@ int main(int argc, char* argv[]) {
             #if defined(HAVE_FLOAT16)
         case 24: { _Float16 fmin = -1.16, fmax = 1.4; if(gmin != FP_ZERO) fmin = gmin; if(gmax != FP_ZERO) fmax = gmax;
           if(quantb > 8) quantb = 8;
-          clen = fpquant8e16(in,inlen,out, BZMASK32(quantb), &fmin, &fmax, FLT16_EPSILON);
+          clen = fpquant8e16((_Float16 *)in,inlen,out, BZMASK32(quantb), &fmin, &fmax, FLT16_EPSILON);
           if(clen < inlen) {
             ctof16(out+clen) = fmin; ctof16(out+clen+2) = fmax; ctou8(out+clen+4) = quantb; clen += 4+1;
           }                                                                     if(verbose>2) printf("\nlen:%u R:[%g/%g]=%g q=%u ", clen, (double)fmin, (double)fmax, (double)fmax-(double)fmin, quantb);
@@ -1084,7 +1084,7 @@ int main(int argc, char* argv[]) {
         //  }   else printf("overflow ");                                           if(verbose>2) printf("\nlen:%u R:[%g/%g]=%g q=%u ", clen, (double)fmin, (double)fmax, (double)fmax-(double)fmin, quantb);
         //} break;
         case 25: { _Float16 fmin=0.0, fmax=0.0; if(gmin != FP_ZERO) fmin = gmin; if(gmax != FP_ZERO) fmax = gmax; if(quantb > 16) quantb = 16;
-          fpquant16e16(in,inlen,out, BZMASK32(quantb), &fmin, &fmax, FLT16_EPSILON); memcpy(in,out,inlen); tpenc(in, inlen, out, 2);
+          fpquant16e16((_Float16 *)in,inlen,out, BZMASK32(quantb), &fmin, &fmax, FLT16_EPSILON); memcpy(in,out,inlen); tpenc(in, inlen, out, 2);
           ctof16(out+inlen) = fmin; ctof16(out+inlen+2) = fmax; ctou8(out+inlen+4) = quantb; clen = inlen+4+1;
                                                                                 if(verbose>2) printf("\nlen:%u R:[%g/%g]=%g q=%u ", inlen, (double)fmin, (double)fmax, (double)fmax-(double)fmin, quantb);
         } break;
@@ -1145,11 +1145,11 @@ int main(int argc, char* argv[]) {
           #ifndef _NQUANT
             #if defined(HAVE_FLOAT16)
         case 24: { _Float16 fmin = ctof16(in+inlen-5), fmax = ctof16(in+inlen-3); quantb = ctou8(in+inlen-1); if(verbose>3) printf("len = %u R:[%g - %g] q=%u ", outlen, (double)fmin, (double)fmax, quantb);
-          fpquant8d16(in, outlen, out, BZMASK32(quantb), fmin, fmax, inlen-5);
+          fpquant8d16(in, outlen, (_Float16 *)out, BZMASK32(quantb), fmin, fmax, inlen-5);
         } break;
       //case 23: { _Float16 fmin = ctof16(in+inlen), fmax = ctof16(in+inlen+2); quantb = ctou8(in+inlen+4); fpquantv8d16(in, outlen, out, BZMASK32(quantb), fmin, fmax); } break;
         case 25: { _Float16 fmin = ctof16(in+outlen), fmax = ctof16(in+outlen+2); quantb = ctou8(in+outlen+4);
-          tpdec(in, outlen, out,  2); memcpy(in, out, outlen); fpquant16d16(in, outlen, out, BZMASK32(quantb), fmin, fmax);
+          tpdec(in, outlen, out,  2); memcpy(in, out, outlen); fpquant16d16(in, outlen, (_Float16 *)out, BZMASK32(quantb), fmin, fmax);
         } break;
             #endif
         case 27: { float    fmin=ctof32(in+outlen), fmax = ctof32(in+outlen+4); quantb = ctou8(in+outlen+8);
