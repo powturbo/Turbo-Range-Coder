@@ -21,31 +21,31 @@
     - twitter  : https://twitter.com/powturbo
     - email    : powturbo [_AT_] gmail [_DOT_] com
 **/
-// TurboRC: Range Coder 
+// TurboRC: Range Coder
 
 /* bitwise adaptive range coder, can be used as order 0..N */
   #if (RC_SIZE - RC_IO)/2 >= RC_BITS
-#define _RCENORM1(_rcrange_,_rclow_,_rcilow_,_op_) 
-#define _RCDNORM1(_rcrange_,_rccode_,_ip_) 
+#define _RCENORM1(_rcrange_,_rclow_,_rcilow_,_op_)
+#define _RCDNORM1(_rcrange_,_rccode_,_ip_)
   #else
 #define _RCENORM1(_rcrange_,_rclow_,_rcilow_,_op_) _rcenorm_(_rcrange_,_rclow_,_rcilow_, _op_)
 #define _RCDNORM1(_rcrange_,_rccode_,_ip_)         _rcdnorm_(_rcrange_,_rccode_,_ip_)
-  #endif 
+  #endif
 
   #if (RC_SIZE - RC_IO)/4 >= RC_BITS
-#define _RCENORM2(_rcrange_,_rclow_,_rcilow_,_op_) 
-#define _RCDNORM2(_rcrange_,_rccode_,_ip_) 
+#define _RCENORM2(_rcrange_,_rclow_,_rcilow_,_op_)
+#define _RCDNORM2(_rcrange_,_rccode_,_ip_)
   #else
 #define _RCENORM2(_rcrange_,_rclow_,_rcilow_,_op_) _rcenorm_(_rcrange_,_rclow_,_rcilow_, _op_)
 #define _RCDNORM2(_rcrange_,_rccode_,_ip_)         _rcdnorm_(_rcrange_,_rccode_,_ip_)
   #endif
-  
+
 // encode n bits
 #define mbnenc(_rcrange_,_rclow_,_rcilow_, _mb_,_prm0_,_prm1_,_op_, _x_, _n_) do {\
   mbu *_mbn = _mb_; unsigned _xn = 1<<(_n_) | (_x_); int _in;\
   for(_in = (_n_)-1; _in >= 0; --_in) {\
     _rcenorm_(_rcrange_,_rclow_,_rcilow_,_op_);\
-	mbu *_mn = &(_mbn)[_xn>>(_in+1)]; unsigned _mnp = mbu_p(_mn,_prm0_); mbu_e(_rcrange_,_rclow_, _mnp, _mn, _prm0_,_prm1_,_op_, RCB(_xn,_in));\
+    mbu *_mn = &(_mbn)[_xn>>(_in+1)]; unsigned _mnp = mbu_p(_mn,_prm0_); mbu_e(_rcrange_,_rclow_, _mnp, _mn, _prm0_,_prm1_,_op_, RCB(_xn,_in));\
   }\
 } while(0)
 
@@ -63,7 +63,7 @@
 #define mbmnenc(_rcrange_,_rclow_,_rcilow_, _m_,_prm0_,_prm1_,_op_, _x_, _n_, _mb1_, _mb2_, _sse2_) do {\
   unsigned _x = 1<<(_n_) | (_x_); int _i;\
   for(_i = (_n_)-1; _i >= 0; --_i) {\
-	mbu *_m = &_m_[_x>>(_i+1)]; unsigned _mp = mbu_p(_m,_prm0_); mbum_enc(_rcrange_,_rclow_,_rcilow_, _mp, _m, _prm0_,_prm1_,_op_, RCB(_x,_i), _mb1_, _mb2_, _sse2_);\
+    mbu *_m = &_m_[_x>>(_i+1)]; unsigned _mp = mbu_p(_m,_prm0_); mbum_enc(_rcrange_,_rclow_,_rcilow_, _mp, _m, _prm0_,_prm1_,_op_, RCB(_x,_i), _mb1_, _mb2_, _sse2_);\
   }\
 } while(0)
 
@@ -76,13 +76,13 @@
 #endif
 
 //-------------- 10,12,16 bits
-#define mb16enc(_rcrange_,_rclow_,_rcilow_,  _mb_,_prm0_,_prm1_,_op_, _x_)  mbnenc(_rcrange_,_rclow_,_rcilow_,  _mb_,_prm0_,_prm1_,_op_, _x_, 16) 
+#define mb16enc(_rcrange_,_rclow_,_rcilow_,  _mb_,_prm0_,_prm1_,_op_, _x_)  mbnenc(_rcrange_,_rclow_,_rcilow_,  _mb_,_prm0_,_prm1_,_op_, _x_, 16)
 #define mb16dec(_rcrange_,_rccode_, _mb_,_prm0_,_prm1_,_ip_, _x_)  mbndec(_rcrange_,_rccode_, _mb_,_prm0_,_prm1_,_ip_, _x_, 16)
 
-#define mb12enc(_rcrange_,_rclow_,_rcilow_,  _mb_,_prm0_,_prm1_,_op_, _x_)  mbnenc(_rcrange_,_rclow_,_rcilow_,  _mb_,_prm0_,_prm1_,_op_, _x_, 12) 
+#define mb12enc(_rcrange_,_rclow_,_rcilow_,  _mb_,_prm0_,_prm1_,_op_, _x_)  mbnenc(_rcrange_,_rclow_,_rcilow_,  _mb_,_prm0_,_prm1_,_op_, _x_, 12)
 #define mb12dec(_rcrange_,_rccode_, _mb_,_prm0_,_prm1_,_ip_, _x_)  mbndec(_rcrange_,_rccode_, _mb_,_prm0_,_prm1_,_ip_, _x_, 12)
 
-#define mb10enc(_rcrange_,_rclow_,_rcilow_,  _mb_,_prm0_,_prm1_,_op_, _x_)  mbnenc(_rcrange_,_rclow_,_rcilow_,  _mb_,_prm0_,_prm1_,_op_, _x_, 10) 
+#define mb10enc(_rcrange_,_rclow_,_rcilow_,  _mb_,_prm0_,_prm1_,_op_, _x_)  mbnenc(_rcrange_,_rclow_,_rcilow_,  _mb_,_prm0_,_prm1_,_op_, _x_, 10)
 #define mb10dec(_rcrange_,_rccode_, _mb_,_prm0_,_prm1_,_ip_, _x_)  mbndec(_rcrange_,_rccode_, _mb_,_prm0_,_prm1_,_ip_, _x_, 10)
 
 //--------------- 8 bits
@@ -168,7 +168,7 @@
 } while(0)
 
 #define mb5dec(_rcrange_,_rccode_, _m_,_prm0_,_prm1_,_ip_, _x_) { \
-  mbu *_m = _m_,*_mx; unsigned _x = 1,_mp;                                                     		_rcdnorm_(_rcrange_,_rccode_,_ip_);\
+  mbu *_m = _m_,*_mx; unsigned _x = 1,_mp;                                                          _rcdnorm_(_rcrange_,_rccode_,_ip_);\
   { _mx = &_m[ 1]; _mp = mbu_p(_mx,_prm0_); mbu_d(_rcrange_,_rccode_, _mp, _mx, _prm0_,_prm1_, _x); _RCDNORM1(_rcrange_,_rccode_,_ip_); }\
   { _mx = &_m[_x]; _mp = mbu_p(_mx,_prm0_); mbu_d(_rcrange_,_rccode_, _mp, _mx, _prm0_,_prm1_, _x); _RCDNORM2(_rcrange_,_rccode_,_ip_); }\
   { _mx = &_m[_x]; _mp = mbu_p(_mx,_prm0_); mbu_d(_rcrange_,_rccode_, _mp, _mx, _prm0_,_prm1_, _x); _RCDNORM1(_rcrange_,_rccode_,_ip_); }\
@@ -187,7 +187,7 @@
 } while(0)
 
 #define mb4dec(_rcrange_,_rccode_, _m_,_prm0_,_prm1_,_ip_, _x_) { \
-  mbu *_m = _m_,*_mx; unsigned _x = 1,_mp;                                              		    _rcdnorm_(_rcrange_,_rccode_,_ip_);\
+  mbu *_m = _m_,*_mx; unsigned _x = 1,_mp;                                                          _rcdnorm_(_rcrange_,_rccode_,_ip_);\
   { _mx = &_m[ 1]; _mp = mbu_p(_mx,_prm0_); mbu_d(_rcrange_,_rccode_, _mp, _mx, _prm0_,_prm1_, _x); _RCDNORM1(_rcrange_,_rccode_,_ip_); }\
   { _mx = &_m[_x]; _mp = mbu_p(_mx,_prm0_); mbu_d(_rcrange_,_rccode_, _mp, _mx, _prm0_,_prm1_, _x); _RCDNORM2(_rcrange_,_rccode_,_ip_); }\
   { _mx = &_m[_x]; _mp = mbu_p(_mx,_prm0_); mbu_d(_rcrange_,_rccode_, _mp, _mx, _prm0_,_prm1_, _x); _RCDNORM1(_rcrange_,_rccode_,_ip_); }\
@@ -204,13 +204,13 @@
 } while(0)
 
 #define mb3dec(_rcrange_,_rccode_, _m_,_prm0_,_prm1_,_ip_, _x_) { \
-  mbu *_m = _m_,*_mx; unsigned _x = 1,_mp;                                                       	_rcdnorm_(_rcrange_,_rccode_,_ip_);\
+  mbu *_m = _m_,*_mx; unsigned _x = 1,_mp;                                                          _rcdnorm_(_rcrange_,_rccode_,_ip_);\
   { _mx = &_m[ 1]; _mp = mbu_p(_mx,_prm0_); mbu_d(_rcrange_,_rccode_, _mp, _mx, _prm0_,_prm1_, _x); _RCDNORM1(_rcrange_,_rccode_,_ip_); }\
   { _mx = &_m[_x]; _mp = mbu_p(_mx,_prm0_); mbu_d(_rcrange_,_rccode_, _mp, _mx, _prm0_,_prm1_, _x); _RCDNORM2(_rcrange_,_rccode_,_ip_); }\
   { _mx = &_m[_x]; _mp = mbu_p(_mx,_prm0_); mbu_d(_rcrange_,_rccode_, _mp, _mx, _prm0_,_prm1_, _x);  }\
    _x_ = _x & 7;\
 }
-            
+
 //--------------- 2 bits
 #define mb2enc(_rcrange_,_rclow_,_rcilow_, _m_,_prm0_,_prm1_,_op_, _x_) do {\
   mbu *_m = _m_,*_mx; unsigned _x = 1<<2 | (_x_),_mp;\
@@ -219,12 +219,12 @@
 } while(0)
 
 #define mb2dec(_rcrange_,_rccode_, _m_,_prm0_,_prm1_,_ip_, _x_) { \
-  mbu *_m = _m_,*_mx; unsigned _x = 1,_mp;                                                       	_rcdnorm_(_rcrange_,_rccode_,_ip_);\
+  mbu *_m = _m_,*_mx; unsigned _x = 1,_mp;                                                          _rcdnorm_(_rcrange_,_rccode_,_ip_);\
   { _mx = &_m[ 1]; _mp = mbu_p(_mx,_prm0_); mbu_d(_rcrange_,_rccode_, _mp, _mx, _prm0_,_prm1_, _x); _RCDNORM1(_rcrange_,_rccode_,_ip_); }\
   { _mx = &_m[_x]; _mp = mbu_p(_mx,_prm0_); mbu_d(_rcrange_,_rccode_, _mp, _mx, _prm0_,_prm1_, _x);  }\
    _x_ = _x & 3;\
 }
-                                                                      
+
 // Static (without predictor)
 #define mbu_senc(_rcrange_,_rclow_,_rcilow_, _m_,_prm0_,_prm1_,_op_, _b_) do { mbu *_m = _m_; unsigned _mbp = mbu_p(_m,_prm0_); rcbenc(_rcrange_,_rclow_,_rcilow_ , _mbp, ;, _m, 0,0,_op_, _b_); } while(0)
 #define mbu_sdec(_rcrange_,_rccode_,_m_,_prm0_,_prm1_,_ip_, _x_) do { mbu *_m = _m_; unsigned _mbp = mbu_p(_m,_prm0_); rcbdec(_rcrange_,_rccode_, _mbp, ;, _m, 0,0,_ip_, _x_); } while(0)
