@@ -325,7 +325,7 @@ static inline __m128i _mm_blendv_epi8(__m128i u, __m128i v, __m128i mask) { retu
       ((imm8) & (1 << 6)) ? 0xFFFF : 0x0000, \
       ((imm8) & (1 << 7)) ? 0xFFFF : 0x0000  \
     }; \
-    (int16x8_t)vbslq_u16(vld1q_u16(_mask_arr), (uint16x8_t)(b), (uint16x8_t)(a)); \
+    (__m128i)vbslq_u16(vld1q_u16(_mask_arr), (uint16x8_t)(b), (uint16x8_t)(a)); \
   })
     
 #define _MM_SHUFFLE(_u3_,_u2_,_u1_,_u0_)        ((_u3_) << 6 | (_u2_) << 4 | (_u1_) << 2 | (_u0_))
