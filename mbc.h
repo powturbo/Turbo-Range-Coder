@@ -21,16 +21,16 @@
     - twitter  : https://twitter.com/powturbo
     - email    : powturbo [_AT_] gmail [_DOT_] com
 **/
-// TurboRC: Range Coder - Predictor Encode + Decode single bit + Context mixing 
+// TurboRC: Range Coder - Predictor Encode + Decode single bit + Context mixing
 
 //#define RCB(_x_,_b_) (_x_ & (1<<_b_))
 #define RCB(_x_,_b_) ((_x_ >> (_b_))&1)
 
 // Encode with predictor
 #define mbu_e(  rcrange,rclow,  _mbp_, _mb_,_prm0_,_prm1_,_op_, _bit_)                                   rcbe(  rcrange,rclow,  _mbp_, mbu_update,_mb_,_prm0_,_prm1_,_op_, _bit_)
-// Encode with predictor + renorm																									  
+// Encode with predictor + renorm
 #define mbu_enc(rcrange,rclow,rcilow,  _mb_,_prm0_,_prm1_,_op_, _bit_) do { unsigned _mbp = mbu_p(_mb_,_prm0_); rcbenc(rcrange,rclow,rcilow,  _mbp,  mbu_update,_mb_,_prm0_,_prm1_,_op_, _bit_); } while(0)
-	
+
 // Decode with predictor
 #define mbu_d(  rcrange,rccode, _mbp_, _mb_,_prm0_,_prm1_, _x_)                                          rcbd(  rcrange,rccode, _mbp_, mbu_update, _mb_,_prm0_,_prm1_, _x_)
 // Decode with predictor + renorm
@@ -38,19 +38,19 @@
 
   #ifdef RC_MACROS
 #define mbu_init0(_mb_) { mbu_init(_mb_, mbu_probinit()); }
-#define mbu_init1(_mb_, _n_) { int _i; for(_i = 0; _i < _n_; _i++) mbu_init(&_mb_[_i], mbu_probinit()); } 
+#define mbu_init1(_mb_, _n_) { int _i; for(_i = 0; _i < _n_; _i++) mbu_init(&_mb_[_i], mbu_probinit()); }
   #else
     #ifndef _MBC_H_
-#define _MBC_H_	
+#define _MBC_H_
 // Init predictor value
-static inline mbu_init0(mbu *mb) { mbu_init(mb, mbu_probinit()); } 
+static inline mbu_init0(mbu *mb) { mbu_init(mb, mbu_probinit()); }
 
-// Init order 0 predictor (1D array) 
+// Init order 0 predictor (1D array)
 static void mbu_init1(mbu *mb, unsigned n) {
-  int i; 
+  int i;
   for(i = 0; i < n; i++)
-    mbu_init(&mb[i], mbu_probinit()); 
-} 
+    mbu_init(&mb[i], mbu_probinit());
+}
     #endif
   #endif
 
@@ -60,7 +60,7 @@ static void mbu_init1(mbu *mb, unsigned n) {
   for(_ix = 0; _ix < (_a1_); _ix++)                    \
     for(_is = 0; _is < (_a0_); _is++)                  \
       mbu_init(&(_mb_)[_ix][_is], mbu_probinit());     \
-}  
+}
 
 // Init order 2 predictor (3D array mb[a0][a1][a2])
 #define mbu_init3(_mb_, _a2_, _a1_, _a0_) {                \
@@ -72,7 +72,7 @@ static void mbu_init1(mbu *mb, unsigned n) {
 }
 
 #define MBU_DEF0(_mb_)           mbu _mb_
-#define MBU_DEF1(_mb_,_b0_)      mbu _mb_[_b0_] 
+#define MBU_DEF1(_mb_,_b0_)      mbu _mb_[_b0_]
 #define MBU_DEF2(_mb_,_b1_,_b0_) mbu _mb_[_b1_][_b0_]
 #define MBU_DEF3(_mb_,_b2_, _b1_,_b0_) mbu _mb_[_b2_][_b1_][_b0_]
 
@@ -86,8 +86,8 @@ static void mbu_init1(mbu *mb, unsigned n) {
   for(  _ix = 0; _ix < (_a0_); _ix++)                   \
     for(_iy = 0; _iy < (_a1_); _iy++) {                 \
       mbu *_mp = &(_mb_)[(_a1_) * _ix + _iy]; mbu_init(_mp, mbu_probinit());\
-	}\
-}  
+    }\
+}
 
 #define mbu_initp3(_mb_, _a2_, _a1_, _a0_) {                  \
   unsigned _iw,_ix,_iy;                                     \
@@ -95,8 +95,8 @@ static void mbu_init1(mbu *mb, unsigned n) {
   for(  _ix = 0; _ix < (_a1_); _ix++)                   \
     for(_iy = 0; _iy < (_a0_); _iy++) {                 \
       mbu *_mp = &(_mb_)[(_a2_)*_iw*_ix + (_a1_)*_ix + _iy]; mbu_init(_mp, mbu_probinit());\
-	}\
-}  
+    }\
+}
 
 #define MBU_NEW2( _mb_,_b1_,_b0_) mbu *_mb_ = malloc((_b0_)*(_b1_)*sizeof(_mb_[0])); if(!_mb_) die("malloc failed\n")
 #define MBU_NEWI2(_mb_,_b1_,_b0_) MBU_NEW2(_mb_,_b0_,_b1_); mbu_initp2(_mb_, _b0_, _b1_)
@@ -114,7 +114,7 @@ static void mbu_init1(mbu *mb, unsigned n) {
 #define mbu_updates1(_mb_, _mbp_, _prm0_, _prm1_) *(_mb_) = (_mbp_) - ( (((_mbp_) - (1<<RC_BITS)) >> _prm0_) + 1)
 #define mbu_updates( _mb_, _mbp_, _prm0_, _prm1_, _bit_)  *(_mb_) = (_mbp_) - ((((_mbp_) - (-_bit_ & (1<<RC_BITS))) >> _prm0_) + _bit_)
   #endif
-  
+
 #define RESCALE 4
 
 //---- o0+o1+o2 (1,2) ----------------------------------------
@@ -134,23 +134,23 @@ static void mbu_init1(mbu *mb, unsigned n) {
 #define PRM202  3
 #define PRMS20  5
 
-  #elif RC_PRDID == 2 
+  #elif RC_PRDID == 2
 #define PRM200  3
 #define PRM201  2
 #define PRM202  2
-#define PRMS20  6 
+#define PRMS20  6
 
 #define PRM210  4
 #define PRM211  2
 #define PRM212  7
 #define PRMS21  6
-  #elif RC_PRDID == 3 
+  #elif RC_PRDID == 3
 #define PRM200  fsm
 #define PRM201  fsm
 #define PRM202  fsm
 #define PRMS20  5
   #else
-#error "predictor not supported"  
+#error "predictor not supported"
   #endif
 
 #define mbum2_update0(_mb_,_mbp_, _prm0_, _prm1_, _mb1_,_mb2_,_sse2_) {\
@@ -160,7 +160,7 @@ static void mbu_init1(mbu *mb, unsigned n) {
   mbu_updates0( _sse2_,    _sse2_[0], PRMS20, PRMS21);\
   mbu_updates0((_sse2_+1), _sse2_[1], PRMS20, PRMS21);\
 }
-   
+
 #define mbum2_update1(_mb_,_mbp_, _prm0_,_prm1_, _mb1_,_mb2_,_sse2_) {\
   mbu_update1(  _mb_,      _mbp,      PRM200, PRM210);\
   mbu_update1(  _mb1_,     _mbp1,     PRM201, PRM211);\
@@ -218,7 +218,7 @@ static void mbu_init1(mbu *mb, unsigned n) {
 #define PRM101  fsm
 #define PRMS10  5
   #else
-#error "predictor not supported"  
+#error "predictor not supported"
   #endif
 
 #define mbum_update0(_mb_,_mbp_, _prm0_,_prm1_, _mb1_,_mb2_,_sse2_) {\
@@ -227,7 +227,7 @@ static void mbu_init1(mbu *mb, unsigned n) {
   mbu_updates0( _sse2_,    _sse2_[0], PRMS10,  PRMS11);\
   mbu_updates0((_sse2_+1), _sse2_[1], PRMS10,  PRMS11);\
 }
-   
+
 #define mbum_update1(_mb_,_mbp_, _prm0_,_prm1_, _mb1_,_mb2_,_sse2_) {\
   mbu_update1(  _mb_,      _mbp,      PRM100,  PRM110);\
   mbu_update1(  _mb1_,     _mbp1,     PRM101,  PRM111);\
@@ -245,7 +245,7 @@ static void mbu_init1(mbu *mb, unsigned n) {
 #define mbum_enc(rcrange,rclow,rcilow,  _mb_,_prm0_,_prm1_,_op_, _bit_, _mb1_, _mb2_, _sse2_) do {\
   unsigned _mbxp,\
            _mbp  = mbu_p(_mb_,_prm0_),\
-		   _mbp1  = mbu_p(_mb1_,_prm0_);\
+           _mbp1  = mbu_p(_mb1_,_prm0_);\
   mbum_p(_mbp,_mbp1,0,_sse2_, _mbxp);\
   rcbmenc(rcrange,rclow,rcilow,  _mbxp, mbum_update,_mb_,_prm0_,_prm1_, _op_,_bit_, _mb1_,_mb2_, _sse2_);\
 } while(0)
@@ -253,16 +253,16 @@ static void mbu_init1(mbu *mb, unsigned n) {
 #define mbum_dec(rcrange,rccode, _mb_,_prm0_,_prm1_,_ip_, _x_, _mb1_, _mb2_, _sse2_) do {\
   unsigned _mbxp,\
            _mbp = mbu_p(_mb_,_prm0_),\
-		   _mbp1 = mbu_p(_mb1_,_prm0_);\
+           _mbp1 = mbu_p(_mb1_,_prm0_);\
   mbum_p(_mbp,_mbp1,0,_sse2_, _mbxp);\
   rcbmdec(rcrange,rccode, _mbxp, mbum_update,_mb_,_prm0_,_prm1_, _ip_,  _x_, _mb1_,_mb2_,_sse2_);\
 } while(0)
-	
+
 #define mbum2_enc(rcrange,rclow,rcilow, _mb_,_prm0_,_prm1_,_op_, _bit_, _mb1_, _mb2_, _sse2_) do {\
   unsigned _mbxp,\
            _mbp  = mbu_p(_mb_,_prm0_),\
-		   _mbp1 = mbu_p(_mb1_,_prm0_),\
-		   _mbp2 = mbu_p(_mb2_,_prm0_);\
+           _mbp1 = mbu_p(_mb1_,_prm0_),\
+           _mbp2 = mbu_p(_mb2_,_prm0_);\
   mbum2_p(_mbp,_mbp1,_mbp2,_sse2_, _mbxp);\
   rcbmenc(rcrange,rclow,rcilow,  _mbxp,  mbum2_update,_mb_,_prm0_,_prm1_, _op_,_bit_, _mb1_,_mb2_, _sse2_);\
 } while(0)
@@ -270,7 +270,7 @@ static void mbu_init1(mbu *mb, unsigned n) {
 #define mbum2_dec(rcrange,rccode, _mb_,_prm0_,_prm1_,_ip_, _x_, _mb1_, _mb2_, _sse2_) do {\
   unsigned _mbxp, _mbp = mbu_p(_mb_,_prm0_),\
            _mbp1 = mbu_p(_mb1_,_prm0_),\
-		   _mbp2 = mbu_p(_mb2_,_prm0_);\
+           _mbp2 = mbu_p(_mb2_,_prm0_);\
   mbum2_p(_mbp,_mbp1,_mbp2,_sse2_, _mbxp);\
   rcbmdec(rcrange,rccode, _mbxp,  mbum2_update,_mb_,_prm0_,_prm1_, _ip_,  _x_, _mb1_,_mb2_,_sse2_);\
 } while(0)
@@ -294,7 +294,7 @@ static void mbu_init1(mbu *mb, unsigned n) {
 #define PRR101  fsm
 #define PRRS10  5
   #else
-#error "predictor not supported"  
+#error "predictor not supported"
   #endif
 
 #define mbur_update0(_mb_,_mbp_, _prm0_,_prm1_, _mb1_,_mb2_,_sse2_) {\
@@ -303,7 +303,7 @@ static void mbu_init1(mbu *mb, unsigned n) {
   mbu_updates0( _sse2_,    _sse2_[0], PRRS10,  PRRS11);\
   mbu_updates0((_sse2_+1), _sse2_[1], PRRS10,  PRRS11);\
 }
-   
+
 #define mbur_update1(_mb_,_mbp_, _prm0_,_prm1_, _mb1_,_mb2_,_sse2_) {\
   mbu_update1(  _mb_,      _mbp,      PRR100,  PRR110);\
   mbu_update1(  _mb1_,     _mbp1,     PRR101,  PRR111);\
@@ -321,8 +321,8 @@ static void mbu_init1(mbu *mb, unsigned n) {
 #define mbur_enc(rcrange,rclow,rcilow,  _mb_,_prm0_,_prm1_,_op_, _bit_, _mb1_, _mb2_, _sse2_) do {\
   unsigned _mbxp,\
            _mbp  = mbu_p(_mb_, _prm0_),\
-		   _mbp1 = mbu_p(_mb1_,_prm0_),\
-		   _mbp2 = mbu_p(_mb2_,_prm0_);\
+           _mbp1 = mbu_p(_mb1_,_prm0_),\
+           _mbp2 = mbu_p(_mb2_,_prm0_);\
   mbur_p(_mbp,_mbp1,_mbp2,_sse2_, _mbxp);\
   rcbmenc(rcrange,rclow,rcilow, _mbxp,  mbur_update,_mb_,_prm0_,_prm1_, _op_,_bit_, _mb1_,_mb2_, _sse2_);\
 } while(0)
