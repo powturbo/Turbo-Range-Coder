@@ -152,6 +152,11 @@ void tp4enc256v4(  unsigned char *__restrict in, unsigned n, unsigned char *__re
 void tp4enc128v8(  unsigned char *__restrict in, unsigned n, unsigned char *__restrict out); 
 void tp4enc256v8(  unsigned char *__restrict in, unsigned n, unsigned char *__restrict out);
 
+void tpenc256v12(  unsigned char *__restrict in, unsigned n, unsigned char *__restrict out);
+void tpenc128v12(  unsigned char *__restrict in, unsigned n, unsigned char *__restrict out);
+void tpdec256v12(  unsigned char *__restrict in, unsigned n, unsigned char *__restrict out);
+void tpdec128v12(  unsigned char *__restrict in, unsigned n, unsigned char *__restrict out);
+
 void tp4zenc128v2( unsigned char *__restrict in, unsigned n, unsigned char *__restrict out);
 void tp4zenc256v2( unsigned char *__restrict in, unsigned n, unsigned char *__restrict out);
 void tp4zenc128v4( unsigned char *__restrict in, unsigned n, unsigned char *__restrict out);
