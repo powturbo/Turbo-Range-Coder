@@ -130,7 +130,6 @@ void tpdec256v12(unsigned char *in, unsigned n, unsigned char *out) {
     for (unsigned j = 0; j < 12; j++) *op++ = ip[j * stride];
   for (unsigned char *ip = in + 12 * stride; op < out + n;) *op++ = *ip++;
 }
-  #elif (defined(__SSE4_1__) || defined(__ARM_NEON) || defined(__riscv_vector) || defined(__loongarch_sx))
 void tpenc128v12(unsigned char *in, unsigned n, unsigned char *out) {
   unsigned stride = n / 12;
   unsigned char *ip = in;
@@ -139,31 +138,30 @@ void tpenc128v12(unsigned char *in, unsigned n, unsigned char *out) {
     __m128i v0 = _mm_loadu_si128((const __m128i*)(ip + 0));
     __m128i v1 = _mm_loadu_si128((const __m128i*)(ip + 16));
     __m128i v2 = _mm_loadu_si128((const __m128i*)(ip + 32));
-
-    // _mm_blend_epi32 (AVX2) replaced by _mm_blend_ps (SSE4.1) via bit-cast.
-    __m128i t0 = _mm_castps_si128(_mm_blend_ps(_mm_castsi128_ps(v0), _mm_castsi128_ps(v2), 0b0010));
-            t0 = _mm_castps_si128(_mm_blend_ps(_mm_castsi128_ps(t0), _mm_castsi128_ps(v1), 0b0100));
-    __m128i t1 = _mm_castps_si128(_mm_blend_ps(_mm_castsi128_ps(v1), _mm_castsi128_ps(v0), 0b0010));
-            t1 = _mm_castps_si128(_mm_blend_ps(_mm_castsi128_ps(t1), _mm_castsi128_ps(v2), 0b0100));
-    __m128i t2 = _mm_castps_si128(_mm_blend_ps(_mm_castsi128_ps(v2), _mm_castsi128_ps(v1), 0b0010));
-            t2 = _mm_castps_si128(_mm_blend_ps(_mm_castsi128_ps(t2), _mm_castsi128_ps(v0), 0b0100));
-
+    
+    __m128i t0 = _mm_blend_epi16(v0, v2, 0x0C);
+            t0 = _mm_blend_epi16(t0, v1, 0x30);
+    __m128i t1 = _mm_blend_epi16(v1, v0, 0x0C);
+            t1 = _mm_blend_epi16(t1, v2, 0x30);
+    __m128i t2 = _mm_blend_epi16(v2, v1, 0x0C);
+            t2 = _mm_blend_epi16(t2, v0, 0x30);
+            
     __m128i out0 = _mm_shuffle_epi8(t0, _mm_setr_epi8(0, 12, 8, 4, 1, 13, 9, 5, 2, 14, 10, 6, 3, 15, 11, 7)); // Transpose each 4x4 block
     __m128i out1 = _mm_shuffle_epi8(t1, _mm_setr_epi8(4, 0, 12, 8, 5, 1, 13, 9, 6, 2, 14, 10, 7, 3, 15, 11));
     __m128i out2 = _mm_shuffle_epi8(t2, _mm_setr_epi8(8, 4, 0, 12, 9, 5, 1, 13, 10, 6, 2, 14, 11, 7, 3, 15));
+    
+    *(uint32_t*)(out + 0 * stride + i) = _mm_cvtsi128_si32(out0);  // Write outputs as 32-bit blocks
+    *(uint32_t*)(out + 1 * stride + i) = _mm_extract_epi32(out0, 1);
+    *(uint32_t*)(out + 2 * stride + i) = _mm_extract_epi32(out0, 2);
+    *(uint32_t*)(out + 3 * stride + i) = _mm_extract_epi32(out0, 3);
 
-    *(uint32_t*)(out + 0 * stride + i)  = _mm_cvtsi128_si32(out0);   // Write outputs as 32-bit blocks
-    *(uint32_t*)(out + 1 * stride + i)  = _mm_extract_epi32(out0, 1);
-    *(uint32_t*)(out + 2 * stride + i)  = _mm_extract_epi32(out0, 2);
-    *(uint32_t*)(out + 3 * stride + i)  = _mm_extract_epi32(out0, 3);
+    *(uint32_t*)(out + 4 * stride + i) = _mm_cvtsi128_si32(out1);
+    *(uint32_t*)(out + 5 * stride + i) = _mm_extract_epi32(out1, 1);
+    *(uint32_t*)(out + 6 * stride + i) = _mm_extract_epi32(out1, 2);
+    *(uint32_t*)(out + 7 * stride + i) = _mm_extract_epi32(out1, 3);
 
-    *(uint32_t*)(out + 4 * stride + i)  = _mm_cvtsi128_si32(out1);
-    *(uint32_t*)(out + 5 * stride + i)  = _mm_extract_epi32(out1, 1);
-    *(uint32_t*)(out + 6 * stride + i)  = _mm_extract_epi32(out1, 2);
-    *(uint32_t*)(out + 7 * stride + i)  = _mm_extract_epi32(out1, 3);
-
-    *(uint32_t*)(out + 8 * stride + i)  = _mm_cvtsi128_si32(out2);
-    *(uint32_t*)(out + 9 * stride + i)  = _mm_extract_epi32(out2, 1);
+    *(uint32_t*)(out + 8 * stride + i) = _mm_cvtsi128_si32(out2);
+    *(uint32_t*)(out + 9 * stride + i) = _mm_extract_epi32(out2, 1);
     *(uint32_t*)(out + 10 * stride + i) = _mm_extract_epi32(out2, 2);
     *(uint32_t*)(out + 11 * stride + i) = _mm_extract_epi32(out2, 3);
   }
