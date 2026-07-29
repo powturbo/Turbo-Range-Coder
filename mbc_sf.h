@@ -22,7 +22,7 @@
     - email    : powturbo [_AT_] gmail [_DOT_] com
 **/
 // TurboRC: Range Coder - fsm predictor
-// Reference: https://encode.su/threads/3681-GDCC-21-T5-FSM-Counter-Optimization 
+// Reference: https://encode.su/threads/3681-GDCC-21-T5-FSM-Counter-Optimization
 #include <stdlib.h> // strtol
 
 #define RC_PRDID 3
@@ -41,7 +41,7 @@
 
 typedef unsigned short mbu;
 
-#define mbu_p(_mb_,_fsm_) (_fsm_[*(_mb_)].p)										
+#define mbu_p(_mb_,_fsm_) (_fsm_[*(_mb_)].p)
 #define mbu_init(_m_, _p0_) { *(_m_) = _p0_; }          //static inline unsigned mbu_p(mbu *mb, fsm_t *_fsm_) { return fsm[*mb].p; }
 
 #define mbu_update0(_mb_, _mbp_, _fsm_, _prm1_) (*(_mb_) = _fsm_[*(_mb_)].s[0])
@@ -55,11 +55,11 @@ typedef unsigned short mbu;
   #endif
 
 static inline unsigned fsmget_(unsigned char **_p) {
-  unsigned char *p = *_p,*e;
+  char *p = *_p, *e;
   int c, r = 0;
   while(*p && (*p<'0' || *p>'9')) p++;
   r = strtoul(p, &e, 10);
-  *_p = e; 														//if(r) printf("%d,", r);
+  *_p = e;                                                      //if(r) printf("%d,", r);
   return r;
 }
 
@@ -70,7 +70,7 @@ static inline void fsminit_(unsigned char *p, fsm_t *fsm, unsigned nstates) {
     m = fsmget_(&p); fsm[i].s[1] = max(0,min(nstates-1,      m));
     m = fsmget_(&p); fsm[i].s[0] = max(0,min(nstates-1,      m));
     m = fsmget_(&p); fsm[i].p    = max(1,min((1<<RC_BITS)-1, m));
-	if(!*p) break;												//if(fsm[i].s[0] || fsm[i].s[1]) printf("%d,%d,%d ", fsm[i].s[0], fsm[i].s[1], fsm[i].p);
+    if(!*p) break;                                              //if(fsm[i].s[0] || fsm[i].s[1]) printf("%d,%d,%d ", fsm[i].s[0], fsm[i].s[1], fsm[i].p);
   }
 }
 
