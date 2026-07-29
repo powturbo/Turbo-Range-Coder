@@ -29,7 +29,7 @@
 #include "include_/conf.h"   
 
 #define RC_MACROS
-#define RC_BITS 16      	// RC_SIZE=64 + RC_IO=32 : set in turborc_.h
+#define RC_BITS 16          // RC_SIZE=64 + RC_IO=32 : set in turborc_.h
 #include "turborc_.h"
-#include "mbc_ss.h"       	// dual speed predictor
+#include "mbc_ss.h"         // dual speed predictor
 #include "rcqlfc_.c"         // bwt template functions 
