@@ -313,7 +313,21 @@ static inline uint32_t  mm_movemask_epu32(uint32x4_t v) { const uint32x4_t mask 
 
 // --- Swizzle : _mm_shuffle_epi8 / _mm_shuffle_epi32 / Pack/Unpack -----------------------------------------------------------------------------------
 static inline __m128i _mm_blendv_epi8(__m128i u, __m128i v, __m128i mask) { return vu8(vbslq_u8(vreinterpretq_u8_s8(vshrq_n_s8((i8v(mask)), 7)), u8v(v), u8v(u))); }
-
+#define _mm_blend_epi16(a, b, imm8) \
+  __extension__({ \
+    const uint16_t _mask_arr[8] = { \
+      ((imm8) & (1 << 0)) ? 0xFFFF : 0x0000, \
+      ((imm8) & (1 << 1)) ? 0xFFFF : 0x0000, \
+      ((imm8) & (1 << 2)) ? 0xFFFF : 0x0000, \
+      ((imm8) & (1 << 3)) ? 0xFFFF : 0x0000, \
+      ((imm8) & (1 << 4)) ? 0xFFFF : 0x0000, \
+      ((imm8) & (1 << 5)) ? 0xFFFF : 0x0000, \
+      ((imm8) & (1 << 6)) ? 0xFFFF : 0x0000, \
+      ((imm8) & (1 << 7)) ? 0xFFFF : 0x0000  \
+    }; \
+    (int16x8_t)vbslq_u16(vld1q_u16(_mask_arr), (uint16x8_t)(b), (uint16x8_t)(a)); \
+  })
+    
 #define _MM_SHUFFLE(_u3_,_u2_,_u1_,_u0_)        ((_u3_) << 6 | (_u2_) << 4 | (_u1_) << 2 | (_u0_))
 
 #define _mm_shuffle_epi8(_u_, _v_)              (__m128i)vqtbl1q_s8(i8v(_u_), u8v(_v_))
