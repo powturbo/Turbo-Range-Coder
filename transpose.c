@@ -130,7 +130,8 @@ void tpdec256v12(unsigned char *in, unsigned n, unsigned char *out) {
     for (unsigned j = 0; j < 12; j++) *op++ = ip[j * stride];
   for (unsigned char *ip = in + 12 * stride; op < out + n;) *op++ = *ip++;
 }
-
+  #endif
+  
   #if (defined(__SSE3__) || defined(__ARM_NEON) || defined(__riscv_vector) || defined(__loongarch_sx))
 void tpenc128v12(unsigned char *in, unsigned n, unsigned char *out) {
   unsigned stride = n / 12;
