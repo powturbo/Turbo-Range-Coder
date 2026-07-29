@@ -818,6 +818,7 @@ static ALWAYS_INLINE __m128i mm_xord_epi64(__m128i v, __m128i vs) { MM_XORD_EPI6
 #define MM_SCAN1z_EPI16(v, vs) { const __m128i _cv = _mm_set_epi16(                        8, 7, 6, 5, 4, 3, 2, 1), _csv = _mm_set1_epi16(8); v  = _mm_add_epi16(vs, _cv); vs = _mm_add_epi16(vs, _csv);}
 #define MM_SCAN1z_EPI32(v, vs) { const __m128i _cv = _mm_set_epi32(                                    4, 3, 2, 1), _csv = _mm_set1_epi32(4); v  = _mm_add_epi32(vs, _cv); vs = _mm_add_epi32(vs, _csv);}
 
+#ifdef __BMI2__
 static inline __m128i mm_pdep_epi16(__m128i v, uint16_t mask) {
   uint16_t v0 = _mm_extract_epi16(v, 0), v1 = _mm_extract_epi16(v, 1), v2 = _mm_extract_epi16(v, 2), v3 = _mm_extract_epi16(v, 3),
            v4 = _mm_extract_epi16(v, 4), v5 = _mm_extract_epi16(v, 5), v6 = _mm_extract_epi16(v, 6), v7 = _mm_extract_epi16(v, 7);
@@ -849,6 +850,7 @@ static inline __m128i mm_pext_epi32(__m128i v, uint32_t mask) {
 static inline __m128i mm_pext_epi64(__m128i v, uint64_t mask) {
   return _mm_set_epi64x(_pext_u64(_mm_extract_epi64(v, 1), mask), _pext_u64(_mm_extract_epi64(v, 0), mask));
 }
+#endif
 
 //------------------------------------------------- Quad v0,v1,v2,v3 -----------------------------------------------------------------------
 #define MM_ZZAGEQ_EPI16(v0, v1, v2, v3) {\
