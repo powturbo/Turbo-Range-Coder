@@ -21,32 +21,32 @@
     - twitter  : https://twitter.com/powturbo
     - email    : powturbo [_AT_] gmail [_DOT_] com
 **/
-// TurboRC: Range Coder encode/decode functions using fsm predictor 
+// TurboRC: Range Coder encode/decode functions using fsm predictor
 
-#include <stdio.h>             
+#include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include "include_/conf.h"   
-#include "include/turborc.h"   
+#include "include_/conf.h"
+#include "include/turborc.h"
 
 #define RC_MACROS
-#define RC_BITS 15      	// RC_SIZE=64 + RC_IO=32 : set in turborc_.h
+#define RC_BITS 15          // RC_SIZE=64 + RC_IO=32 : set in turborc_.h
 #include "turborc_.h"
-#include "mbc_sf.h"       	// fsm predictor
+#include "mbc_sf.h"         // fsm predictor
 
 fsm_t fsm[N_STATES];
 
 #define BUFSIZE (1u<<20)
-void fsm_init(int id) {      					
+void fsm_init(int id) {
   char     s[256], buf[BUFSIZE];
   unsigned l;
   sprintf(s, "FSM%d.txt", id);
-  FILE *f = fopen(s, "r"); 					    if(!f) { fprintf(stderr, "FSM file '%s' not found\n", s); exit(0); } 
-  if((l = fread(buf, 1, BUFSIZE, f)) == -1) 
-	perror("fread failed\n");   				
+  FILE *f = fopen(s, "r");                      if(!f) { fprintf(stderr, "FSM file '%s' not found\n", s); exit(0); }
+  if((l = fread(buf, 1, BUFSIZE, f)) == -1)
+    perror("fread failed\n");
   printf("fsm file '%s' read.length=%d\n", s, l);
-  buf[l] = 0; 
+  buf[l] = 0;
   fsminit_(buf, fsm, N_STATES);
 }
-	
-#include "rc_.c"      // template functions 
+
+#include "rc_.c"      // template functions
