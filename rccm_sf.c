@@ -23,16 +23,16 @@
 **/
 // TurboRC: Range Coder - CM predictor (16 bits counters)
 
-#include <stdio.h>             
+#include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include "include/turborc.h"
-#include "include_/conf.h"   
+#include "include_/conf.h"
 
 #define RC_MACROS
-#define RC_BITS 16     	    // RC_SIZE + RC_IO: set in turborc_.h
+#define RC_BITS 16          // RC_SIZE + RC_IO: set in turborc_.h
 #include "turborc_.h"
 extern fsm_t fsm[];
 
-#include "mbc_sf.h"       	// simple predictor
-#include "rccm_.c"          // template functions 
+#include "mbc_sf.h"         // simple predictor
+#include "rccm_.c"          // template functions
