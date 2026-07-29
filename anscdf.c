@@ -717,7 +717,7 @@ LIBAPI size_t ansbd(unsigned char *in, size_t outlen, unsigned char *out) {
   for(op = out; op < out_; ) { 
     unsigned char *eop = op + BSIZE/8; 
     if(eop > out_) eop = out_;
-    for(i = 0; i < ABSN; i++) { if(st[i] != ANS_LOW) die(stderr, "Fatal error - data corrupted: st=%x\n", st); ecdini(st[i], in); }
+    for(i = 0; i < ABSN; i++) { if(st[i] != ANS_LOW) die("Fatal error - data corrupted: st=%x\n", st); ecdini(st[i], in); }
     
     for(; op < eop;) { 
       unsigned cx = 1;
