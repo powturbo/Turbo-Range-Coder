@@ -110,10 +110,10 @@ static ALWAYS_INLINE unsigned ror64(unsigned x, int s) { return x >> s | x << (6
     #else
 #include <stdint.h>
 #define __builtin_prefetch(x,a) _mm_prefetch(x, _MM_HINT_NTA)
+#define ALWAYS_INLINE   __forceinline
     #endif
 
 #define ALIGNED(t,v,n)  __declspec(align(n)) t v
-#define ALWAYS_INLINE   __forceinline
 #define NOINLINE        __declspec(noinline)
 #define _PACKED         //__attribute__ ((packed))
 #define THREADLOCAL     __declspec(thread)
