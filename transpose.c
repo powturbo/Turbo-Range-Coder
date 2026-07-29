@@ -130,6 +130,7 @@ void tpdec256v12(unsigned char *in, unsigned n, unsigned char *out) {
     for (unsigned j = 0; j < 12; j++) *op++ = ip[j * stride];
   for (unsigned char *ip = in + 12 * stride; op < out + n;) *op++ = *ip++;
 }
+
 #elif defined(__SSE4_1__) || defined(__ARM_NEON) || defined(__riscv_vector) || defined(__loongarch_sx)
 void tpenc128v12(unsigned char *in, unsigned n, unsigned char *out) {
   unsigned stride = n / 12;
@@ -139,28 +140,24 @@ void tpenc128v12(unsigned char *in, unsigned n, unsigned char *out) {
     __m128i v0 = _mm_loadu_si128((const __m128i*)(ip + 0));
     __m128i v1 = _mm_loadu_si128((const __m128i*)(ip + 16));
     __m128i v2 = _mm_loadu_si128((const __m128i*)(ip + 32));
-    
     __m128i t0 = _mm_blend_epi16(v0, v2, 0x0C);
             t0 = _mm_blend_epi16(t0, v1, 0x30);
     __m128i t1 = _mm_blend_epi16(v1, v0, 0x0C);
             t1 = _mm_blend_epi16(t1, v2, 0x30);
     __m128i t2 = _mm_blend_epi16(v2, v1, 0x0C);
             t2 = _mm_blend_epi16(t2, v0, 0x30);
-            
-    __m128i out0 = _mm_shuffle_epi8(t0, _mm_setr_epi8(0, 12, 8, 4, 1, 13, 9, 5, 2, 14, 10, 6, 3, 15, 11, 7)); // Transpose each 4x4 block
-    __m128i out1 = _mm_shuffle_epi8(t1, _mm_setr_epi8(4, 0, 12, 8, 5, 1, 13, 9, 6, 2, 14, 10, 7, 3, 15, 11));
-    __m128i out2 = _mm_shuffle_epi8(t2, _mm_setr_epi8(8, 4, 0, 12, 9, 5, 1, 13, 10, 6, 2, 14, 11, 7, 3, 15));
-    
-    *(uint32_t*)(out + 0 * stride + i) = _mm_cvtsi128_si32(out0);  // Write outputs as 32-bit blocks
+           
+    __m128i out0 = _mm_shuffle_epi8(t0, _mm_set_epi8(7, 11, 15, 3, 6, 10, 14, 2, 5, 9, 13, 1, 4, 8, 12, 0)); // Transpose each 4x4 block
+    __m128i out1 = _mm_shuffle_epi8(t1, _mm_set_epi8(11, 15, 3, 7, 10, 14, 2, 6, 9, 13, 1, 5, 8, 12, 0, 4));
+    __m128i out2 = _mm_shuffle_epi8(t2, _mm_set_epi8(15, 3, 7, 11, 14, 2, 6, 10, 13, 1, 5, 9, 12, 0, 4, 8));
+    *(uint32_t*)(out + 0 * stride + i) = _mm_cvtsi128_si32(out0); // Write outputs as 32-bit blocks
     *(uint32_t*)(out + 1 * stride + i) = _mm_extract_epi32(out0, 1);
     *(uint32_t*)(out + 2 * stride + i) = _mm_extract_epi32(out0, 2);
     *(uint32_t*)(out + 3 * stride + i) = _mm_extract_epi32(out0, 3);
-
     *(uint32_t*)(out + 4 * stride + i) = _mm_cvtsi128_si32(out1);
     *(uint32_t*)(out + 5 * stride + i) = _mm_extract_epi32(out1, 1);
     *(uint32_t*)(out + 6 * stride + i) = _mm_extract_epi32(out1, 2);
     *(uint32_t*)(out + 7 * stride + i) = _mm_extract_epi32(out1, 3);
-
     *(uint32_t*)(out + 8 * stride + i) = _mm_cvtsi128_si32(out2);
     *(uint32_t*)(out + 9 * stride + i) = _mm_extract_epi32(out2, 1);
     *(uint32_t*)(out + 10 * stride + i) = _mm_extract_epi32(out2, 2);
@@ -168,55 +165,52 @@ void tpenc128v12(unsigned char *in, unsigned n, unsigned char *out) {
   }
   for (unsigned char *op = out; ip < in + stride * 12; op++, i++)
     for (unsigned j = 0; j < 12; j++) op[j * stride] = *ip++;
-  for (unsigned char *op = out + 12 * stride; ip < in + n;)  *op++ = *ip++;
+  for (unsigned char *op = out + 12 * stride; ip < in + n;) *op++ = *ip++;
 }
-
 void tpdec128v12(unsigned char *in, unsigned n, unsigned char *out) {
   unsigned stride = n / 12;
   unsigned char *op = out;
-  unsigned i = 0;  
+  unsigned i = 0;
   for (; i + 4 <= stride; i += 4, op += 48) { // Process 4 elements (48 bytes) per iteration
-    __m128i t0 = _mm_setr_epi32( // Load 4 bytes from each of the 12 separated component arrays
-            *(const uint32_t*)(in + 0 * stride + i),
-            *(const uint32_t*)(in + 1 * stride + i),
+    __m128i t0 = _mm_set_epi32( // Load 4 bytes from each of the 12 separated component arrays
+            *(const uint32_t*)(in + 3 * stride + i),
             *(const uint32_t*)(in + 2 * stride + i),
-            *(const uint32_t*)(in + 3 * stride + i)
+            *(const uint32_t*)(in + 1 * stride + i),
+            *(const uint32_t*)(in + 0 * stride + i)
         );
-        __m128i t1 = _mm_setr_epi32(
-            *(const uint32_t*)(in + 4 * stride + i),
-            *(const uint32_t*)(in + 5 * stride + i),
+        __m128i t1 = _mm_set_epi32(
+            *(const uint32_t*)(in + 7 * stride + i),
             *(const uint32_t*)(in + 6 * stride + i),
-            *(const uint32_t*)(in + 7 * stride + i)
+            *(const uint32_t*)(in + 5 * stride + i),
+            *(const uint32_t*)(in + 4 * stride + i)
         );
-        __m128i t2 = _mm_setr_epi32(
-            *(const uint32_t*)(in + 8 * stride + i),
-            *(const uint32_t*)(in + 9 * stride + i),
+        __m128i t2 = _mm_set_epi32(
+            *(const uint32_t*)(in + 11 * stride + i),
             *(const uint32_t*)(in + 10 * stride + i),
-            *(const uint32_t*)(in + 11 * stride + i)
+            *(const uint32_t*)(in + 9 * stride + i),
+            *(const uint32_t*)(in + 8 * stride + i)
         );
     __m128i s0, s1, s2; // Shuffle blocks to correctly place them into interleaved structure
-        
-    s0 = _mm_shuffle_epi8(t0, _mm_setr_epi8(0, 4, 8, 12, -1, -1, -1, -1, -1, -1, -1, -1, 1, 5, 9, 13));
-    s1 = _mm_shuffle_epi8(t1, _mm_setr_epi8(-1, -1, -1, -1, 0, 4, 8, 12, -1, -1, -1, -1, -1, -1, -1, -1));
-    s2 = _mm_shuffle_epi8(t2, _mm_setr_epi8(-1, -1, -1, -1, -1, -1, -1, -1, 0, 4, 8, 12, -1, -1, -1, -1));
+       
+    s0 = _mm_shuffle_epi8(t0, _mm_set_epi8(13, 9, 5, 1, -1, -1, -1, -1, -1, -1, -1, -1, 12, 8, 4, 0));
+    s1 = _mm_shuffle_epi8(t1, _mm_set_epi8(-1, -1, -1, -1, -1, -1, -1, -1, 12, 8, 4, 0, -1, -1, -1, -1));
+    s2 = _mm_shuffle_epi8(t2, _mm_set_epi8(-1, -1, -1, -1, 12, 8, 4, 0, -1, -1, -1, -1, -1, -1, -1, -1));
     __m128i v0 = _mm_or_si128(_mm_or_si128(s0, s1), s2);
-
-    s0 = _mm_shuffle_epi8(t0, _mm_setr_epi8(-1, -1, -1, -1, -1, -1, -1, -1, 2, 6, 10, 14, -1, -1, -1, -1));
-    s1 = _mm_shuffle_epi8(t1, _mm_setr_epi8(1, 5, 9, 13, -1, -1, -1, -1, -1, -1, -1, -1, 2, 6, 10, 14));
-    s2 = _mm_shuffle_epi8(t2, _mm_setr_epi8(-1, -1, -1, -1, 1, 5, 9, 13, -1, -1, -1, -1, -1, -1, -1, -1));
+    s0 = _mm_shuffle_epi8(t0, _mm_set_epi8(-1, -1, -1, -1, 14, 10, 6, 2, -1, -1, -1, -1, -1, -1, -1, -1));
+    s1 = _mm_shuffle_epi8(t1, _mm_set_epi8(14, 10, 6, 2, -1, -1, -1, -1, -1, -1, -1, -1, 13, 9, 5, 1));
+    s2 = _mm_shuffle_epi8(t2, _mm_set_epi8(-1, -1, -1, -1, -1, -1, -1, -1, 13, 9, 5, 1, -1, -1, -1, -1));
     __m128i v1 = _mm_or_si128(_mm_or_si128(s0, s1), s2);
-
-    s0 = _mm_shuffle_epi8(t0, _mm_setr_epi8(-1, -1, -1, -1, 3, 7, 11, 15, -1, -1, -1, -1, -1, -1, -1, -1));
-    s1 = _mm_shuffle_epi8(t1, _mm_setr_epi8(-1, -1, -1, -1, -1, -1, -1, -1, 3, 7, 11, 15, -1, -1, -1, -1));
-    s2 = _mm_shuffle_epi8(t2, _mm_setr_epi8(2, 6, 10, 14, -1, -1, -1, -1, -1, -1, -1, -1, 3, 7, 11, 15));
-    __m128i v2 = _mm_or_si128(_mm_or_si128(s0, s1), s2);       
+    s0 = _mm_shuffle_epi8(t0, _mm_set_epi8(-1, -1, -1, -1, -1, -1, -1, -1, 15, 11, 7, 3, -1, -1, -1, -1));
+    s1 = _mm_shuffle_epi8(t1, _mm_set_epi8(-1, -1, -1, -1, 15, 11, 7, 3, -1, -1, -1, -1, -1, -1, -1, -1));
+    s2 = _mm_shuffle_epi8(t2, _mm_set_epi8(15, 11, 7, 3, -1, -1, -1, -1, -1, -1, -1, -1, 14, 10, 6, 2));
+    __m128i v2 = _mm_or_si128(_mm_or_si128(s0, s1), s2);
     _mm_storeu_si128((__m128i*)(op + 0), v0); // Store interleaved output
     _mm_storeu_si128((__m128i*)(op + 16), v1);
     _mm_storeu_si128((__m128i*)(op + 32), v2);
   }
   for (unsigned char *ip = in + i; op < out + stride * 12; ip++)
     for (unsigned j = 0; j < 12; j++) *op++ = ip[j * stride];
-  for (unsigned char *ip = in + 12 * stride; op < out + n;)  *op++ = *ip++;
+  for (unsigned char *ip = in + 12 * stride; op < out + n;) *op++ = *ip++;
 }
 #endif
 
