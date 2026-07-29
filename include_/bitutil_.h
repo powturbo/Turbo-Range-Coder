@@ -173,14 +173,62 @@ static ALWAYS_INLINE __m256i mm256_xord_epi64(__m256i v, __m256i vs) { MM256_SCA
 #define MM256_SCAN1_EPI8( v, vs)  { const __m256i _cv = _mm256_set_epi8(32,31,30,29,28,27,26,25,24,23,22,21,20,19,18,17,16,15,14,13,12,11,10, 9, 8, 7, 6, 5, 4, 3, 2, 1); MM256_SCAN_EPI8( v, vs); vs = v = _mm256_add_epi8( v, _cv); }
 #define MM256_SCAN1_EPI16(v, vs)  { const __m256i _cv = _mm256_set_epi16(                                               16,15,14,13,12,11,10, 9, 8, 7, 6, 5, 4, 3, 2, 1); MM256_SCAN_EPI16(v, vs); vs = v = _mm256_add_epi16(v, _cv); }
 #define MM256_SCAN1_EPI32(v, vs)  { const __m256i _cv = _mm256_set_epi32(                                                                        8, 7, 6, 5, 4, 3, 2, 1); MM256_SCAN_EPI32(v, vs); vs = v = _mm256_add_epi32(v, _cv); }
+#define MM256_SCAN1_EPI64(v, vs)  { const __m256i _cv = _mm256_set_epi64x(                                                                                   4, 3, 2, 1); MM256_SCAN_EPI64(v, vs); vs = v = _mm256_add_epi64(v, _cv); }
 
 #define MM256_SCAN1z_EPI8( v, vs) { const __m256i _cv = _mm256_set_epi8(32,31,30,29,28,27,26,25,24,23,22,21,20,19,18,17,16,15,14,13,12,11,10, 9, 8, 7, 6, 5, 4, 3, 2, 1), csv = _mm256_set1_epi8( 32); v = _mm256_add_epi8( vs, _cv); vs = _mm256_add_epi8( vs, csv);}
 #define MM256_SCAN1z_EPI16(v, vs) { const __m256i _cv = _mm256_set_epi16(                                               16,15,14,13,12,11,10, 9, 8, 7, 6, 5, 4, 3, 2, 1), csv = _mm256_set1_epi16(16); v = _mm256_add_epi16(vs, _cv); vs = _mm256_add_epi16(vs, csv);}
 #define MM256_SCAN1z_EPI32(v, vs) { const __m256i _cv = _mm256_set_epi32(                                                                        8, 7, 6, 5, 4, 3, 2, 1), csv = _mm256_set1_epi32( 8); v = _mm256_add_epi32(vs, _cv); vs = _mm256_add_epi32(vs, csv);}
+#define MM256_SCAN1z_EPI64(v, vs) { const __m256i _cv = _mm256_set_epi64x(                                                                                   4, 3, 2, 1), csv = _mm256_set1_epi64x(4); v = _mm256_add_epi64(vs, _cv); vs = _mm256_add_epi64(vs, csv);}
 
 // --- delta N --------------
 static ALWAYS_INLINE __m256i mm256_scani_epi16(__m256i v, __m256i vs, __m256i vi) { return _mm256_add_epi16(mm256_scan_epi16(v, vs), vi); }
 static ALWAYS_INLINE __m256i mm256_scani_epi32(__m256i v, __m256i vs, __m256i vi) { return _mm256_add_epi32(mm256_scan_epi32(v, vs), vi); }
+
+static inline __m256i mm256_pdep_epi16(__m256i v, uint16_t mask) {
+  uint16_t v0  = _mm256_extract_epi16(v, 0),  v1  = _mm256_extract_epi16(v, 1),  v2  = _mm256_extract_epi16(v, 2), v3  = _mm256_extract_epi16(v, 3),
+           v4  = _mm256_extract_epi16(v, 4),  v5  = _mm256_extract_epi16(v, 5),  v6  = _mm256_extract_epi16(v, 6), v7  = _mm256_extract_epi16(v, 7);
+  uint16_t v8  = _mm256_extract_epi16(v, 8),  v9  = _mm256_extract_epi16(v, 9),  v10 = _mm256_extract_epi16(v,10), v11 = _mm256_extract_epi16(v,11),
+           v12 = _mm256_extract_epi16(v,12),  v13 = _mm256_extract_epi16(v,13),  v14 = _mm256_extract_epi16(v,14), v15 = _mm256_extract_epi16(v,15);
+  return _mm256_set_epi16(_pdep_u32(v7, mask), _pdep_u32(v6, mask), _pdep_u32(v5, mask), _pdep_u32(v4, mask), 
+                          _pdep_u32(v3, mask), _pdep_u32(v2, mask), _pdep_u32(v1, mask), _pdep_u32(v0, mask),
+                          _pdep_u32(v8, mask), _pdep_u32(v9, mask), _pdep_u32(v10,mask), _pdep_u32(v11,mask), 
+                          _pdep_u32(v12,mask), _pdep_u32(v13,mask), _pdep_u32(v14,mask), _pdep_u32(v14,mask));
+}
+
+static inline __m256i mm256_pdep_epi32(__m256i v, uint32_t mask) {
+  uint32_t v0 = _mm256_extract_epi32(v, 0), v1 = _mm256_extract_epi32(v, 1), v2 = _mm256_extract_epi32(v, 2), v3 = _mm256_extract_epi32(v, 3),
+           v4 = _mm256_extract_epi32(v, 4), v5 = _mm256_extract_epi32(v, 5), v6 = _mm256_extract_epi32(v, 6), v7 = _mm256_extract_epi32(v, 7);
+  return _mm256_set_epi32(_pdep_u32(v7, mask), _pdep_u32(v6, mask), _pdep_u32(v5, mask), _pdep_u32(v4, mask), 
+                          _pdep_u32(v3, mask), _pdep_u32(v2, mask), _pdep_u32(v1, mask), _pdep_u32(v0, mask));
+}
+
+static inline __m256i mm256_pdep_epi64(__m256i v, uint64_t mask) {
+  uint64_t v0 = _mm256_extract_epi64(v, 0), v1 = _mm256_extract_epi64(v, 1), v2 = _mm256_extract_epi64(v, 2), v3 = _mm256_extract_epi64(v, 3);
+  return _mm256_set_epi64x(_pdep_u64(v3, mask), _pdep_u64(v2, mask), _pdep_u64(v1, mask), _pdep_u64(v0, mask));
+}
+
+static inline __m256i mm256_pext_epi16(__m256i v, uint16_t mask) {
+  uint16_t v0  = _mm256_extract_epi16(v, 0),  v1  = _mm256_extract_epi16(v, 1),  v2  = _mm256_extract_epi16(v, 2), v3  = _mm256_extract_epi16(v, 3),
+           v4  = _mm256_extract_epi16(v, 4),  v5  = _mm256_extract_epi16(v, 5),  v6  = _mm256_extract_epi16(v, 6), v7  = _mm256_extract_epi16(v, 7);
+  uint16_t v8  = _mm256_extract_epi16(v, 8),  v9  = _mm256_extract_epi16(v, 9),  v10 = _mm256_extract_epi16(v,10), v11 = _mm256_extract_epi16(v,11),
+           v12 = _mm256_extract_epi16(v,12),  v13 = _mm256_extract_epi16(v,13),  v14 = _mm256_extract_epi16(v,14), v15 = _mm256_extract_epi16(v,15);
+  return _mm256_set_epi16(_pext_u32(v7, mask), _pext_u32(v6, mask), _pext_u32(v5, mask), _pext_u32(v4, mask), 
+                          _pext_u32(v3, mask), _pext_u32(v2, mask), _pext_u32(v1, mask), _pext_u32(v0, mask),
+                          _pext_u32(v8, mask), _pext_u32(v9, mask), _pext_u32(v10,mask), _pext_u32(v11,mask), 
+                          _pext_u32(v12,mask), _pext_u32(v13,mask), _pext_u32(v14,mask), _pext_u32(v14,mask));
+}
+
+static inline __m256i mm256_pext_epi32(__m256i v, uint32_t mask) {
+  uint32_t v0 = _mm256_extract_epi32(v, 0), v1 = _mm256_extract_epi32(v, 1), v2 = _mm256_extract_epi32(v, 2), v3 = _mm256_extract_epi32(v, 3),
+           v4 = _mm256_extract_epi32(v, 4), v5 = _mm256_extract_epi32(v, 5), v6 = _mm256_extract_epi32(v, 6), v7 = _mm256_extract_epi32(v, 7);
+  return _mm256_set_epi32(_pext_u32(v7, mask), _pext_u32(v6, mask), _pext_u32(v5, mask), _pext_u32(v4, mask), 
+                          _pext_u32(v3, mask), _pext_u32(v2, mask), _pext_u32(v1, mask), _pext_u32(v0, mask));
+}
+
+static inline __m256i mm256_pext_epi64(__m256i v, uint64_t mask) {
+  uint64_t v0 = _mm256_extract_epi64(v, 0), v1 = _mm256_extract_epi64(v, 1), v2 = _mm256_extract_epi64(v, 2), v3 = _mm256_extract_epi64(v, 3);
+  return _mm256_set_epi64x(_pext_u64(v3, mask), _pext_u64(v2, mask), _pext_u64(v1, mask), _pext_u64(v0, mask));
+}
 
 //--------------------------------------------------------- Quad v0,v1,v2,v3 ----------------------------
 #define MM256_ZZAGEQ_EPI32(v0, v1, v2, v3) { \
@@ -770,6 +818,38 @@ static ALWAYS_INLINE __m128i mm_xord_epi64(__m128i v, __m128i vs) { MM_XORD_EPI6
 #define MM_SCAN1z_EPI16(v, vs) { const __m128i _cv = _mm_set_epi16(                        8, 7, 6, 5, 4, 3, 2, 1), _csv = _mm_set1_epi16(8); v  = _mm_add_epi16(vs, _cv); vs = _mm_add_epi16(vs, _csv);}
 #define MM_SCAN1z_EPI32(v, vs) { const __m128i _cv = _mm_set_epi32(                                    4, 3, 2, 1), _csv = _mm_set1_epi32(4); v  = _mm_add_epi32(vs, _cv); vs = _mm_add_epi32(vs, _csv);}
 
+static inline __m128i mm_pdep_epi16(__m128i v, uint16_t mask) {
+  uint16_t v0 = _mm_extract_epi16(v, 0), v1 = _mm_extract_epi16(v, 1), v2 = _mm_extract_epi16(v, 2), v3 = _mm_extract_epi16(v, 3),
+           v4 = _mm_extract_epi16(v, 4), v5 = _mm_extract_epi16(v, 5), v6 = _mm_extract_epi16(v, 6), v7 = _mm_extract_epi16(v, 7);
+  return _mm_set_epi16(_pdep_u32(v7, mask), _pdep_u32(v6, mask), _pdep_u32(v5, mask), _pdep_u32(v4, mask),
+                       _pdep_u32(v3, mask), _pdep_u32(v2, mask), _pdep_u32(v1, mask), _pdep_u32(v0, mask));
+}
+
+static inline __m128i mm_pdep_epi32(__m128i v, uint32_t mask) {
+  uint32_t v0 = _mm_extract_epi32(v, 0), v1 = _mm_extract_epi32(v, 1), v2 = _mm_extract_epi32(v, 2), v3 = _mm_extract_epi32(v, 3);
+  return _mm_set_epi32(_pdep_u32(v3, mask), _pdep_u32(v2, mask), _pdep_u32(v1, mask), _pdep_u32(v0, mask));
+}
+
+static inline __m128i mm_pdep_epi64(__m128i v, uint64_t mask) {
+  return _mm_set_epi64x(_pdep_u64(_mm_extract_epi64(v, 1), mask), _pdep_u64(_mm_extract_epi64(v, 0), mask));
+}
+
+static inline __m128i mm_pext_epi16(__m128i v, uint16_t mask) {
+  uint16_t v0 = _mm_extract_epi16(v, 0), v1 = _mm_extract_epi16(v, 1), v2 = _mm_extract_epi16(v, 2), v3 = _mm_extract_epi16(v, 3),
+           v4 = _mm_extract_epi16(v, 4), v5 = _mm_extract_epi16(v, 5), v6 = _mm_extract_epi16(v, 6), v7 = _mm_extract_epi16(v, 7);
+  return _mm_set_epi16(_pext_u32(v7, mask), _pext_u32(v6, mask), _pext_u32(v5, mask), _pext_u32(v4, mask),
+                       _pext_u32(v3, mask), _pext_u32(v2, mask), _pext_u32(v1, mask), _pext_u32(v0, mask));
+}
+
+static inline __m128i mm_pext_epi32(__m128i v, uint32_t mask) {
+  uint32_t v0 = _mm_extract_epi32(v, 0), v1 = _mm_extract_epi32(v, 1), v2 = _mm_extract_epi32(v, 2), v3 = _mm_extract_epi32(v, 3);
+  return _mm_set_epi32(_pext_u32(v3, mask), _pext_u32(v2, mask), _pext_u32(v1, mask), _pext_u32(v0, mask));
+}
+
+static inline __m128i mm_pext_epi64(__m128i v, uint64_t mask) {
+  return _mm_set_epi64x(_pext_u64(_mm_extract_epi64(v, 1), mask), _pext_u64(_mm_extract_epi64(v, 0), mask));
+}
+
 //------------------------------------------------- Quad v0,v1,v2,v3 -----------------------------------------------------------------------
 #define MM_ZZAGEQ_EPI16(v0, v1, v2, v3) {\
   __m128i _v0 = mm_slli_epi16(v0, 1),\
@@ -1109,11 +1189,11 @@ static ALWAYS_INLINE __m128i mm_xord_epi64(__m128i v, __m128i vs) { MM_XORD_EPI6
   v3 = _mm_add_epi32(v3, mm_shuffle_nnnn_epi32(v2, 3));\
 }
 
-static ALWAYS_INLINE void mm_storeuq_si128(__m128i *op, __m128i v0, __m128i v1, __m128i v2, __m128i v3) {
-  _mm_storeu_si128(op, v0); op = (char*)op+16;
-  _mm_storeu_si128(op, v1); op = (char*)op+16;
-  _mm_storeu_si128(op, v2); op = (char*)op+16;
-  _mm_storeu_si128(op, v3); op = (char*)op+16;
+static ALWAYS_INLINE void mm_storeuq_si128(char *op, __m128i v0, __m128i v1, __m128i v2, __m128i v3) {
+  _mm_storeu_si128((__m128i *)op, v0); op = (char*)op+16;
+  _mm_storeu_si128((__m128i *)op, v1); op = (char*)op+16;
+  _mm_storeu_si128((__m128i *)op, v2); op = (char*)op+16;
+  _mm_storeu_si128((__m128i *)op, v3); op = (char*)op+16;
 }
 #endif // SSE
 
@@ -1134,36 +1214,39 @@ static ALWAYS_INLINE void mm_storeuq_si128(__m128i *op, __m128i v0, __m128i v1, 
   #ifdef __AVX2__
 #define BITZERO32(_out_, _n_, _start_) do {\
   __m256i _vs = _mm256_set1_epi32(_start_), *_op = (__m256i *)(_out_), *out_ = (__m256i *)(_out_ + _n_);\
-  do _mm256_storeu_si256(_op, _vs), _op = (char*)_op+32; while(_op < out_);\
+  do _mm256_storeu_si256(_op, _vs), _op += 32/sizeof(_op[0]); while(_op < out_);\
 } while(0)
 
 #define BITFORZERO32(_out_, _n_, _start_, _mindelta_) do {\
   __m256i _vs = _mm256_set1_epi32(_start_), *_op=(__m256i *)(_out_), *out_ = (__m256i *)(_out_ + _n_), _cv = _mm256_set_epi32(7+_mindelta_,6+_mindelta_,5+_mindelta_,4+_mindelta_,3*_mindelta_,2*_mindelta_,1*_mindelta_,0);\
     _vs = _mm256_add_epi32(_vs, _cv);\
     _cv = _mm256_set1_epi32(4);\
-  do { _mm256_storeu_si256(_op, _vs), _op = (char*)_op+32; _vs = _mm256_add_epi32(_vs, _cv); } while(_op < out_);\
+  do { _mm256_storeu_si256(_op, _vs), _op += 32/sizeof(_op[0]); _vs = _mm256_add_epi32(_vs, _cv); } while(_op < out_);\
 } while(0)
 
 #define BITDIZERO32(_out_, _n_, _start_, _mindelta_) do { __m256i _vs = _mm256_set1_epi32(_start_), _cv = _mm256_set_epi32(7+_mindelta_,6+_mindelta_,5+_mindelta_,4+_mindelta_,3+_mindelta_,2+_mindelta_,1+_mindelta_,_mindelta_), *_op=(__m256i *)(_out_), *out_ = (__m256i *)(_out_ + _n_);\
-  _vs = _mm256_add_epi32(_vs, _cv); _cv = _mm256_set1_epi32(4*_mindelta_); do { _mm256_storeu_si256(_op, _vs), _op = (char*)_op+32, _vs = _mm256_add_epi32(_vs, _cv); } while(_op < out_);\
+  _vs = _mm256_add_epi32(_vs, _cv); _cv = _mm256_set1_epi32(4*_mindelta_); do { _mm256_storeu_si256(_op, _vs), _op += 32/sizeof(_op[0]), _vs = _mm256_add_epi32(_vs, _cv); } while(_op < out_);\
 } while(0)
 
   #elif defined(__SSE2__) || defined(__ARM_NEON) || defined(__riscv_vector) || defined(__loongarch_sx) // -------------
 // SIMD set value (memset)
 #define BITZERO32(_out_, _n_, _v_) do {\
-  __m128i _vs = _mm_set1_epi32(_v_), *_op = (__m128i *)(_out_), *out_ = (__m128i *)(_out_ + _n_);\
-  do _mm_storeu_si128(_op, _vs), _op = (char*)_op+16; while(_op < out_);\
+  unsigned char *_op = (unsigned char *)(_out_), *out_ = _op + _n_; __m128i _vs = _mm_set1_epi32(_v_);\
+  do _mm_storeu_si128((__m128i *)_op, _vs), _op += 16/sizeof(_op[0]); while(_op < out_);\
 } while(0)
 
 #define BITFORZERO32(_out_, _n_, _start_, _mindelta_) do {\
-  __m128i _vs = _mm_set1_epi32(_start_), *_op=(__m128i *)(_out_), *out_ = (__m128i *)(_out_ + _n_), _cv = _mm_set_epi32(3*_mindelta_,2*_mindelta_,1*_mindelta_,0);\
+  unsigned char *_op = (unsigned char *)_out_, *out_ = _op + _n_; \
+  __m128i _vs = _mm_set1_epi32(_start_), _cv = _mm_set_epi32(3*_mindelta_,2*_mindelta_,1*_mindelta_,0);\
     _vs = _mm_add_epi32(_vs, _cv);\
     _cv = _mm_set1_epi32(4);\
-  do { _mm_storeu_si128(_op, _vs), _op = (char*)_op+16; _vs = _mm_add_epi32(_vs, _cv); } while(_op < out_);\
+  do { _mm_storeu_si128((__m128i *)_op, _vs), _op += 16/sizeof(_op[0]); _vs = _mm_add_epi32(_vs, _cv); } while(_op < out_);\
 } while(0)
 
-#define BITDIZERO32(_out_, _n_, _start_, _mindelta_) do { __m128i _vs = _mm_set1_epi32(_start_), _cv = _mm_set_epi32(3+_mindelta_,2+_mindelta_,1+_mindelta_,_mindelta_), *_op=(__m128i *)(_out_), *out_ = (__m128i *)(_out_ + _n_);\
-  _vs = _mm_add_epi32(_vs, _cv); _cv = _mm_set1_epi32(4*_mindelta_); do { _mm_storeu_si128(_op, _vs), _op = (char*)_op+16, _vs = _mm_add_epi32(_vs, _cv); } while(_op < out_);\
+#define BITDIZERO32(_out_, _n_, _start_, _mindelta_) do { \
+  unsigned char *_op = (unsigned char *)_out_, *out_ = _op + _n_; \
+  __m128i _vs = _mm_set1_epi32(_start_), _cv = _mm_set_epi32(3+_mindelta_,2+_mindelta_,1+_mindelta_,_mindelta_); \
+  _vs = _mm_add_epi32(_vs, _cv); _cv = _mm_set1_epi32(4*_mindelta_); do { _mm_storeu_si128((__m128i *)_op, _vs), _op += 16/sizeof(_op[0]), _vs = _mm_add_epi32(_vs, _cv); } while(_op < out_);\
 } while(0)
   #else
 #define BITFORZERO32(_out_, _n_, _start_, _mindelta_) BITFORSET_(_out_, _n_, _start_, _mindelta_)
@@ -1173,6 +1256,150 @@ static ALWAYS_INLINE void mm_storeuq_si128(__m128i *op, __m128i v0, __m128i v1, 
 
 //#define DELTR( _in_, _n_, _start_, _mindelta_,      _out_) { unsigned _v; for(      _v = 0; _v < _n_; _v++) _out_[_v] = _in_[_v] - (_start_) - _v*(_mindelta_) - (_mindelta_); }
 //#define DELTRB(_in_, _n_, _start_, _mindelta_, _b_, _out_) { unsigned _v; for(_b_=0,_v = 0; _v < _n_; _v++) _out_[_v] = _in_[_v] - (_start_) - _v*(_mindelta_) - (_mindelta_), _b_ |= _out_[_v]; _b_ = bsr32(_b_); }
+
+#define _memset(_p_, _c_, _i_) while(_i_--) *_p_++ = _c_
+
+#ifdef __AVX2__
+static inline uint8_t *memset256x8(uint8_t *op, uint8_t c, unsigned n) {
+  //if (n >= 32)
+  {
+    __m256i v = _mm256_set1_epi8((char)c);
+    while (n >= 32) {
+      _mm256_storeu_si256((__m256i *)op, v);
+      op += 32;
+      n -= 32;
+    }
+  }
+  _memset(op, c, n);
+  return op;
+}
+
+static inline uint16_t *memset256x16(uint16_t *op, uint16_t c, unsigned n) {
+  //if (n >= 16)
+  {
+    __m256i v = _mm256_set1_epi16((short)c);
+    while (n >= 16) {
+      _mm256_storeu_si256((__m256i *)op, v);
+      op += 16;
+      n -= 16;
+    }
+  }
+  _memset(op, c, n);
+  return op;
+}
+
+static inline uint32_t *memset256x32(uint32_t *op, uint32_t c, unsigned n) {
+  //if (n >= 8)
+  {
+    __m256i v = _mm256_set1_epi32((int)c);
+    while (n >= 8) {
+        _mm256_storeu_si256((__m256i *)op, v);
+        op += 8;
+        n -= 8;
+    }
+  }
+  _memset(op, c, n);
+  return op;
+}
+
+static inline uint64_t *memset256x64(uint64_t *op, uint64_t c, unsigned n) {
+  //if (n >= 4)
+  {
+    __m256i v = _mm256_set1_epi64x((long long)c);
+    while (n >= 4) {
+      _mm256_storeu_si256((__m256i *)op, v);
+      op += 4;
+      n -= 4;
+    }
+  }
+  _memset(op, c, n);
+  return op;
+}
+#endif
+
+#if defined(__SSE3__) || defined(__ARM_NEON) || defined(__riscv_vector) || defined(__loongarch_sx)
+static inline uint8_t *memset128x8(uint8_t *op, uint8_t c, unsigned n) {
+  //if (n >= 16)
+  {
+    __m128i val = _mm_set1_epi8(c);
+    while(n >= 32) {
+      _mm_storeu_si128((__m128i *)op, val);
+      _mm_storeu_si128((__m128i *)(op+16), val);
+      op += 32;
+      n -= 32;
+    }
+  }
+  _memset(op, c, n);
+  return op;
+}
+
+static inline uint16_t *memset128x16(uint16_t *op, uint16_t c, unsigned n) {
+  //if (n >= 8)
+  {
+    __m128i val = _mm_set1_epi16(c);
+    while (n >= 16) {
+      _mm_storeu_si128((__m128i *)op, val);
+      _mm_storeu_si128((__m128i *)(op+8), val);
+      op += 16;
+      n -= 16;
+    }
+  }
+  _memset(op, c, n);
+  return op;
+}
+
+static inline uint32_t *memset128x32(uint32_t *op, uint32_t c, unsigned n) {
+  //if (n >= 4)
+  {
+    __m128i val = _mm_set1_epi32(c);
+    while (n >= 8) {
+      _mm_storeu_si128((__m128i *)op, val);
+      _mm_storeu_si128((__m128i *)(op+4), val);
+      op += 8;
+      n -= 8;
+    }
+  }
+  _memset(op, c, n);
+  return op;
+}
+
+static inline uint64_t *memset128x64(uint64_t *op, uint64_t c, unsigned n) {
+  //if (n >= 2)
+  {
+    __m128i val = _mm_set1_epi64x(c);
+    while (n >= 4) {
+      _mm_storeu_si128((__m128i *)op, val);
+      _mm_storeu_si128((__m128i *)(op+2), val);
+      op += 4;
+      n -= 4;
+    }
+  }
+  _memset(op, c, n);
+  return op;
+}
+#endif
+
+static inline uint8_t  *memset8( uint8_t  *op, uint8_t  c, unsigned n) { _memset(op, c, n); return op; }
+static inline uint16_t *memset16(uint16_t *op, uint16_t c, unsigned n) { _memset(op, c, n); return op; }
+static inline uint32_t *memset32(uint32_t *op, uint32_t c, unsigned n) { _memset(op, c, n); return op; }
+static inline uint64_t *memset64(uint64_t *op, uint64_t c, unsigned n) { _memset(op, c, n); return op; }
+
+  #ifdef __AVX2__
+#define memset8( op, c, n) op = memset256x8( op, c, n)
+#define memset16(op, c, n) op = memset256x16(op, c, n)
+#define memset32(op, c, n) op = memset256x32(op, c, n)
+#define memset64(op, c, n) op = memset256x64(op, c, n)
+  #elif defined(__SSE3__) || defined(__ARM_NEON) || defined(__riscv_vector) || defined(__loongarch_sx)
+#define memset8( op, c, n) op = memset128x8( op, c, n)
+#define memset16(op, c, n) op = memset128x16(op, c, n)
+#define memset32(op, c, n) op = memset128x32(op, c, n)
+#define memset64(op, c, n) op = memset128x64(op, c, n)
+  #else
+#define memset8( op, c, n) op = memset8(op, c, n)
+#define memset16(op, c, n) op = memset16(op, c, n)
+#define memset32(op, c, n) op = memset32(op, c, n)
+#define memset64(op, c, n) op = memset64(op, c, n)
+  #endif
 
 //----------------------------------------- bitreverse scalar + SIMD -------------------------------------------
   #if __clang__ && defined __has_builtin
