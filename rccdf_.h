@@ -74,16 +74,16 @@
   #endif
 
 // Variable Length Coding: Integer 0-299
-// 1:0-12   		   0-12
+// 1:0-12              0-12
 // 2:13,14 xxxx        13,14...45(13+32)
-// 3:15	   xxxx+xxxx   46,47..299(255+13+32)
+// 3:15    xxxx+xxxx   46,47..299(255+13+32)
 #define cdfe8(rcrange0,rclow0,rcilow0,rcrange1,rclow1,rcilow1, _m0_, _m1_, _m2_, _x_, _op0_, _op1_) { unsigned _x = _x_;\
   if(likely(_x < 13))   {                                        cdf4e(rcrange0,rclow0,rcilow0,_m0_, _x, _op0_); }\
   else if  (_x < 13+32) { _x -= 13;    unsigned _y = (_x>>4)+13; cdf4e(rcrange0,rclow0,rcilow0,_m0_, _y, _op0_); \
                                                 _y = _x&0xf;     cdf4e(rcrange1,rclow1,rcilow1,_m1_, _y, _op1_); }\
   else {                  _x -= 13+32; unsigned _y = _x>>4;      cdf4e(rcrange0,rclow0,rcilow0,_m0_, 15, _op0_); \
                                                                  cdf4e(rcrange1,rclow1,rcilow1,_m1_, _y, _op1_);\
-											    _y = _x&0xf;     cdf4e(rcrange0,rclow0,rcilow0,_m2_, _y, _op0_); }\
+                                                _y = _x&0xf;     cdf4e(rcrange0,rclow0,rcilow0,_m2_, _y, _op0_); }\
 }
 
 #define cdfd8(rcrange0,rccode0,rcrange1,rccode1, _m0_, _m1_, _m2_, _x_, _ip0_, _ip1_) {\
@@ -91,12 +91,12 @@
   if(_x_ >= 13) { \
     if(_x_ != 15) { unsigned _y; cdf4d(rcrange1,rccode1,_m1_,_y, _ip1_); _x_=((_x_-13)<<4|_y)+13; }\
     else {          unsigned _y; cdf4d(rcrange1,rccode1,_m1_,_y, _ip1_); \
-	                             cdf4d(rcrange0,rccode0,_m2_,_x_,_ip0_); _x_=(_y<<4|_x_)+13+32; } \
+                                 cdf4d(rcrange0,rccode0,_m2_,_x_,_ip0_); _x_=(_y<<4|_x_)+13+32; } \
   }\
 }
 // 7bits: 8+127
-//1: 0-8                            xxxx 
-//2: 9+3bits: 9,10,11, 12,13,14,15  1xxx xxxx 
+//1: 0-8                            xxxx
+//2: 9+3bits: 9,10,11, 12,13,14,15  1xxx xxxx
 #define cdfe7(rcrange0,rclow0,rcilow0,rcrange1,rclow1,rcilow1, _m0_, _m1_, _x_, _op0_, _op1_) { unsigned _x = _x_;\
   if(likely(_x < 8))    {                  cdf4e(rcrange0,rclow0,rcilow0,_m0_, _x, _op0_); }\
   else { _x -= 8; unsigned _y = (_x>>4)+8; cdf4e(rcrange0,rclow0,rcilow0,_m0_, _y, _op0_); \
@@ -108,7 +108,7 @@
   if(_x_ >= 8) { unsigned _y; cdf4d(rcrange1,rccode1,_m1_,_y, _ip1_); _x_=((_x_-8)<<4|_y)+8; }\
 }
 // 6 bits: 0-76
-// 1: 0-12 
+// 1: 0-12
 // 2: 13,14,15: bbxxxx 13 - 13+63 bits
 #define cdfe6(rcrange0,rclow0,rcilow0,rcrange1,rclow1,rcilow1, _m0_, _m1_, _x_, _op0_, _op1_) { unsigned _x = _x_;\
   if(likely(_x < 12))    {                   cdf4e(rcrange0,rclow0,rcilow0,_m0_, _x, _op0_); }\
