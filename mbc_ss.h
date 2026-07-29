@@ -21,7 +21,7 @@
     - twitter  : https://twitter.com/powturbo
     - email    : powturbo [_AT_] gmail [_DOT_] com
 **/
-// TurboRC: Range Coder - dual speed predictor (two 16 bits counters) 
+// TurboRC: Range Coder - dual speed predictor (two 16 bits counters)
 #define RC_PRDID 2
 #define RC_PRD   ss
 
@@ -31,7 +31,7 @@
   #ifndef _MBC_SS_H
 #include "include_/conf.h" // _PACKED
 #define _MBC_SS_H
-#pragma pack(1) 
+#pragma pack(1)
 typedef struct { unsigned short p,q; } _PACKED mbu; // o0:5,8 o1:4,6 o2:2,5 bwt:4,7
 #pragma pack()
   #endif
