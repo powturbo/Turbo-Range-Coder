@@ -21,16 +21,16 @@
     - twitter  : https://twitter.com/powturbo
     - email    : powturbo [_AT_] gmail [_DOT_] com
 **/
-// TurboRC: Range Coder 
+// TurboRC: Range Coder
 #include <stdint.h>
 #include "include_/conf.h"
 //----------------------------- Logging/statistics macros (ex. counting number of 0/1 bits ) --------------------------
-  #ifdef RC_LOG 
-#define RC_BE(_x_) rc_c[_x_]++  
+  #ifdef RC_LOG
+#define RC_BE(_x_) rc_c[_x_]++
 #define RC_BD(_x_) rc_c[_x_]++
 #define RC_BG      unsigned long long rc_c[2];
 #define RC_LOGINI  rc_c[0] = rc_c[1] = 0
-  #else 
+  #else
 #define RC_BE(_x_)
 #define RC_BD(_x_)
 #define RC_BG
@@ -40,11 +40,11 @@
 //----------------------------- Setting RC_SIZE, RC_IO, RC_BITS ------------------------------------------------------
   #ifndef RC_SIZE
 #define RC_SIZE 64
-  #endif  
-  
+  #endif
+
   #if   RC_SIZE == 128                  // 128 bits range coder
 #define rcrange_t __uint128_t
-    #ifndef RC_IO                      
+    #ifndef RC_IO
 #define RC_IO 64
     #elif RC_IO != 8 && RC_IO != 16 && RC_IO != 32 && RC_IO != 64
 #error "RC_IO must be 8,16,32 or 64"
@@ -65,14 +65,14 @@
     #endif
   #endif
 
-  #ifndef RC_BITS                      // Optimal range coder precision 
-    #if RC_IO == 32  
+  #ifndef RC_BITS                      // Optimal range coder precision
+    #if RC_IO == 32
        #ifdef RC_MULTISYMBOL
 #define RC_BITS 15
        #else
 #define RC_BITS 14
-       #endif  
-    #elif RC_IO == 16 
+       #endif
+    #elif RC_IO == 16
 #define RC_BITS 13
     #elif RC_IO == 8
 #define RC_BITS 15
@@ -83,7 +83,7 @@
 
 //--------------------------- Input/Output --------------------------------------------------------
   #ifdef RC_BSWAP
-#define _RC_BSWAP(a) T3(bswap, _, RC_IO)(a) 
+#define _RC_BSWAP(a) T3(bswap, _, RC_IO)(a)
   #else
 #define _RC_BSWAP(a) (a)
   #endif
@@ -105,7 +105,7 @@
 #define _rcenorm_(_rcrange_,_rclow_,_rcilow_, _op_)\
   _LOOP(unlikely(_rcrange_ < ((rcrange_t)1<<RC_S(_rcrange_)))) { \
     _rccarry_(_rcilow_,_rclow_, _op_);\
-	RCPUT((rcout_t)(_rclow_ >> RC_S(_rcrange_)),_op_); _rclow_ <<= RC_IO; _rcrange_ <<= RC_IO; _rcilow_ = _rclow_;\
+    RCPUT((rcout_t)(_rclow_ >> RC_S(_rcrange_)),_op_); _rclow_ <<= RC_IO; _rcrange_ <<= RC_IO; _rcilow_ = _rclow_;\
   }
 
 #define _rcdnorm_(_rcrange_, rccode,_ip_) _LOOP(_rcrange_ < ((rcrange_t)1<<RC_S(_rcrange_)))  { _rcrange_ <<= RC_IO; rccode <<= RC_IO; rccode |= RCGET(_ip_);  }
@@ -131,15 +131,15 @@
 #define _TURBORC_H_
 static void _rceflush_(rcrange_t rcrange, rcrange_t rclow, rcrange_t rcilow, unsigned char **_op) {
   unsigned char *op = *_op;
-  _rcenorm_(rcrange,rclow,rcilow, op);               
-  if(rcrange > ((rcrange_t)1<<(sizeof(rcrange)*8-RC_IO+1)) ) {                               
-    _rccarry_(rcilow, rclow += (rcrange_t)1 << RC_S(rcrange), op);                                                         
-    RCPUT( (rcout_t)(rclow >> RC_S(rcrange)), op );                             
-  } else {                                                 
-    _rccarry_(rcilow, rclow += (rcrange_t)1<<  (RC_S(rcrange)-RC_IO), op);                         
-    RCPUT((rcout_t)(rclow >>  RC_S(rcrange)),        op);   
-    RCPUT((rcout_t)(rclow >> (RC_S(rcrange)-RC_IO)), op);  
-  } 
+  _rcenorm_(rcrange,rclow,rcilow, op);
+  if(rcrange > ((rcrange_t)1<<(sizeof(rcrange)*8-RC_IO+1)) ) {
+    _rccarry_(rcilow, rclow += (rcrange_t)1 << RC_S(rcrange), op);
+    RCPUT( (rcout_t)(rclow >> RC_S(rcrange)), op );
+  } else {
+    _rccarry_(rcilow, rclow += (rcrange_t)1<<  (RC_S(rcrange)-RC_IO), op);
+    RCPUT((rcout_t)(rclow >>  RC_S(rcrange)),        op);
+    RCPUT((rcout_t)(rclow >> (RC_S(rcrange)-RC_IO)), op);
+  }
   *_op = op;
 }
 #define rceflush(_rcrange_,_rclow_,_rcilow_, _op_) _rceflush_(_rcrange_,_rclow_,_rcilow_, &_op_)
@@ -165,9 +165,9 @@ static void _rceflush_(rcrange_t rcrange, rcrange_t rclow, rcrange_t rcilow, uns
 #error "RC_SIZE must be 32 for using reciprocal multiplication"
       #endif
 
-#pragma pack(1) 
+#pragma pack(1)
 struct _div32 { unsigned m; unsigned char s; } _PACKED; //divisor RC_BITS=15 -> (1<<(32-15))*5 = 640k lookup table
-#pragma pack() 
+#pragma pack()
 
 #define powof2(n)              !((n)&((n)-1))
 #define DIVS32(_d_)            (__bsr32(_d_) - powof2(_d_))
@@ -184,7 +184,7 @@ DIVTDEF32(DIV_BITS);
 #define _DIVTDEF32
   #else
 extern struct _div32 _div32lut[];
-  #endif 
+  #endif
 //static ALWAYS_INLINE DIVTDIV32(unsigned _x_, unsigned _d_) { struct _div32 s = _div32lut[_d_]; return DIVDIV32(_x_, s.m, s.s); }
 static int _div32ini;
 static void div32init(void) { if(!_div32ini) { DIVTINI32(_div32lut, DIV_BITS); _div32ini++; } }
@@ -194,9 +194,9 @@ static void div32init(void) { if(!_div32ini) { DIVTINI32(_div32lut, DIV_BITS); _
 #define DIVTINI(__n)
 #define DIVTDIV32(_x_, _y_) ((_x_) / (_y_))
     #endif
-    
+
                   //------------ (adaptive) multisymbol range coder ---------------------
-#define _rcadprob(_rcrange_, rccode, _total_) rccode/(_rcrange_ = DIVTDIV32(_rcrange_, _total_))  
+#define _rcadprob(_rcrange_, rccode, _total_) rccode/(_rcrange_ = DIVTDIV32(_rcrange_, _total_))
 
 #define _rcaenc(_rcrange_,_rclow_,_rcilow_, _cum_, _cnt_, _total_,_op_) {\
   _rclow_   += (_rcrange_ = DIVTDIV32(_rcrange_, _total_)) * (_cum_);\
@@ -211,7 +211,7 @@ static void div32init(void) { if(!_div32ini) { DIVTINI32(_div32lut, DIV_BITS); _
 }
 
 //#################################### cdf multisymbol range coder (see usage example in rccdf.c) ##################################
-//########## Encode 
+//########## Encode
 #define _rccdfenc_(_rcrange_,_rclow_, _cdf0_, _cdf1_,_op_) { _rclow_ += (_rcrange_ >>= RC_BITS)*(_cdf0_); _rcrange_ *= (_cdf1_ - _cdf0_); }
 //########## Decode
 #define _rccdf(_rcrange_, rccode, _cdfp_) { _rcrange_ >>= RC_BITS; _cdfp_ = DIVTDIV32(rccode, _rcrange_); }  //usage cdf decoding with division
@@ -221,8 +221,8 @@ static void div32init(void) { if(!_div32ini) { DIVTINI32(_div32lut, DIV_BITS); _
   _rcrange_      = _rcrange_ * (_cdf1_) - _rp;\
   rccode        -= _rp;                       \
 }
-#define _rccdfrange(_rcrange_) (_rcrange_ >>= RC_BITS) // usage in linear/binray symbol search in cdf (CDF cum must be power of 2) 
-  
+#define _rccdfrange(_rcrange_) (_rcrange_ >>= RC_BITS) // usage in linear/binray symbol search in cdf (CDF cum must be power of 2)
+
 //## Encode + renorm
 #define _rccdfenc(_rcrange_,_rclow_,_rcilow_, _cdf0_, _cdf1_,_op_) { _rccdfenc_(_rcrange_,_rclow_, _cdf0_, _cdf1_,_op_); _rcenorm_(_rcrange_,_rclow_,_rcilow_, _op_); }
 //## Decode + renorm
@@ -253,7 +253,7 @@ static void div32init(void) { if(!_div32ini) { DIVTINI32(_div32lut, DIV_BITS); _
   _x_ =  ctz32(_m+(1<<16)) - 1;\
 }
   #elif defined(__AVX2__) && RC_SIZE == 32
-// avx2 symbol search  
+// avx2 symbol search
 #define mm256_cmpgt_epu32(_a_, _b_) _mm256_cmpgt_epi32(_mm256_xor_si256(_a_, _mm256_set1_epi32(0x80000000)), _mm256_xor_si256(_b_, _mm256_set1_epi32(0x80000000)))
 
 #define _cdflget16(_rcrange_,rccode, _cdf_, _x_) {\
@@ -330,7 +330,7 @@ static void div32init(void) { if(!_div32ini) { DIVTINI32(_div32lut, DIV_BITS); _
   _rccdf(_rcrange_, rccode, _cdfp);\
   _cdfvlget(_cdf_, _cdfn_, _cdfp, _x_);\
   _rccdfupdate(_rcrange_,rccode, _cdf_[_x_], _cdf_[_x_+1], _ip_);\
-} 
+}
 
 //Binary search
 #define _cdfvbget(_cdf_, _cdfnum_, _cdfp, _x_) {\
@@ -348,9 +348,9 @@ static void div32init(void) { if(!_div32ini) { DIVTINI32(_div32lut, DIV_BITS); _
   _rccdf(_rcrange_, rccode, _cdfp);\
   _cdfvbget(_cdf_, _cdfn_, _cdfp, _x_);\
   _rccdfupdate(_rcrange_,rccode, _cdf_[_x_], _cdf_[_x_+1], _ip_);\
-} 
+}
 
-// direct lookup table search for static CDFs (Not yet implemented) 
+// direct lookup table search for static CDFs (Not yet implemented)
 
                  //------------ multisymbol direct bits -----------------
     #if RC_SIZE == 32
@@ -395,38 +395,38 @@ static void div32init(void) { if(!_div32ini) { DIVTINI32(_div32lut, DIV_BITS); _
     _x = (_x << 1) | (_code + 1);\
     rccode += _rcrange_ & _code;\
   } while(--_nb);\
-}  
+}
 
 #define rcbitsdecx(_rcrange_, rccode, _nb_,_ip_, _x_) rcbitsdec(_rcrange_, rccode, _nb_,_ip_, _x_)
   #endif // MULTISYMBOL
 
 // ******************************** bitwise range coder *************************************************************************
-// _mbp_             : predicted probability  
-// _mb_              : predictor 
-// _mbupd0_/_mbupd1_ : bit 0/1 update functions/macros for predictor _mb_ 
+// _mbp_             : predicted probability
+// _mb_              : predictor
+// _mbupd0_/_mbupd1_ : bit 0/1 update functions/macros for predictor _mb_
 // _prm_             : predictor parameters
 
 //----- Fast flag read + check bit / update predictor (usage see: mb_vint.h) ----------------
 #define if_rc0(_rcrange_, rccode, _mbp_,_ip_) unsigned _predp = _mbp_; _rcdnorm_(_rcrange_,rccode,_ip_); rcrange_t _rcx = (_rcrange_ >> RC_BITS) * (_predp); if(rccode >= _rcx)
 #define if_rc1(_rcrange_, rccode, _mbp_,_ip_) unsigned _predp = _mbp_; _rcdnorm_(_rcrange_,rccode,_ip_); rcrange_t _rcx = (_rcrange_ >> RC_BITS) * (_predp); if(rccode <  _rcx)
-    
+
 #define rcupdate0(_rcrange_, rccode, _mbupd0_, _mb_,_prm0_,_prm1_) { RC_BD(0); _rcrange_ -= _rcx; rccode -= _rcx; _mbupd0_(_mb_, _predp,_prm0_,_prm1_); }
 #define rcupdate1(_rcrange_, rccode, _mbupd1_, _mb_,_prm0_,_prm1_) { RC_BD(1); _rcrange_  = _rcx;                 _mbupd1_(_mb_, _predp,_prm0_,_prm1_); }
 
 //-------------------------------- encode bit (branchless) --------------------------------------------------
 #define rcbe_(_rcrange_,_rclow_, _mbp_, _op_, _bit) { \
-  rcrange_t   _rcx  = (_rcrange_ >> RC_BITS) * (_mbp_), _bb = -!(_bit);   			RC_BE(_bit_); \
+  rcrange_t   _rcx  = (_rcrange_ >> RC_BITS) * (_mbp_), _bb = -!(_bit);             RC_BE(_bit_); \
          _rcrange_  = _rcx + (_bb & (_rcrange_ - _rcx - _rcx)); \
          _rclow_   += _bb & _rcx;\
 }
 
-//-- encode bit + update predictor 
+//-- encode bit + update predictor
 #define rcbe(_rcrange_,_rclow_, _mbp_, _mbupd_,_mb_,_prm0_,_prm1_,_op_, _bit_) do { \
   rcbe_(_rcrange_,_rclow_, _mbp_, _op_, _bit_);\
   _mbupd_(_mb_,_mbp_, _prm0_,_prm1_,_bit_);\
 } while(0)
 
-//--- encode bit + update predictor + renorm 
+//--- encode bit + update predictor + renorm
 #define rcbenc(_rcrange_,_rclow_,_rcilow_, _mbp_,_mbupd_, _mb_,_prm0_,_prm1_,_op_, _bit_) do {\
   _rcenorm_(_rcrange_,_rclow_,_rcilow_,_op_);\
   rcbe(_rcrange_,_rclow_, _mbp_, _mbupd_, _mb_,_prm0_,_prm1_,_op_, _bit_);\
@@ -437,7 +437,7 @@ static void div32init(void) { if(!_div32ini) { DIVTINI32(_div32lut, DIV_BITS); _
   rcbe_(_rcrange_,_rclow_, _mbp_, _op_, _bit_);\
   _mbupd_(_mb_,_mbp_,_prm0_,_prm1_, _bit_, _mb1_,_mb2_,_sse2_);\
 } while(0)
-	
+
 #define rcbmenc(_rcrange_,_rclow_,_rcilow_, _mbp_,_mbupd_, _mb_,_prm0_,_prm1_,_op_, _bit_, _mb1_, _mb2_, _sse2_) do {\
   _rcenorm_(_rcrange_,_rclow_,_rcilow_,_op_);\
   rcbme(_rcrange_,_rclow_, _mbp_, _mbupd_, _mb_,_prm0_,_prm1_,_op_, _bit_, _mb1_, _mb2_, _sse2_);\
@@ -451,14 +451,14 @@ static void div32init(void) { if(!_div32ini) { DIVTINI32(_div32lut, DIV_BITS); _
   rccode  -= (-!_bit_) & _rcx;\
 }
 
-//-- decode bit + update predictor 
+//-- decode bit + update predictor
 #define rcbd(_rcrange_, rccode, _mbp_, _mbupd_,_mb_,_prm0_,_prm1_, _x_) do {\
   rcrange_t _bit;\
   rcbd_(_rcrange_, rccode, _mbp_, _bit);\
   _x_ += _x_+_bit;\
   _mbupd_(_mb_,_mbp_, _prm0_,_prm1_,_bit); \
 } while(0)
-	
+
 //--- decode bit + renorm
 #define rcbdec( _rcrange_,rccode, _mbp_, _mbupd_, _mb_,_prm0_,_prm1_, _ip_, _x_) do {\
   _rcdnorm_(_rcrange_,rccode,_ip_); \
