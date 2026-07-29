@@ -23,16 +23,16 @@
 **/
 // TurboRC: Range Coder - CM predictor (16 bits counters)
 
-#include <stdio.h>             
+#include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include "include_/conf.h"   
+#include "include_/conf.h"
 
 #define RC_MACROS
-#define RC_BITS 16     	    // RC_SIZE + RC_IO: set in turborc_.h
+#define RC_BITS 16          // RC_SIZE + RC_IO: set in turborc_.h
 #include "turborc_.h"
 
-void ssebinit(unsigned short sse2[1<<(1+8)][17]) {  int r,i,j;	
+void ssebinit(unsigned short sse2[1<<(1+8)][17]) {  int r,i,j;
   for(r=0; r<2; ++r)
     for(i=0; i<256; ++i)
       for(j=0; j<=16; ++j)
@@ -43,8 +43,8 @@ void sseinit( unsigned short sse[1<<8][17]) { int i,j;
   for(i=0; i<256; ++i)
     for(int j=0; j<=16; ++j)
       sse[i][j] = (j<<(RC_BITS-4))-(j==RC_BITS);
-}		
+}
 
 #define RATE_S
-#include "mbc_s.h"       	// simple predictor
-#include "rccm_.c"          // template functions 
+#include "mbc_s.h"          // simple predictor
+#include "rccm_.c"          // template functions
