@@ -21,11 +21,11 @@
     - twitter  : https://twitter.com/powturbo
     - email    : powturbo [_AT_] gmail [_DOT_] com
 **/
-// TurboRC: Range Coder - Sliding context order N context bits bitwise range coder 
+// TurboRC: Range Coder - Sliding context order N context bits bitwise range coder
 // Unlike other entropy coders, you can specify the context in bits (4 - 24 bits)
 // and not only in bytes.
 
-// Predictor declaration. _cxbits_ must be >= 4 
+// Predictor declaration. _cxbits_ must be >= 4
 #define MBC_DEF(  _m_, _cxbits_) mbu       _m_[1<<(_cxbits_+1)][1<<(4+2)]
 // Predictor init
 #define MBC_INIT( _m_, _cxbits_) mbu_init2(_m_,1<<(_cxbits_+1), 1<<(4+2))
@@ -50,14 +50,14 @@
   { mbu *_m = &_ml[(_cxl << 1) & 0x3c    ]; mbu_enc(rcrange,rclow,rcilow, _m,_prm0_,_prm1_,_op_, RCB(_cxl,0)); }\
 }
 
-// Decode char with context 'cx' of size 'cxbits' bits. Decoded char = (unsigned char)cx  
+// Decode char with context 'cx' of size 'cxbits' bits. Decoded char = (unsigned char)cx
 #define mbcdec(rcrange,rccode, _cx_, _cxbits_, _m_,_prm0_,_prm1_,_ip_) { \
-  mbu      *_mh = &_m_[MBC_(_cx_, _cxbits_)],*_m;\
+  mbu      *_mh = (mbu *)&_m_[MBC_(_cx_, _cxbits_)], *_m;\
   unsigned _y = (_cx_) >> _cxbits_;\
   _m = &_mh[(_y & 0xf) << 2 | 3]; mbu_dec(rcrange,rccode, _m,_prm0_,_prm1_,_ip_, _y); /* high nibble*/\
   _m = &_mh[(_y & 0xf) << 2 | 2]; mbu_dec(rcrange,rccode, _m,_prm0_,_prm1_,_ip_, _y);\
   _m = &_mh[(_y & 0xf) << 2 | 1]; mbu_dec(rcrange,rccode, _m,_prm0_,_prm1_,_ip_, _y);\
-  _m = &_mh[(_y & 0xf) << 2    ]; mbu_dec(rcrange,rccode, _m,_prm0_,_prm1_,_ip_, _y); _cx_ = _cx_ << 4 | _y & 0xf; _mh = &_m_[1<<_cxbits_ | MBC_(_cx_, _cxbits_)]; _y = (_cx_) >> _cxbits_;\
+  _m = &_mh[(_y & 0xf) << 2    ]; mbu_dec(rcrange,rccode, _m,_prm0_,_prm1_,_ip_, _y); _cx_ = _cx_ << 4 | _y & 0xf; _mh = (mbu *)&_m_[1<<_cxbits_ | MBC_(_cx_, _cxbits_)]; _y = (_cx_) >> _cxbits_;\
   _m = &_mh[(_y & 0xf) << 2 | 3]; mbu_dec(rcrange,rccode, _m,_prm0_,_prm1_,_ip_, _y); /* low nibble*/\
   _m = &_mh[(_y & 0xf) << 2 | 2]; mbu_dec(rcrange,rccode, _m,_prm0_,_prm1_,_ip_, _y);\
   _m = &_mh[(_y & 0xf) << 2 | 1]; mbu_dec(rcrange,rccode, _m,_prm0_,_prm1_,_ip_, _y);\
