@@ -24,16 +24,16 @@
 // TurboRC: Range Coder - fsm
 // Reference: http://cbloomrants.blogspot.com/2017/01/order-0-estimators-for-data-compression.html
 
-#include <stdio.h>             
+#include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include "include/turborc.h"   
-#include "include_/conf.h"   
+#include "include/turborc.h"
+#include "include_/conf.h"
 
 #define RC_MACROS
-#define RC_BITS 15      	// RC_SIZE=64 + RC_IO=32 : set in turborc_.h
+#define RC_BITS 15          // RC_SIZE=64 + RC_IO=32 : set in turborc_.h
 #include "turborc_.h"
-#include "mbc_sf.h"       	// fsm predictor
+#include "mbc_sf.h"         // fsm predictor
 
 extern fsm_t fsm[];
-#include "rcqlfc_.c"    // template functions 
+#include "rcqlfc_.c"    // template functions
