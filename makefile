@@ -112,7 +112,7 @@ else ifeq ($(ARCH),x86_64)
 endif
 
 ifeq ($(OS),Windows)
-  LDFLAGS=-Wl,--stack,33554432
+  LDFLAGS=-Wl,--stack,33554432 -lpowrprof
 endif
 
 CFLAGS+=$(_SSE) -w -Wall $(DDEBUG) 
