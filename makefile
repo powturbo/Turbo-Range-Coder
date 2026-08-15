@@ -17,7 +17,7 @@ ANS=1
 #NZ=1
 #SF=1
 #TURBORLE=1
-TRANSPOSE=1
+TP=1
 #----------------------------------------------
 CC ?= gcc
 #CC ?= clang
@@ -212,20 +212,20 @@ CFLAGS+=-D_TURBORLE
 LIB+=trlec.o trled.o
 endif
 
-ifeq ($(TRANSPOSE), 1)
+ifeq ($(TP), 1)
 ifeq ($(ARCH),x86_64)
-transpose_avx2.o: transpose.c
-	$(CC) -O3 $(CFLAGS) $(_AVX2) -c transpose.c -o transpose_avx2.o
+tp256.o: tp.c
+	$(CC) -O3 $(CFLAGS) $(_AVX2) -c tp.c -o tp256.o
 
-#transpose_.o: transpose_.c
-#	$(CC) -O3 $(CFLAGS) $(_SSE) -c transpose_.c -o transpose_.o
+#tp_.c: tp_.c
+#	$(CC) -O3 $(CFLAGS) $(_SSE) -c tp_.c -o tp_.c
 	
 endif
-CFLAGS+=-D_TRANSPOSE -D_NCPUISA
-LIB+=transpose.o transpose_.o 
+CFLAGS+=-D_TP -D_NCPUISA
+LIB+=tp.o tp_.o
 
 ifeq ($(ARCH), x86_64)
-LIB+=transpose_avx2.o
+LIB+=tp256.o
 endif
 endif
 
