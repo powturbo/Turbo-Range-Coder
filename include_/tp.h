@@ -21,7 +21,7 @@
     - twitter  : https://twitter.com/powturbo
     - email    : powturbo [_AT_] gmail [_DOT_] com
 **/
-//--  transpose.h - Byte/Nibble transpose for further compressing with lz77 or other compressors -------------------------------------
+//--  tp.h - Byte/Nibble transpose for further compressing with lz77 or other compressors -------------------------------------
 
 #ifdef __cplusplus
 extern "C" {
@@ -66,10 +66,16 @@ void tpenc3(       unsigned char *__restrict in, unsigned n, unsigned char *__re
 void tpenc4(       unsigned char *__restrict in, unsigned n, unsigned char *__restrict out);
 void tpenc128v4(   unsigned char *__restrict in, unsigned n, unsigned char *__restrict out); 
 void tpzenc256v4(  unsigned char *__restrict in, unsigned n, unsigned char *__restrict out); 
+void tpenc128v6(   unsigned char *__restrict in, unsigned n, unsigned char *__restrict out);
+void tpenc256v6(   unsigned char *__restrict in, unsigned n, unsigned char *__restrict out);
 void tpenc8(       unsigned char *__restrict in, unsigned n, unsigned char *__restrict out);
 void tpenc128v8(   unsigned char *__restrict in, unsigned n, unsigned char *__restrict out); 
 void tpenc256v8(   unsigned char *__restrict in, unsigned n, unsigned char *__restrict out); 
+void tpenc128v12(  unsigned char *__restrict in, unsigned n, unsigned char *__restrict out);
+void tpenc256v12(  unsigned char *__restrict in, unsigned n, unsigned char *__restrict out);
 void tpenc16(      unsigned char *__restrict in, unsigned n, unsigned char *__restrict out);
+void tpenc128v16(  unsigned char *__restrict in, unsigned n, unsigned char *__restrict out);
+void tpenc256v16(  unsigned char *__restrict in, unsigned n, unsigned char *__restrict out);
 
 void tpzenc2(      unsigned char *__restrict in, unsigned n, unsigned char *__restrict out); // zigzag
 void tpzenc128v2(  unsigned char *__restrict in, unsigned n, unsigned char *__restrict out);
@@ -115,10 +121,16 @@ void tpdec3(       unsigned char *__restrict in, unsigned n, unsigned char *__re
 void tpdec4(       unsigned char *__restrict in, unsigned n, unsigned char *__restrict out);
 void tpdec128v4(   unsigned char *__restrict in, unsigned n, unsigned char *__restrict out);
 void tpdec256v4(   unsigned char *__restrict in, unsigned n, unsigned char *__restrict out);
+void tpdec128v6(   unsigned char *__restrict in, unsigned n, unsigned char *__restrict out);
+void tpdec256v6(   unsigned char *__restrict in, unsigned n, unsigned char *__restrict out);
 void tpdec8(       unsigned char *__restrict in, unsigned n, unsigned char *__restrict out);
 void tpdec128v8(   unsigned char *__restrict in, unsigned n, unsigned char *__restrict out);
 void tpdec256v8(   unsigned char *__restrict in, unsigned n, unsigned char *__restrict out);
+void tpdec256v12(  unsigned char *__restrict in, unsigned n, unsigned char *__restrict out);
+void tpdec128v12(  unsigned char *__restrict in, unsigned n, unsigned char *__restrict out);
 void tpdec16(      unsigned char *__restrict in, unsigned n, unsigned char *__restrict out);
+void tpdec256v16(  unsigned char *__restrict in, unsigned n, unsigned char *__restrict out);
+void tpdec128v16(  unsigned char *__restrict in, unsigned n, unsigned char *__restrict out);
 
 void tpzdec2(      unsigned char *__restrict in, unsigned n, unsigned char *__restrict out);
 void tpzdec128v2(  unsigned char *__restrict in, unsigned n, unsigned char *__restrict out);
@@ -151,11 +163,6 @@ void tp4enc128v4(  unsigned char *__restrict in, unsigned n, unsigned char *__re
 void tp4enc256v4(  unsigned char *__restrict in, unsigned n, unsigned char *__restrict out); 
 void tp4enc128v8(  unsigned char *__restrict in, unsigned n, unsigned char *__restrict out); 
 void tp4enc256v8(  unsigned char *__restrict in, unsigned n, unsigned char *__restrict out);
-
-void tpenc256v12(  unsigned char *__restrict in, unsigned n, unsigned char *__restrict out);
-void tpenc128v12(  unsigned char *__restrict in, unsigned n, unsigned char *__restrict out);
-void tpdec256v12(  unsigned char *__restrict in, unsigned n, unsigned char *__restrict out);
-void tpdec128v12(  unsigned char *__restrict in, unsigned n, unsigned char *__restrict out);
 
 void tp4zenc128v2( unsigned char *__restrict in, unsigned n, unsigned char *__restrict out);
 void tp4zenc256v2( unsigned char *__restrict in, unsigned n, unsigned char *__restrict out);
