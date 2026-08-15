@@ -887,7 +887,7 @@ int main(int argc, char* argv[]) {
     char _scmd[33];
     int  fno=0, nblk = 0, nid = 0, cminid=0, cminl = (unsigned)-1;
     sprintf(_scmd, "1-%d", ID_MEMCPY);                                                      if(verbose>2) printf("BENCHMARK ARGS: fno=%d,optind=%d,argc=%d\n", fno, optind, argc);
-    printf("      size   ratio     E MB/s   D MB/s function prdid=");
+    printf("      size   ratio       E MB/s    D MB/s  function prdid=");
     switch(prdid) {
       case 1: printf("'s(5)'\n"); break;
       case 2: printf("'ss(%u,%u)'\n", prm1, prm2); break;
