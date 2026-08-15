@@ -66,6 +66,7 @@ static inline __m128i _mm_set_epi16(            int16_t u7, int16_t u6, int16_t 
 static inline __m128i _mm_set_epi32(            int32_t u3, int32_t u2, int32_t u1, int32_t u0) { int32_t __attribute__((aligned(16))) u[ 4] = { u0,u1,u2,u3 };             return vld1q_s32(u); }
 static inline __m128i _mm_set_epi64x(           int64_t u1, int64_t u0) { int64_t __attribute__((aligned(16))) u[ 2] = { u0,u1 };                                           return (__m128i)(vld1q_s64(u)); }
 
+#define _mm_setr_epi8(u15,u14,u13,u12,u11,u10,u9,u8, u7,u6,u5,u4,u3,u2,u1,u0)  _mm_set_epi8(u0,u1,u2,u3,u4,u5,u6,u7,  u8,u9,u10,u11,u12,u13,u14,u15)
 #define _mm_setr_epi16(u7,u6,u5,u4,u3,u2,u1,u0) _mm_set_epi16( u0,u1,u2,u3,u4,u5,u6,u7)
 #define _mm_setr_epi32(u3,u2,u1,u0)             _mm_set_epi32( u0,u1,u2,u3)
 #define _mm_setr_epi64x(u1,u0)                  _mm_set_epi64x(u0,u0)
