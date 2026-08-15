@@ -46,7 +46,7 @@
 #include "include_/time_.h"
 
   #ifdef _TRANSPOSE
-#include "include_/transpose.h"
+#include "include_/tp.h"
   #endif
 #ifdef _TURBORLE
 #include "include_/trle.h"
