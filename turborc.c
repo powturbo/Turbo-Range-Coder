@@ -1149,7 +1149,7 @@ int main(int argc, char* argv[]) {
         case 24: { _Float16 fmin = ctof16(in+inlen-5), fmax = ctof16(in+inlen-3); quantb = ctou8(in+inlen-1); if(verbose>3) printf("len = %u R:[%g - %g] q=%u ", outlen, (double)fmin, (double)fmax, quantb);
           fpquant8d16(in, outlen, (_Float16 *)out, BZMASK32(quantb), fmin, fmax, inlen-5);
         } break;
-      //case 23: { _Float16 fmin = ctof16(in+inlen), fmax = ctof16(in+inlen+2); quantb = ctou8(in+inlen+4); fpquantv8d16(in, outlen, out, BZMASK32(quantb), fmin, fmax); } break;
+        //case 23: { _Float16 fmin = ctof16(in+inlen), fmax = ctof16(in+inlen+2); quantb = ctou8(in+inlen+4); fpquantv8d16(in, outlen, out, BZMASK32(quantb), fmin, fmax); } break;
         case 25: { _Float16 fmin = ctof16(in+outlen), fmax = ctof16(in+outlen+2); quantb = ctou8(in+outlen+4);
           tpdec(in, outlen, out,  2); memcpy(in, out, outlen); fpquant16d16((uint16_t *)in, outlen, (_Float16 *)out, BZMASK32(quantb), fmin, fmax);
         } break;
