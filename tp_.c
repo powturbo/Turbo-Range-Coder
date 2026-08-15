@@ -25,7 +25,7 @@
 #include <string.h>
 #include "include_/conf.h"
 #include "include_/cpu.h"
-#include "include_/transpose.h"
+#include "include_/tp.h"
 
 typedef void (*TPFUNC)( unsigned char *__restrict in, unsigned n, unsigned char *__restrict out);
 
@@ -65,8 +65,10 @@ void tpini(int id) {
   if(i >= IS_AVX2) {
     _tpe[ 2] = tpenc256v2;  _tpd[ 2] = tpdec256v2;  _tp4e[ 2] = tp4enc256v2;  _tp4d[ 2] = tp4dec256v2;
     _tpe[ 4] = tpenc256v4;  _tpd[ 4] = tpdec256v4;  _tp4e[ 4] = tp4enc256v4;  _tp4d[ 4] = tp4dec256v4;
+    _tpe[ 6] = tpenc256v6;  _tpd[ 6] = tpdec256v6; 
     _tpe[ 8] = tpenc256v8;  _tpd[ 8] = tpdec256v8;  _tp4e[ 8] = tp4enc256v8;  _tp4d[ 8] = tp4dec256v8;
     _tpe[12] = tpenc256v12; _tpd[12] = tpdec256v12; 
+    _tpe[16] = tpenc256v16; _tpd[12] = tpdec256v16; 
 
       #ifndef NTP_ZZAG
     _tpze[2] = tpzenc256v2; _tpzd[2] = tpzdec256v2; _tp4ze[2] = tp4zenc256v2; _tp4zd[2] = tp4zdec256v2;
@@ -85,8 +87,10 @@ void tpini(int id) {
     if(i >= IS_SSE2) {
       _tpe[ 2] = tpenc128v2;  _tpd[ 2] = tpdec128v2;  _tp4e[ 2] = tp4enc128v2;  _tp4d[ 2] = tp4dec128v2;
       _tpe[ 4] = tpenc128v4;  _tpd[ 4] = tpdec128v4;  _tp4e[ 4] = tp4enc128v4;  _tp4d[ 4] = tp4dec128v4;
+      _tpe[ 6] = tpenc128v6;  _tpd[ 6] = tpdec128v6; 
       _tpe[ 8] = tpenc128v8;  _tpd[ 8] = tpdec128v8;  _tp4e[ 8] = tp4enc128v8;  _tp4d[ 8] = tp4dec128v8;
       _tpe[12] = tpenc128v12; _tpd[12] = tpdec128v12; 
+      _tpe[16] = tpenc128v16; _tpd[16] = tpdec128v16; 
       //if(i == 35) _tpd[8] = tpdec8; // ARM NEON scalar is faster!, TODO:retest on Apple M?
 
        #ifndef NTP_ZZAG
