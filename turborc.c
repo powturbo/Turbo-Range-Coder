@@ -45,7 +45,7 @@
 #include "rcutil_.h"
 #include "include_/time_.h"
 
-  #ifdef _TRANSPOSE
+  #ifdef _TP
 #include "include_/tp.h"
   #endif
 #ifdef _TURBORLE
@@ -554,7 +554,7 @@ unsigned bench(unsigned char *in, unsigned n, unsigned char *out, unsigned char 
     case 84:l=n;     TM("84:delta8e24                            ",delta8e24( in,n,out),                        n,l,     delta8d24( out,n,cpy)); break;
   //case 65:l=n;     TM("85:delta24e24                           ",delta24e24(in,n,out),                        n,l,     delta24d24(out,n,cpy)); break;
       #endif
-      #ifdef _TRANSPOSE
+      #ifdef _TP
     case 85:l=n;     TM("85:tpenc 24 bits                        ",tpenc(in,n,out,3),                           n,l,     tpdec( out,n,cpy, 3)); break;
       #endif
       #ifndef _NQUANT
@@ -929,7 +929,7 @@ int main(int argc, char* argv[]) {
         n = dfmt?befgen(fi, in, b, dfmt, isize, osize, kid, skiph, decs, divs, keysep, mdelta):fread(in, 1, b, fi);
         if(n <= 0) break;                                                       if(verbose>2) printf("read=%u t=%zd\n", n, tpbyte);     //memcpy(cpy, in, n); fpstat(in, n/2, cpy, -2, NULL);
         switch(tpbyte) {
-            #ifdef _TRANSPOSE
+            #ifdef _TP
           case 22:  tpenc(in, n, out, 2); memcpy(in, out, n); break;
           case 11: delta8e24(in,n,out); tpenc(out, n, in, 3); break;
           case 12: tpenc(in, n, out, 3); memcpy(in, out, n); break;
@@ -959,6 +959,7 @@ int main(int argc, char* argv[]) {
             fpquant16e16((_Float16 *)in,n/2, (uint16_t *)out,BZMASK32(quantb), &fmin,&fmax,FLT16_EPSILON); tpenc(out, n, in, 2);
           } break;
               #endif
+              #ifdef _TP
           case 9 : { float fmin=0.0, fmax=0.0;  if(gmin != FP_ZERO) fmin = gmin; if(gmax != FP_ZERO) fmax = gmax;
             if(!quantb || quantb > 32) quantb = 32;
             fpquant32e32((float *)in,n/4, (uint32_t *)out,BZMASK32(quantb), &fmin,&fmax,FLT_EPSILON);  tpenc(out, n, in, 4);
@@ -967,6 +968,7 @@ int main(int argc, char* argv[]) {
             if(!quantb || quantb > 32) quantb = 32;
             fpquant64e64((double *)in,n/8, (uint64_t *)out,BZMASK32(quantb), &fmin,&fmax,DBL_EPSILON);  tpenc(out, n, in, 8);
           } break;
+              #endif
             #endif
         }
 
@@ -1152,12 +1154,14 @@ int main(int argc, char* argv[]) {
           tpdec(in, outlen, out,  2); memcpy(in, out, outlen); fpquant16d16((uint16_t *)in, outlen, (_Float16 *)out, BZMASK32(quantb), fmin, fmax);
         } break;
             #endif
-        case 27: { float    fmin=ctof32(in+outlen), fmax = ctof32(in+outlen+4); quantb = ctou8(in+outlen+8);
+            #ifdef _TP
+       case 27: { float    fmin=ctof32(in+outlen), fmax = ctof32(in+outlen+4); quantb = ctou8(in+outlen+8);
           tpdec(in, outlen, out, 4); memcpy(in, out, outlen); fpquant32d32((uint32_t *)in, outlen, (float *)out, BZMASK32(quantb), fmin, fmax);
         } break;
         case 28: { double   fmin=ctof32(in+outlen), fmax = ctof32(in+outlen+8); quantb = ctou8(in+outlen+16);
           tpdec(in, outlen, out, 8); memcpy(in, out, outlen); fpquant32d32((uint32_t *)in, outlen, (float *)out, BZMASK32(quantb), fmin, fmax);
         } break;
+            #endif
           #endif
         default: ERR(E_CODEC);
       }
