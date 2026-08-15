@@ -246,6 +246,21 @@ static inline __m256i mm256_pext_epi64(__m256i v, uint64_t mask) {
   v3 = _mm256_xor_si256(v3, _v3);\
 }
 
+#define MM256_ZZAGEQ_EPI64(v0, v1, v2, v3) { \
+  __m256i _v0 = mm256_srai_epi64_63(v0),\
+          _v1 = mm256_srai_epi64_63(v1),\
+          _v2 = mm256_srai_epi64_63(v2),\
+          _v3 = mm256_srai_epi64_63(v3);\
+  v0 = _mm256_slli_epi64(v0,1);\
+  v1 = _mm256_slli_epi64(v1,1);\
+  v2 = _mm256_slli_epi64(v2,1);\
+  v3 = _mm256_slli_epi64(v3,1); \
+  v0 = _mm256_xor_si256(v0, _v0);\
+  v1 = _mm256_xor_si256(v1, _v1);\
+  v2 = _mm256_xor_si256(v2, _v2);\
+  v3 = _mm256_xor_si256(v3, _v3);\
+}
+
 #define MM256_ZZAGDQ_EPI16(v0, v1, v2, v3) { \
   __m256i _v0 = _mm256_slli_epi16(v0, 15),\
           _v1 = _mm256_slli_epi16(v1, 15),\
@@ -389,6 +404,7 @@ static inline __m256i mm256_pext_epi64(__m256i v, uint64_t mask) {
 }
 
 #define MM256_DELTAZQ_EPI32(v0, v1, v2, v3, vs) { MM256_DELTAQ_EPI32(v0, v1, v2, v3, vs); MM256_ZZAGEQ_EPI32(v0, v1, v2, v3); } 
+#define MM256_DELTAZQ_EPI64(v0, v1, v2, v3, vs) { MM256_DELTAQ_EPI64(v0, v1, v2, v3, vs); MM256_ZZAGEQ_EPI64(v0, v1, v2, v3); } 
 
 #define _MM256_SCANQ_EPI16(v0, v1, v2, v3, vs, _ho_) {\
   const __m256i       zv = _mm256_setzero_si256(), pidx = _mm256_set1_epi32(7),\
@@ -813,10 +829,12 @@ static ALWAYS_INLINE __m128i mm_xord_epi64(__m128i v, __m128i vs) { MM_XORD_EPI6
 #define MM_SCAN1_EPI8( v, vs) { const __m128i _cv = _mm_set_epi8( 16,15,14,13,12,11,10, 9, 8, 7, 6, 5, 4, 3, 2, 1); MM_SCAN_EPI8( v, vs); vs = v = _mm_add_epi8( v, _cv); }
 #define MM_SCAN1_EPI16(v, vs) { const __m128i _cv = _mm_set_epi16(                         8, 7, 6, 5, 4, 3, 2, 1); MM_SCAN_EPI16(v, vs); vs = v = _mm_add_epi16(v, _cv); }
 #define MM_SCAN1_EPI32(v, vs) { const __m128i _cv = _mm_set_epi32(                                     4, 3, 2, 1); MM_SCAN_EPI32(v, vs); vs = v = _mm_add_epi32(v, _cv); }
+#define MM_SCAN1_EPI64(v, vs) { const __m128i _cv = _mm_set_epi64x(                                          2, 1); MM_SCAN_EPI64(v, vs); vs = v = _mm_add_epi64(v, _cv); }
 
-#define MM_SCAN1z_EPI8( v, vs) { const __m128i _cv = _mm_set_epi8(16,15,14,13,12,11,10, 9, 8, 7, 6, 5, 4, 3, 2, 1), _csv = _mm_set1_epi8(16); v  = _mm_add_epi8( vs, _cv); vs = _mm_add_epi8( vs, _csv);}
-#define MM_SCAN1z_EPI16(v, vs) { const __m128i _cv = _mm_set_epi16(                        8, 7, 6, 5, 4, 3, 2, 1), _csv = _mm_set1_epi16(8); v  = _mm_add_epi16(vs, _cv); vs = _mm_add_epi16(vs, _csv);}
-#define MM_SCAN1z_EPI32(v, vs) { const __m128i _cv = _mm_set_epi32(                                    4, 3, 2, 1), _csv = _mm_set1_epi32(4); v  = _mm_add_epi32(vs, _cv); vs = _mm_add_epi32(vs, _csv);}
+#define MM_SCAN1z_EPI8( v, vs) { const __m128i _cv = _mm_set_epi8(16,15,14,13,12,11,10, 9, 8, 7, 6, 5, 4, 3, 2, 1), _csv = _mm_set1_epi8(16);  v  = _mm_add_epi8( vs, _cv); vs = _mm_add_epi8( vs, _csv);}
+#define MM_SCAN1z_EPI16(v, vs) { const __m128i _cv = _mm_set_epi16(                        8, 7, 6, 5, 4, 3, 2, 1), _csv = _mm_set1_epi16(8);  v  = _mm_add_epi16(vs, _cv); vs = _mm_add_epi16(vs, _csv);}
+#define MM_SCAN1z_EPI32(v, vs) { const __m128i _cv = _mm_set_epi32(                                    4, 3, 2, 1), _csv = _mm_set1_epi32(4);  v  = _mm_add_epi32(vs, _cv); vs = _mm_add_epi32(vs, _csv);}
+#define MM_SCAN1z_EPI64(v, vs) { const __m128i _cv = _mm_set_epi64x(                                         2, 1), _csv = _mm_set1_epi64x(2); v  = _mm_add_epi64(vs, _cv); vs = _mm_add_epi64(vs, _csv);}
 
 #ifdef __BMI2__
 static inline __m128i mm_pdep_epi16(__m128i v, uint16_t mask) {
@@ -871,12 +889,27 @@ static inline __m128i mm_pext_epi64(__m128i v, uint64_t mask) {
 #define MM_ZZAGEQ_EPI32(v0, v1, v2, v3) {\
   __m128i _v0 = mm_slli_epi32(v0, 1),\
           _v1 = mm_slli_epi32(v1, 1),\
-		  _v2 = mm_slli_epi32(v2, 1),\
-		  _v3 = mm_slli_epi32(v3, 1);\
+	  _v2 = mm_slli_epi32(v2, 1),\
+	  _v3 = mm_slli_epi32(v3, 1);\
   v0 = mm_srai_epi32(v0, 31);\
   v1 = mm_srai_epi32(v1, 31);\
   v2 = mm_srai_epi32(v2, 31);\
   v3 = mm_srai_epi32(v3, 31);\
+  v0 = _mm_xor_si128(v0, _v0);\
+  v1 = _mm_xor_si128(v1, _v1);\
+  v2 = _mm_xor_si128(v2, _v2);\
+  v3 = _mm_xor_si128(v3, _v3);\
+}
+
+#define MM_ZZAGEQ_EPI64(v0, v1, v2, v3) {\
+  __m128i _v0 = mm_slli_epi64(v0, 1),\
+          _v1 = mm_slli_epi64(v1, 1),\
+	  _v2 = mm_slli_epi64(v2, 1),\
+	  _v3 = mm_slli_epi64(v3, 1);\
+  v0 = mm_srai_epi64_63(v0);\
+  v1 = mm_srai_epi64_63(v1);\
+  v2 = mm_srai_epi64_63(v2);\
+  v3 = mm_srai_epi64_63(v3);\
   v0 = _mm_xor_si128(v0, _v0);\
   v1 = _mm_xor_si128(v1, _v1);\
   v2 = _mm_xor_si128(v2, _v2);\
@@ -1096,6 +1129,7 @@ static inline __m128i mm_pext_epi64(__m128i v, uint64_t mask) {
 
 #define MM_DELTAZQ_EPI16(v0, v1, v2, v3, vs) { MM_DELTAQ_EPI16(v0, v1, v2, v3, vs); MM_ZZAGEQ_EPI16(v0, v1, v2, v3); }
 #define MM_DELTAZQ_EPI32(v0, v1, v2, v3, vs) { MM_DELTAQ_EPI32(v0, v1, v2, v3, vs); MM_ZZAGEQ_EPI32(v0, v1, v2, v3); }
+#define MM_DELTAZQ_EPI64(v0, v1, v2, v3, vs) { MM_DELTAQ_EPI64(v0, v1, v2, v3, vs); MM_ZZAGEQ_EPI64(v0, v1, v2, v3); }
 
 #define MM_SCANZQ_EPI16(v0, v1, v2, v3, vs) { MM_ZZAGDQ_EPI16(v0, v1, v2, v3); MM_SCANQ_EPI16(v0, v1, v2, v3, vs); }
 #define MM_SCANZQ_EPI32(v0, v1, v2, v3, vs) { MM_ZZAGDQ_EPI32(v0, v1, v2, v3); MM_SCANQ_EPI32(v0, v1, v2, v3, vs); }
