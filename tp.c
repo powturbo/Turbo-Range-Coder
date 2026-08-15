@@ -21,75 +21,146 @@
     - twitter  : https://twitter.com/powturbo
     - email    : powturbo [_AT_] gmail [_DOT_] com
 **/
-//   Nibble/Byte transpose
 #ifndef ESIZE //---------------------------------- Functions -----------------------------------------------------------------
 #include <string.h>
 #include "include_/conf.h"
-#include "include_/transpose.h"
+#include "include_/tp.h"
 #include "include_/bitutil_.h"
 
 #ifdef __AVX2__
+#define ESIZE 6
+#define DUP128(m) _mm256_set_m128i(m, m)
+
+void tpenc256v6(unsigned char *in, unsigned n, unsigned char *out) {
+  unsigned i, stride = n / ESIZE;
+  unsigned char *op, *ip;
+  unsigned vector_iters = stride / 16;
+  unsigned vec_len = vector_iters * 16;
+  __m256i mAB0 = DUP128(_mm_setr_epi8(0, 6, 12, -1, -1, -1, -1, -1, 1, 7, 13, -1, -1, -1, -1, -1)),
+          mAB1 = DUP128(_mm_setr_epi8(-1, -1, -1, 2, 8, 14, -1, -1, -1, -1, -1, 3, 9, 15, -1, -1)),
+          mAB2 = DUP128(_mm_setr_epi8(-1, -1, -1, -1, -1, -1, 4, 10, -1, -1, -1, -1, -1, -1, 5, 11));
+  __m256i mCD0 = DUP128(_mm_setr_epi8(2, 8, 14, -1, -1, -1, -1, -1, 3, 9, 15, -1, -1, -1, -1, -1)),
+          mCD1 = DUP128(_mm_setr_epi8(-1, -1, -1, 4, 10, -1, -1, -1, -1, -1, -1, 5, 11, -1, -1, -1)),
+          mCD2 = DUP128(_mm_setr_epi8(-1, -1, -1, -1, -1, 0, 6, 12, -1, -1, -1, -1, -1, 1, 7, 13));
+  __m256i mEF0 = DUP128(_mm_setr_epi8(4, 10, -1, -1, -1, -1, -1, -1, 5, 11, -1, -1, -1, -1, -1, -1)),
+          mEF1 = DUP128(_mm_setr_epi8(-1, -1, 0, 6, 12, -1, -1, -1, -1, -1, 1, 7, 13, -1, -1, -1)),
+          mEF2 = DUP128(_mm_setr_epi8(-1, -1, -1, -1, -1, 2, 8, 14, -1, -1, -1, -1, -1, 3, 9, 15));
+  for (unsigned j = 0; j < vec_len; j += 16) {
+    const unsigned char* p = in + j * ESIZE;
+    __m256i Y0 = _mm256_inserti128_si256(_mm256_castsi128_si256(_mm_loadu_si128((const __m128i*)(p))), _mm_loadu_si128((const __m128i*)(p + 48)), 1),
+            Y1 = _mm256_inserti128_si256(_mm256_castsi128_si256(_mm_loadu_si128((const __m128i*)(p + 16))), _mm_loadu_si128((const __m128i*)(p + 64)), 1),
+            Y2 = _mm256_inserti128_si256(_mm256_castsi128_si256(_mm_loadu_si128((const __m128i*)(p + 32))), _mm_loadu_si128((const __m128i*)(p + 80)), 1);
+    __m256i AB = _mm256_or_si256(_mm256_or_si256(_mm256_shuffle_epi8(Y0, mAB0), _mm256_shuffle_epi8(Y1, mAB1)), _mm256_shuffle_epi8(Y2, mAB2)),
+            CD = _mm256_or_si256(_mm256_or_si256(_mm256_shuffle_epi8(Y0, mCD0), _mm256_shuffle_epi8(Y1, mCD1)), _mm256_shuffle_epi8(Y2, mCD2)),
+            EF = _mm256_or_si256(_mm256_or_si256(_mm256_shuffle_epi8(Y0, mEF0), _mm256_shuffle_epi8(Y1, mEF1)), _mm256_shuffle_epi8(Y2, mEF2));
+    __m128i A_128 = _mm_unpacklo_epi64(_mm256_castsi256_si128(AB), _mm256_extracti128_si256(AB, 1));
+    __m128i B_128 = _mm_unpackhi_epi64(_mm256_castsi256_si128(AB), _mm256_extracti128_si256(AB, 1));
+    _mm_storeu_si128((__m128i*)&out[0 * stride + j], A_128);
+    _mm_storeu_si128((__m128i*)&out[1 * stride + j], B_128);     
+    __m128i C_128 = _mm_unpacklo_epi64(_mm256_castsi256_si128(CD), _mm256_extracti128_si256(CD, 1));
+    __m128i D_128 = _mm_unpackhi_epi64(_mm256_castsi256_si128(CD), _mm256_extracti128_si256(CD, 1));
+    _mm_storeu_si128((__m128i*)&out[2 * stride + j], C_128);
+    _mm_storeu_si128((__m128i*)&out[3 * stride + j], D_128);  
+    __m128i E_128 = _mm_unpacklo_epi64(_mm256_castsi256_si128(EF), _mm256_extracti128_si256(EF, 1));
+    __m128i F_128 = _mm_unpackhi_epi64(_mm256_castsi256_si128(EF), _mm256_extracti128_si256(EF, 1));
+    _mm_storeu_si128((__m128i*)&out[4 * stride + j], E_128);
+    _mm_storeu_si128((__m128i*)&out[5 * stride + j], F_128);
+  }
+  for(ip = in + vec_len * ESIZE, op = out + vec_len; ip < in + stride * ESIZE; op++) 
+    for(i = 0; i < ESIZE; i++) op[i * stride] = *ip++;
+  for(op = out + ESIZE * stride; ip < in + n;)
+    *op++ = *ip++;
+}
+
+void tpdec256v6(unsigned char *in, unsigned n, unsigned char *out) {
+  unsigned i, stride = n / ESIZE;
+  unsigned char *op, *ip;   
+  unsigned vector_iters = stride / 16;
+  unsigned vec_len = vector_iters * 16;
+    
+  __m256i iAB0 = DUP128(_mm_setr_epi8(0, 8, -1, -1, -1, -1, 1, 9, -1, -1, -1, -1, 2, 10, -1, -1)),
+          iCD0 = DUP128(_mm_setr_epi8(-1, -1, 0, 8, -1, -1, -1, -1, 1, 9, -1, -1, -1, -1, 2, 10)),
+          iEF0 = DUP128(_mm_setr_epi8(-1, -1, -1, -1, 0, 8, -1, -1, -1, -1, 1, 9, -1, -1, -1, -1));  
+  __m256i iAB1 = DUP128(_mm_setr_epi8(-1, -1, 3, 11, -1, -1, -1, -1, 4, 12, -1, -1, -1, -1, 5, 13)),
+          iCD1 = DUP128(_mm_setr_epi8(-1, -1, -1, -1, 3, 11, -1, -1, -1, -1, 4, 12, -1, -1, -1, -1)),
+          iEF1 = DUP128(_mm_setr_epi8(2, 10, -1, -1, -1, -1, 3, 11, -1, -1, -1, -1, 4, 12, -1, -1));  
+  __m256i iAB2 = DUP128(_mm_setr_epi8(-1, -1, -1, -1, 6, 14, -1, -1, -1, -1, 7, 15, -1, -1, -1, -1)),
+          iCD2 = DUP128(_mm_setr_epi8(5, 13, -1, -1, -1, -1, 6, 14, -1, -1, -1, -1, 7, 15, -1, -1)),
+          iEF2 = DUP128(_mm_setr_epi8(-1, -1, 5, 13, -1, -1, -1, -1, 6, 14, -1, -1, -1, -1, 7, 15));
+  for (unsigned j = 0; j < vec_len; j += 16) {
+    __m128i A_128 = _mm_loadu_si128((const __m128i*)&in[0 * stride + j]),
+            B_128 = _mm_loadu_si128((const __m128i*)&in[1 * stride + j]);
+    __m256i    AB = _mm256_inserti128_si256(_mm256_castsi128_si256(_mm_unpacklo_epi64(A_128, B_128)), _mm_unpackhi_epi64(A_128, B_128), 1);    
+    __m128i C_128 = _mm_loadu_si128((const __m128i*)&in[2 * stride + j]),
+            D_128 = _mm_loadu_si128((const __m128i*)&in[3 * stride + j]);
+    __m256i    CD = _mm256_inserti128_si256(_mm256_castsi128_si256(_mm_unpacklo_epi64(C_128, D_128)), _mm_unpackhi_epi64(C_128, D_128), 1);    
+    __m128i E_128 = _mm_loadu_si128((const __m128i*)&in[4 * stride + j]),
+            F_128 = _mm_loadu_si128((const __m128i*)&in[5 * stride + j]);
+    __m256i    EF = _mm256_inserti128_si256(_mm256_castsi128_si256(_mm_unpacklo_epi64(E_128, F_128)), _mm_unpackhi_epi64(E_128, F_128), 1);
+    __m256i Y0 = _mm256_or_si256(_mm256_or_si256(_mm256_shuffle_epi8(AB, iAB0), _mm256_shuffle_epi8(CD, iCD0)), _mm256_shuffle_epi8(EF, iEF0)),
+            Y1 = _mm256_or_si256(_mm256_or_si256(_mm256_shuffle_epi8(AB, iAB1), _mm256_shuffle_epi8(CD, iCD1)), _mm256_shuffle_epi8(EF, iEF1)),
+            Y2 = _mm256_or_si256(_mm256_or_si256(_mm256_shuffle_epi8(AB, iAB2), _mm256_shuffle_epi8(CD, iCD2)), _mm256_shuffle_epi8(EF, iEF2));
+        
+    unsigned char* p = out + j * ESIZE;
+    _mm_storeu_si128((__m128i*)(p), _mm256_castsi256_si128(Y0));
+    _mm_storeu_si128((__m128i*)(p + 48), _mm256_extracti128_si256(Y0, 1));
+    _mm_storeu_si128((__m128i*)(p + 16), _mm256_castsi256_si128(Y1));
+    _mm_storeu_si128((__m128i*)(p + 64), _mm256_extracti128_si256(Y1, 1));      
+    _mm_storeu_si128((__m128i*)(p + 32), _mm256_castsi256_si128(Y2));
+    _mm_storeu_si128((__m128i*)(p + 80), _mm256_extracti128_si256(Y2, 1));
+  }
+  for (op = out + vec_len * ESIZE, ip = in + vec_len; op < out + stride * ESIZE; ip++)
+    for (i = 0; i < ESIZE; i++)  *op++ = ip[i * stride];
+  for (ip = in + ESIZE * stride; op < out + n;) *op++ = *ip++;
+}
+
+#define ESIZE 12
 void tpenc256v12(unsigned char *in, unsigned n, unsigned char *out) {
   unsigned stride = n / 12;
   unsigned char *ip = in;
   unsigned i = 0;
   for (; i + 8 <= stride; i += 8, ip += 96) {
-    // Load into AVX2 registers. We interleave halves so that Lane 0, processes elements 0..3 and Lane 1 processes elements 4..7.
     __m256i v0 = _mm256_inserti128_si256(_mm256_castsi128_si256(_mm_loadu_si128((const __m128i*)(ip + 0))), _mm_loadu_si128((const __m128i*)(ip + 48)), 1);
     __m256i v1 = _mm256_inserti128_si256(_mm256_castsi128_si256(_mm_loadu_si128((const __m128i*)(ip + 16))), _mm_loadu_si128((const __m128i*)(ip + 64)), 1);
     __m256i v2 = _mm256_inserti128_si256(_mm256_castsi128_si256(_mm_loadu_si128((const __m128i*)(ip + 32))), _mm_loadu_si128((const __m128i*)(ip + 80)), 1);
-
-        // Blend lanes to group components (duplicated 8-bit masks)
     __m256i t0 = _mm256_blend_epi32(v0, v2, 0b00100010);
             t0 = _mm256_blend_epi32(t0, v1, 0b01000100);
     __m256i t1 = _mm256_blend_epi32(v1, v0, 0b00100010);
             t1 = _mm256_blend_epi32(t1, v2, 0b01000100);
     __m256i t2 = _mm256_blend_epi32(v2, v1, 0b00100010);
             t2 = _mm256_blend_epi32(t2, v0, 0b01000100);
-
-        // Transpose blocks within each 128-bit lane
-    __m256i s_mask0 = _mm256_set_epi8( 0,12,8,4, 1,13,9,5, 2,14,10,6, 3,15,11,7, // Lane 1
-                                       0,12,8,4, 1,13,9,5, 2,14,10,6, 3,15,11,7  // Lane 0
-                                     );
-    __m256i s_mask1 = _mm256_set_epi8( 4,0,12,8, 5,1,13,9, 6,2,14,10, 7,3,15,11, // Lane 1
-                                       4,0,12,8, 5,1,13,9, 6,2,14,10, 7,3,15,11  // Lane 0
-                                     );
-    __m256i s_mask2 = _mm256_set_epi8( 8,4,0,12, 9,5,1,13, 10,6,2,14, 11,7,3,15, // Lane 1
-                                       8,4,0,12, 9,5,1,13, 10,6,2,14, 11,7,3,15  // Lane 0
-                                     );
-    __m256i out0 = _mm256_shuffle_epi8(t0, _mm256_setr_epi8( 0,12,8,4, 1,13,9,5, 2,14,10,6, 3,15,11,7,   0,12,8,4, 1,13,9,5, 2,14,10,6, 3,15,11,7));
-    __m256i out1 = _mm256_shuffle_epi8(t1, _mm256_setr_epi8( 4,0,12,8, 5,1,13,9, 6,2,14,10, 7,3,15,11,   4,0,12,8, 5,1,13,9, 6,2,14,10, 7,3,15,11));
-    __m256i out2 = _mm256_shuffle_epi8(t2, _mm256_setr_epi8( 8,4,0,12, 9,5,1,13, 10,6,2,14, 11,7,3,15,   8,4,0,12, 9,5,1,13, 10,6,2,14, 11,7,3,15));
-    
-    out0 = _mm256_permutevar8x32_epi32(out0, _mm256_setr_epi32(0, 4, 1, 5, 2, 6, 3, 7)); // Permute to make the 64-bit blocks contiguous
+    __m256i s_mask0 = _mm256_set_epi8( 0,12,8,4, 1,13,9,5, 2,14,10,6, 3,15,11,7,  0,12,8,4, 1,13,9,5, 2,14,10,6, 3,15,11,7),
+            s_mask1 = _mm256_set_epi8( 4,0,12,8, 5,1,13,9, 6,2,14,10, 7,3,15,11,  4,0,12,8, 5,1,13,9, 6,2,14,10, 7,3,15,11),
+            s_mask2 = _mm256_set_epi8( 8,4,0,12, 9,5,1,13, 10,6,2,14, 11,7,3,15,  8,4,0,12, 9,5,1,13, 10,6,2,14, 11,7,3,15);
+    __m256i out0 = _mm256_shuffle_epi8(t0, _mm256_setr_epi8( 0,12,8,4, 1,13,9,5, 2,14,10,6, 3,15,11,7,   0,12,8,4, 1,13,9,5, 2,14,10,6, 3,15,11,7)),
+            out1 = _mm256_shuffle_epi8(t1, _mm256_setr_epi8( 4,0,12,8, 5,1,13,9, 6,2,14,10, 7,3,15,11,   4,0,12,8, 5,1,13,9, 6,2,14,10, 7,3,15,11)),
+            out2 = _mm256_shuffle_epi8(t2, _mm256_setr_epi8( 8,4,0,12, 9,5,1,13, 10,6,2,14, 11,7,3,15,   8,4,0,12, 9,5,1,13, 10,6,2,14, 11,7,3,15)); 
+    out0 = _mm256_permutevar8x32_epi32(out0, _mm256_setr_epi32(0, 4, 1, 5, 2, 6, 3, 7));
     out1 = _mm256_permutevar8x32_epi32(out1, _mm256_setr_epi32(0, 4, 1, 5, 2, 6, 3, 7));
     out2 = _mm256_permutevar8x32_epi32(out2, _mm256_setr_epi32(0, 4, 1, 5, 2, 6, 3, 7));
-
-    *(uint64_t*)(out + 0 * stride + i) = _mm_cvtsi128_si64(_mm256_castsi256_si128(out0));
-    *(uint64_t*)(out + 1 * stride + i) = _mm_extract_epi64(_mm256_castsi256_si128(out0), 1);
-    *(uint64_t*)(out + 2 * stride + i) = _mm_extract_epi64(_mm256_extracti128_si256(out0, 1), 0);
-    *(uint64_t*)(out + 3 * stride + i) = _mm_extract_epi64(_mm256_extracti128_si256(out0, 1), 1);
-
-    *(uint64_t*)(out + 4 * stride + i) = _mm_cvtsi128_si64(_mm256_castsi256_si128(out1));
-    *(uint64_t*)(out + 5 * stride + i) = _mm_extract_epi64(_mm256_castsi256_si128(out1), 1);
-    *(uint64_t*)(out + 6 * stride + i) = _mm_extract_epi64(_mm256_extracti128_si256(out1, 1), 0);
-    *(uint64_t*)(out + 7 * stride + i) = _mm_extract_epi64(_mm256_extracti128_si256(out1, 1), 1);
-
-    *(uint64_t*)(out + 8 * stride + i) = _mm_cvtsi128_si64(_mm256_castsi256_si128(out2));
-    *(uint64_t*)(out + 9 * stride + i) = _mm_extract_epi64(_mm256_castsi256_si128(out2), 1);
+    *(uint64_t*)(out +  0 * stride + i) = _mm_cvtsi128_si64(_mm256_castsi256_si128(out0));
+    *(uint64_t*)(out +  1 * stride + i) = _mm_extract_epi64(_mm256_castsi256_si128(out0),  1);
+    *(uint64_t*)(out +  2 * stride + i) = _mm_extract_epi64(_mm256_extracti128_si256(out0, 1), 0);
+    *(uint64_t*)(out +  3 * stride + i) = _mm_extract_epi64(_mm256_extracti128_si256(out0, 1), 1);
+    *(uint64_t*)(out +  4 * stride + i) = _mm_cvtsi128_si64(_mm256_castsi256_si128(out1));
+    *(uint64_t*)(out +  5 * stride + i) = _mm_extract_epi64(_mm256_castsi256_si128(out1),  1);
+    *(uint64_t*)(out +  6 * stride + i) = _mm_extract_epi64(_mm256_extracti128_si256(out1, 1), 0);
+    *(uint64_t*)(out +  7 * stride + i) = _mm_extract_epi64(_mm256_extracti128_si256(out1, 1), 1);
+    *(uint64_t*)(out +  8 * stride + i) = _mm_cvtsi128_si64(_mm256_castsi256_si128(out2));
+    *(uint64_t*)(out +  9 * stride + i) = _mm_extract_epi64(_mm256_castsi256_si128(out2),  1);
     *(uint64_t*)(out + 10 * stride + i) = _mm_extract_epi64(_mm256_extracti128_si256(out2, 1), 0);
     *(uint64_t*)(out + 11 * stride + i) = _mm_extract_epi64(_mm256_extracti128_si256(out2, 1), 1);
   }
-  for (unsigned char *op = out; ip < in + stride * 12; op++, i++)
-    for (unsigned j = 0; j < 12; j++) op[j * stride] = *ip++;
-  for (unsigned char *op = out + 12 * stride; ip < in + n;) *op++ = *ip++;
+  for(unsigned char *op = out; ip < in + stride * 12; op++, i++)
+    for(unsigned j = 0; j < 12; j++) op[j * stride] = *ip++;
+  for(unsigned char *op = out + 12 * stride; ip < in + n;) *op++ = *ip++;
 }
 
 void tpdec256v12(unsigned char *in, unsigned n, unsigned char *out) {
   unsigned char *op = out;
   unsigned stride = n / 12, i = 0;
-  for (; i + 8 <= stride; i += 8, op += 96) {  // Process 8 elements (96 bytes) per iteration
-    __m256i t0 = _mm256_setr_epi64x( *(const uint64_t*)(in + 0 * stride + i),  // Load 8 bytes (uint64_t) from each component array
+  for (; i + 8 <= stride; i += 8, op += 96) { 
+    __m256i t0 = _mm256_setr_epi64x( *(const uint64_t*)(in + 0 * stride + i), 
                                      *(const uint64_t*)(in + 1 * stride + i),
                                      *(const uint64_t*)(in + 2 * stride + i),
                                      *(const uint64_t*)(in + 3 * stride + i) );
@@ -100,12 +171,12 @@ void tpdec256v12(unsigned char *in, unsigned n, unsigned char *out) {
     __m256i t2 = _mm256_setr_epi64x( *(const uint64_t*)(in + 8 * stride + i),
                                      *(const uint64_t*)(in + 9 * stride + i),
                                      *(const uint64_t*)(in + 10 * stride + i),
-                                    *(const uint64_t*)(in + 11 * stride + i) );       
-    __m256i perm_mask = _mm256_setr_epi32(0, 2, 4, 6, 1, 3, 5, 7);// Permute to move the upper 32-bits (elements 4..7) to Lane 1, and lower 32-bits (elements 0..3) to Lane 0
+                                     *(const uint64_t*)(in + 11 * stride + i));       
+    __m256i perm_mask = _mm256_setr_epi32(0, 2, 4, 6, 1, 3, 5, 7);
     t0 = _mm256_permutevar8x32_epi32(t0, perm_mask);
     t1 = _mm256_permutevar8x32_epi32(t1, perm_mask);
     t2 = _mm256_permutevar8x32_epi32(t2, perm_mask);       
-    __m256i s0, s1, s2; // Now Lane 0 has exactly the same layout as SSE, and so does Lane 1!
+    __m256i s0, s1, s2;
             s0 = _mm256_shuffle_epi8(t0, _mm256_setr_epi8( 0, 4, 8, 12, -1, -1, -1, -1, -1, -1, -1, -1, 1, 5, 9, 13,      0, 4, 8, 12, -1, -1, -1, -1, -1, -1, -1, -1, 1, 5, 9, 13 ));
             s1 = _mm256_shuffle_epi8(t1, _mm256_setr_epi8(-1, -1, -1, -1, 0, 4, 8, 12, -1, -1, -1, -1, -1, -1, -1, -1,   -1, -1, -1, -1, 0, 4, 8, 12, -1, -1, -1, -1, -1, -1, -1, -1 ));
             s2 = _mm256_shuffle_epi8(t2, _mm256_setr_epi8(-1, -1, -1, -1, -1, -1, -1, -1, 0, 4, 8, 12, -1, -1, -1, -1,   -1, -1, -1, -1, -1, -1, -1, -1, 0, 4, 8, 12, -1, -1, -1, -1 ));
@@ -118,7 +189,6 @@ void tpdec256v12(unsigned char *in, unsigned n, unsigned char *out) {
             s1 = _mm256_shuffle_epi8(t1, _mm256_setr_epi8(-1, -1, -1, -1, -1, -1, -1, -1, 3, 7, 11, 15, -1, -1, -1, -1,   -1, -1, -1, -1, -1, -1, -1, -1, 3, 7, 11, 15, -1, -1, -1, -1 ));
             s2 = _mm256_shuffle_epi8(t2, _mm256_setr_epi8( 2, 6, 10, 14, -1, -1, -1, -1, -1, -1, -1, -1, 3, 7, 11, 15,     2, 6, 10, 14, -1, -1, -1, -1, -1, -1, -1, -1, 3, 7, 11, 15   ));
     __m256i v2 = _mm256_or_si256(_mm256_or_si256(s0, s1), s2);
-
     _mm_storeu_si128((__m128i*)(op + 0), _mm256_castsi256_si128(v0));
     _mm_storeu_si128((__m128i*)(op + 16), _mm256_castsi256_si128(v1));
     _mm_storeu_si128((__m128i*)(op + 32), _mm256_castsi256_si128(v2));
@@ -131,25 +201,298 @@ void tpdec256v12(unsigned char *in, unsigned n, unsigned char *out) {
   for (unsigned char *ip = in + 12 * stride; op < out + n;) *op++ = *ip++;
 }
 
+#define ESIZE 16
+#define TP256_16x16(r0, r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, r11, r12, r13, r14, r15) do { \
+    __m256i t0 = _mm256_unpacklo_epi8(r0, r1); \
+    __m256i t1 = _mm256_unpackhi_epi8(r0, r1); \
+    __m256i t2 = _mm256_unpacklo_epi8(r2, r3); \
+    __m256i t3 = _mm256_unpackhi_epi8(r2, r3); \
+    __m256i t4 = _mm256_unpacklo_epi8(r4, r5); \
+    __m256i t5 = _mm256_unpackhi_epi8(r4, r5); \
+    __m256i t6 = _mm256_unpacklo_epi8(r6, r7); \
+    __m256i t7 = _mm256_unpackhi_epi8(r6, r7); \
+    __m256i t8 = _mm256_unpacklo_epi8(r8, r9); \
+    __m256i t9 = _mm256_unpackhi_epi8(r8, r9); \
+    __m256i t10 = _mm256_unpacklo_epi8(r10, r11); \
+    __m256i t11 = _mm256_unpackhi_epi8(r10, r11); \
+    __m256i t12 = _mm256_unpacklo_epi8(r12, r13); \
+    __m256i t13 = _mm256_unpackhi_epi8(r12, r13); \
+    __m256i t14 = _mm256_unpacklo_epi8(r14, r15); \
+    __m256i t15 = _mm256_unpackhi_epi8(r14, r15); \
+    r0 = _mm256_unpacklo_epi16(t0, t2); \
+    r1 = _mm256_unpackhi_epi16(t0, t2); \
+    r2 = _mm256_unpacklo_epi16(t1, t3); \
+    r3 = _mm256_unpackhi_epi16(t1, t3); \
+    r4 = _mm256_unpacklo_epi16(t4, t6); \
+    r5 = _mm256_unpackhi_epi16(t4, t6); \
+    r6 = _mm256_unpacklo_epi16(t5, t7); \
+    r7 = _mm256_unpackhi_epi16(t5, t7); \
+    r8 = _mm256_unpacklo_epi16(t8, t10); \
+    r9 = _mm256_unpackhi_epi16(t8, t10); \
+    r10 = _mm256_unpacklo_epi16(t9, t11); \
+    r11 = _mm256_unpackhi_epi16(t9, t11); \
+    r12 = _mm256_unpacklo_epi16(t12, t14); \
+    r13 = _mm256_unpackhi_epi16(t12, t14); \
+    r14 = _mm256_unpacklo_epi16(t13, t15); \
+    r15 = _mm256_unpackhi_epi16(t13, t15); \
+    t0 = _mm256_unpacklo_epi32(r0, r4); \
+    t1 = _mm256_unpackhi_epi32(r0, r4); \
+    t2 = _mm256_unpacklo_epi32(r1, r5); \
+    t3 = _mm256_unpackhi_epi32(r1, r5); \
+    t4 = _mm256_unpacklo_epi32(r2, r6); \
+    t5 = _mm256_unpackhi_epi32(r2, r6); \
+    t6 = _mm256_unpacklo_epi32(r3, r7); \
+    t7 = _mm256_unpackhi_epi32(r3, r7); \
+    t8 = _mm256_unpacklo_epi32(r8, r12); \
+    t9 = _mm256_unpackhi_epi32(r8, r12); \
+    t10 = _mm256_unpacklo_epi32(r9, r13); \
+    t11 = _mm256_unpackhi_epi32(r9, r13); \
+    t12 = _mm256_unpacklo_epi32(r10, r14); \
+    t13 = _mm256_unpackhi_epi32(r10, r14); \
+    t14 = _mm256_unpacklo_epi32(r11, r15); \
+    t15 = _mm256_unpackhi_epi32(r11, r15); \
+    r0 = _mm256_unpacklo_epi64(t0, t8); \
+    r1 = _mm256_unpackhi_epi64(t0, t8); \
+    r2 = _mm256_unpacklo_epi64(t1, t9); \
+    r3 = _mm256_unpackhi_epi64(t1, t9); \
+    r4 = _mm256_unpacklo_epi64(t2, t10); \
+    r5 = _mm256_unpackhi_epi64(t2, t10); \
+    r6 = _mm256_unpacklo_epi64(t3, t11); \
+    r7 = _mm256_unpackhi_epi64(t3, t11); \
+    r8 = _mm256_unpacklo_epi64(t4, t12); \
+    r9 = _mm256_unpackhi_epi64(t4, t12); \
+    r10 = _mm256_unpacklo_epi64(t5, t13); \
+    r11 = _mm256_unpackhi_epi64(t5, t13); \
+    r12 = _mm256_unpacklo_epi64(t6, t14); \
+    r13 = _mm256_unpackhi_epi64(t6, t14); \
+    r14 = _mm256_unpacklo_epi64(t7, t15); \
+    r15 = _mm256_unpackhi_epi64(t7, t15); \
+} while(0)
+
+#define IV256(r, mask) do { \
+    r = _mm256_permute4x64_epi64(r, _MM_SHUFFLE(3, 1, 2, 0)); \
+    r = _mm256_shuffle_epi8(r, mask); \
+} while(0)
+
+#define DIV256(r, mask) do { \
+    r = _mm256_shuffle_epi8(r, mask); \
+    r = _mm256_permute4x64_epi64(r, _MM_SHUFFLE(3, 1, 2, 0)); \
+} while(0)
+
+void tpenc256v16(unsigned char *in, unsigned n, unsigned char *out) {
+  unsigned stride = n / 16;
+  unsigned i;
+  __m256i maskiv = _mm256_set_epi8(15, 7, 14, 6, 13, 5, 12, 4, 11, 3, 10, 2, 9, 1, 8, 0,   15, 7, 14, 6, 13, 5, 12, 4, 11, 3, 10, 2, 9, 1, 8, 0  );
+  for (i = 0; i + 31 < stride; i += 32) {
+    __m256i r0  = _mm256_loadu_si256((__m256i*)(in + (i +  0) * 16)),
+            r1  = _mm256_loadu_si256((__m256i*)(in + (i +  2) * 16)),
+            r2  = _mm256_loadu_si256((__m256i*)(in + (i +  4) * 16)),
+            r3  = _mm256_loadu_si256((__m256i*)(in + (i +  6) * 16)),
+            r4  = _mm256_loadu_si256((__m256i*)(in + (i +  8) * 16)),
+            r5  = _mm256_loadu_si256((__m256i*)(in + (i + 10) * 16)),
+            r6  = _mm256_loadu_si256((__m256i*)(in + (i + 12) * 16)),
+            r7  = _mm256_loadu_si256((__m256i*)(in + (i + 14) * 16)),
+            r8  = _mm256_loadu_si256((__m256i*)(in + (i + 16) * 16)),
+            r9  = _mm256_loadu_si256((__m256i*)(in + (i + 18) * 16)),
+            r10 = _mm256_loadu_si256((__m256i*)(in + (i + 20) * 16)),
+            r11 = _mm256_loadu_si256((__m256i*)(in + (i + 22) * 16)),
+            r12 = _mm256_loadu_si256((__m256i*)(in + (i + 24) * 16)),
+            r13 = _mm256_loadu_si256((__m256i*)(in + (i + 26) * 16)),
+            r14 = _mm256_loadu_si256((__m256i*)(in + (i + 28) * 16)),
+            r15 = _mm256_loadu_si256((__m256i*)(in + (i + 30) * 16));
+    TP256_16x16(r0, r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, r11, r12, r13, r14, r15);
+    IV256(r0,  maskiv);
+    IV256(r1,  maskiv);
+    IV256(r2,  maskiv);
+    IV256(r3,  maskiv);
+    IV256(r4,  maskiv);
+    IV256(r5,  maskiv);
+    IV256(r6,  maskiv);
+    IV256(r7,  maskiv);
+    IV256(r8,  maskiv);
+    IV256(r9,  maskiv);
+    IV256(r10, maskiv);
+    IV256(r11, maskiv);
+    IV256(r12, maskiv);
+    IV256(r13, maskiv);
+    IV256(r14, maskiv);
+    IV256(r15, maskiv);
+    _mm256_storeu_si256((__m256i*)(out +  0 * stride + i), r0);
+    _mm256_storeu_si256((__m256i*)(out +  1 * stride + i), r1);
+    _mm256_storeu_si256((__m256i*)(out +  2 * stride + i), r2);
+    _mm256_storeu_si256((__m256i*)(out +  3 * stride + i), r3);
+    _mm256_storeu_si256((__m256i*)(out +  4 * stride + i), r4);
+    _mm256_storeu_si256((__m256i*)(out +  5 * stride + i), r5);
+    _mm256_storeu_si256((__m256i*)(out +  6 * stride + i), r6);
+    _mm256_storeu_si256((__m256i*)(out +  7 * stride + i), r7);
+    _mm256_storeu_si256((__m256i*)(out +  8 * stride + i), r8);
+    _mm256_storeu_si256((__m256i*)(out +  9 * stride + i), r9);
+    _mm256_storeu_si256((__m256i*)(out + 10 * stride + i), r10);
+    _mm256_storeu_si256((__m256i*)(out + 11 * stride + i), r11);
+    _mm256_storeu_si256((__m256i*)(out + 12 * stride + i), r12);
+    _mm256_storeu_si256((__m256i*)(out + 13 * stride + i), r13);
+    _mm256_storeu_si256((__m256i*)(out + 14 * stride + i), r14);
+    _mm256_storeu_si256((__m256i*)(out + 15 * stride + i), r15);
+  }
+  for(; i < stride; i++) 
+    for(unsigned j = 0; j < 16; j++) 
+      out[j * stride + i] = in[i * 16 + j];
+}
+
+void tpdec256v16(unsigned char *in, unsigned n, unsigned char *out) {
+  unsigned stride = n / 16;
+  unsigned i;
+  __m256i mask_deinterleave = _mm256_set_epi8(15, 13, 11, 9, 7, 5, 3, 1, 14, 12, 10, 8, 6, 4, 2, 0,   15, 13, 11, 9, 7, 5, 3, 1, 14, 12, 10, 8, 6, 4, 2, 0 );
+  for (i = 0; i + 31 < stride; i += 32) {
+    __m256i r0 = _mm256_loadu_si256((__m256i*)(in + 0 * stride + i)),
+            r1 = _mm256_loadu_si256((__m256i*)(in + 1 * stride + i)),
+            r2 = _mm256_loadu_si256((__m256i*)(in + 2 * stride + i)),
+            r3 = _mm256_loadu_si256((__m256i*)(in + 3 * stride + i)),
+            r4 = _mm256_loadu_si256((__m256i*)(in + 4 * stride + i)),
+            r5 = _mm256_loadu_si256((__m256i*)(in + 5 * stride + i)),
+            r6 = _mm256_loadu_si256((__m256i*)(in + 6 * stride + i)),
+            r7 = _mm256_loadu_si256((__m256i*)(in + 7 * stride + i)),
+            r8 = _mm256_loadu_si256((__m256i*)(in + 8 * stride + i)),
+            r9 = _mm256_loadu_si256((__m256i*)(in + 9 * stride + i)),
+            r10 = _mm256_loadu_si256((__m256i*)(in + 10 * stride + i)),
+            r11 = _mm256_loadu_si256((__m256i*)(in + 11 * stride + i)),
+            r12 = _mm256_loadu_si256((__m256i*)(in + 12 * stride + i)),
+            r13 = _mm256_loadu_si256((__m256i*)(in + 13 * stride + i)),
+            r14 = _mm256_loadu_si256((__m256i*)(in + 14 * stride + i)),
+            r15 = _mm256_loadu_si256((__m256i*)(in + 15 * stride + i));
+      DIV256(r0, mask_deinterleave);
+      DIV256(r1, mask_deinterleave);
+      DIV256(r2, mask_deinterleave);
+      DIV256(r3, mask_deinterleave);
+      DIV256(r4, mask_deinterleave);
+      DIV256(r5, mask_deinterleave);
+      DIV256(r6, mask_deinterleave);
+      DIV256(r7, mask_deinterleave);
+      DIV256(r8, mask_deinterleave);
+      DIV256(r9, mask_deinterleave);
+      DIV256(r10, mask_deinterleave);
+      DIV256(r11, mask_deinterleave);
+      DIV256(r12, mask_deinterleave);
+      DIV256(r13, mask_deinterleave);
+      DIV256(r14, mask_deinterleave);
+      DIV256(r15, mask_deinterleave);
+      TP256_16x16(r0, r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, r11, r12, r13, r14, r15);
+      _mm256_storeu_si256((__m256i*)(out + (i + 0) * 16), r0);
+      _mm256_storeu_si256((__m256i*)(out + (i + 2) * 16), r1);
+      _mm256_storeu_si256((__m256i*)(out + (i + 4) * 16), r2);
+      _mm256_storeu_si256((__m256i*)(out + (i + 6) * 16), r3);
+      _mm256_storeu_si256((__m256i*)(out + (i + 8) * 16), r4);
+      _mm256_storeu_si256((__m256i*)(out + (i + 10) * 16), r5);
+      _mm256_storeu_si256((__m256i*)(out + (i + 12) * 16), r6);
+      _mm256_storeu_si256((__m256i*)(out + (i + 14) * 16), r7);
+      _mm256_storeu_si256((__m256i*)(out + (i + 16) * 16), r8);
+      _mm256_storeu_si256((__m256i*)(out + (i + 18) * 16), r9);
+      _mm256_storeu_si256((__m256i*)(out + (i + 20) * 16), r10);
+      _mm256_storeu_si256((__m256i*)(out + (i + 22) * 16), r11);
+      _mm256_storeu_si256((__m256i*)(out + (i + 24) * 16), r12);
+      _mm256_storeu_si256((__m256i*)(out + (i + 26) * 16), r13);
+      _mm256_storeu_si256((__m256i*)(out + (i + 28) * 16), r14);
+      _mm256_storeu_si256((__m256i*)(out + (i + 30) * 16), r15);
+  }
+  for(; i < stride; i++) 
+    for (unsigned j = 0; j < 16; j++) 
+      out[i * 16 + j] = in[j * stride + i];
+}
+
 #elif defined(__SSE4_1__) || defined(__ARM_NEON) || defined(__riscv_vector) || defined(__loongarch_sx)
+#define ESIZE 6
+void tpenc128v6(unsigned char *in, unsigned n, unsigned char *out) {
+  unsigned i, stride = n / ESIZE;
+  unsigned char *op, *ip;
+  unsigned vector_iters = stride / 8;
+  unsigned vec_len = vector_iters * 8;
+    
+  __m128i mAB0 = _mm_setr_epi8(0, 6, 12, -1, -1, -1, -1, -1, 1, 7, 13, -1, -1, -1, -1, -1),
+          mAB1 = _mm_setr_epi8(-1, -1, -1, 2, 8, 14, -1, -1, -1, -1, -1, 3, 9, 15, -1, -1),
+          mAB2 = _mm_setr_epi8(-1, -1, -1, -1, -1, -1, 4, 10, -1, -1, -1, -1, -1, -1, 5, 11);    
+  __m128i mCD0 = _mm_setr_epi8(2, 8, 14, -1, -1, -1, -1, -1, 3, 9, 15, -1, -1, -1, -1, -1),
+          mCD1 = _mm_setr_epi8(-1, -1, -1, 4, 10, -1, -1, -1, -1, -1, -1, 5, 11, -1, -1, -1),
+          mCD2 = _mm_setr_epi8(-1, -1, -1, -1, -1, 0, 6, 12, -1, -1, -1, -1, -1, 1, 7, 13);
+  __m128i mEF0 = _mm_setr_epi8(4, 10, -1, -1, -1, -1, -1, -1, 5, 11, -1, -1, -1, -1, -1, -1),
+          mEF1 = _mm_setr_epi8(-1, -1, 0, 6, 12, -1, -1, -1, -1, -1, 1, 7, 13, -1, -1, -1),
+          mEF2 = _mm_setr_epi8(-1, -1, -1, -1, -1, 2, 8, 14, -1, -1, -1, -1, -1, 3, 9, 15);   
+  for (unsigned j = 0; j < vec_len; j += 8) {
+    const unsigned char* p = in + j * ESIZE;
+    __m128i V0 = _mm_loadu_si128((const __m128i*)(p)),
+            V1 = _mm_loadu_si128((const __m128i*)(p + 16)),
+            V2 = _mm_loadu_si128((const __m128i*)(p + 32));
+    __m128i AB = _mm_or_si128(_mm_or_si128(_mm_shuffle_epi8(V0, mAB0), _mm_shuffle_epi8(V1, mAB1)), _mm_shuffle_epi8(V2, mAB2)),
+            CD = _mm_or_si128(_mm_or_si128(_mm_shuffle_epi8(V0, mCD0), _mm_shuffle_epi8(V1, mCD1)), _mm_shuffle_epi8(V2, mCD2)),
+            EF = _mm_or_si128(_mm_or_si128(_mm_shuffle_epi8(V0, mEF0), _mm_shuffle_epi8(V1, mEF1)), _mm_shuffle_epi8(V2, mEF2));
+    _mm_storel_epi64((__m128i*)&out[0 * stride + j], AB);
+    _mm_storel_epi64((__m128i*)&out[1 * stride + j], _mm_unpackhi_epi64(AB, AB));
+    _mm_storel_epi64((__m128i*)&out[2 * stride + j], CD);
+    _mm_storel_epi64((__m128i*)&out[3 * stride + j], _mm_unpackhi_epi64(CD, CD));
+    _mm_storel_epi64((__m128i*)&out[4 * stride + j], EF);
+    _mm_storel_epi64((__m128i*)&out[5 * stride + j], _mm_unpackhi_epi64(EF, EF));
+  }
+  for (ip = in + vec_len * ESIZE, op = out + vec_len; ip < in + stride * ESIZE; op++)
+    for (i = 0; i < ESIZE; i++) op[i * stride] = *ip++;
+  for (op = out + ESIZE * stride; ip < in + n;)
+    *op++ = *ip++;
+}
+
+void tpdec128v6(unsigned char *in, unsigned n, unsigned char *out) {
+  unsigned i, stride = n / ESIZE;
+  unsigned char *op, *ip;  
+  unsigned vector_iters = stride / 8;
+  unsigned vec_len = vector_iters * 8;
+  __m128i iAB0 = _mm_setr_epi8(0, 8, -1, -1, -1, -1, 1, 9, -1, -1, -1, -1, 2, 10, -1, -1),
+          iCD0 = _mm_setr_epi8(-1, -1, 0, 8, -1, -1, -1, -1, 1, 9, -1, -1, -1, -1, 2, 10),
+          iEF0 = _mm_setr_epi8(-1, -1, -1, -1, 0, 8, -1, -1, -1, -1, 1, 9, -1, -1, -1, -1);  
+  __m128i iAB1 = _mm_setr_epi8(-1, -1, 3, 11, -1, -1, -1, -1, 4, 12, -1, -1, -1, -1, 5, 13),
+          iCD1 = _mm_setr_epi8(-1, -1, -1, -1, 3, 11, -1, -1, -1, -1, 4, 12, -1, -1, -1, -1),
+          iEF1 = _mm_setr_epi8(2, 10, -1, -1, -1, -1, 3, 11, -1, -1, -1, -1, 4, 12, -1, -1);
+  __m128i iAB2 = _mm_setr_epi8(-1, -1, -1, -1, 6, 14, -1, -1, -1, -1, 7, 15, -1, -1, -1, -1),
+          iCD2 = _mm_setr_epi8(5, 13, -1, -1, -1, -1, 6, 14, -1, -1, -1, -1, 7, 15, -1, -1),
+          iEF2 = _mm_setr_epi8(-1, -1, 5, 13, -1, -1, -1, -1, 6, 14, -1, -1, -1, -1, 7, 15);
+  for (unsigned j = 0; j < vec_len; j += 8) {
+    __m128i A = _mm_loadl_epi64((const __m128i*)&in[0 * stride + j]),
+            B = _mm_loadl_epi64((const __m128i*)&in[1 * stride + j]),
+            AB = _mm_unpacklo_epi64(A, B);
+    __m128i C = _mm_loadl_epi64((const __m128i*)&in[2 * stride + j]),
+            D = _mm_loadl_epi64((const __m128i*)&in[3 * stride + j]),
+            CD = _mm_unpacklo_epi64(C, D);    
+    __m128i E = _mm_loadl_epi64((const __m128i*)&in[4 * stride + j]),
+            F = _mm_loadl_epi64((const __m128i*)&in[5 * stride + j]),
+            EF = _mm_unpacklo_epi64(E, F);
+    __m128i V0 = _mm_or_si128(_mm_or_si128(_mm_shuffle_epi8(AB, iAB0), _mm_shuffle_epi8(CD, iCD0)), _mm_shuffle_epi8(EF, iEF0)),
+            V1 = _mm_or_si128(_mm_or_si128(_mm_shuffle_epi8(AB, iAB1), _mm_shuffle_epi8(CD, iCD1)), _mm_shuffle_epi8(EF, iEF1)),
+            V2 = _mm_or_si128(_mm_or_si128(_mm_shuffle_epi8(AB, iAB2), _mm_shuffle_epi8(CD, iCD2)), _mm_shuffle_epi8(EF, iEF2));
+        
+    unsigned char* p = out + j * ESIZE;
+    _mm_storeu_si128((__m128i*)(p), V0);
+    _mm_storeu_si128((__m128i*)(p + 16), V1);
+    _mm_storeu_si128((__m128i*)(p + 32), V2);
+  }
+  for (op = out + vec_len * ESIZE, ip = in + vec_len; op < out + stride * ESIZE; ip++)
+    for (i = 0; i < ESIZE; i++) *op++ = ip[i * stride];
+  for (ip = in + ESIZE * stride; op < out + n;) *op++ = *ip++;
+}
+
+#define ESIZE 12
 void tpenc128v12(unsigned char *in, unsigned n, unsigned char *out) {
   unsigned stride = n / 12;
   unsigned char *ip = in;
   unsigned i = 0;
   for (; i + 4 <= stride; i += 4, ip += 48) { // Process 4 elements (48 bytes) per iteration
-    __m128i v0 = _mm_loadu_si128((const __m128i*)(ip + 0));
-    __m128i v1 = _mm_loadu_si128((const __m128i*)(ip + 16));
-    __m128i v2 = _mm_loadu_si128((const __m128i*)(ip + 32));
+    __m128i v0 = _mm_loadu_si128((const __m128i*)(ip +  0)),
+            v1 = _mm_loadu_si128((const __m128i*)(ip + 16)),
+            v2 = _mm_loadu_si128((const __m128i*)(ip + 32));
     __m128i t0 = _mm_blend_epi16(v0, v2, 0x0C);
             t0 = _mm_blend_epi16(t0, v1, 0x30);
     __m128i t1 = _mm_blend_epi16(v1, v0, 0x0C);
             t1 = _mm_blend_epi16(t1, v2, 0x30);
     __m128i t2 = _mm_blend_epi16(v2, v1, 0x0C);
             t2 = _mm_blend_epi16(t2, v0, 0x30);
-           
-    __m128i out0 = _mm_shuffle_epi8(t0, _mm_set_epi8(7, 11, 15, 3, 6, 10, 14, 2, 5, 9, 13, 1, 4, 8, 12, 0)); // Transpose each 4x4 block
-    __m128i out1 = _mm_shuffle_epi8(t1, _mm_set_epi8(11, 15, 3, 7, 10, 14, 2, 6, 9, 13, 1, 5, 8, 12, 0, 4));
-    __m128i out2 = _mm_shuffle_epi8(t2, _mm_set_epi8(15, 3, 7, 11, 14, 2, 6, 10, 13, 1, 5, 9, 12, 0, 4, 8));
+    __m128i out0 = _mm_shuffle_epi8(t0, _mm_set_epi8(7, 11, 15, 3, 6, 10, 14, 2, 5, 9, 13, 1, 4, 8, 12, 0)),
+            out1 = _mm_shuffle_epi8(t1, _mm_set_epi8(11, 15, 3, 7, 10, 14, 2, 6, 9, 13, 1, 5, 8, 12, 0, 4)),
+            out2 = _mm_shuffle_epi8(t2, _mm_set_epi8(15, 3, 7, 11, 14, 2, 6, 10, 13, 1, 5, 9, 12, 0, 4, 8));
     *(uint32_t*)(out + 0 * stride + i) = _mm_cvtsi128_si32(out0); // Write outputs as 32-bit blocks
     *(uint32_t*)(out + 1 * stride + i) = _mm_extract_epi32(out0, 1);
     *(uint32_t*)(out + 2 * stride + i) = _mm_extract_epi32(out0, 2);
@@ -167,6 +510,7 @@ void tpenc128v12(unsigned char *in, unsigned n, unsigned char *out) {
     for (unsigned j = 0; j < 12; j++) op[j * stride] = *ip++;
   for (unsigned char *op = out + 12 * stride; ip < in + n;) *op++ = *ip++;
 }
+
 void tpdec128v12(unsigned char *in, unsigned n, unsigned char *out) {
   unsigned stride = n / 12;
   unsigned char *op = out;
@@ -176,22 +520,18 @@ void tpdec128v12(unsigned char *in, unsigned n, unsigned char *out) {
             *(const uint32_t*)(in + 3 * stride + i),
             *(const uint32_t*)(in + 2 * stride + i),
             *(const uint32_t*)(in + 1 * stride + i),
-            *(const uint32_t*)(in + 0 * stride + i)
-        );
-        __m128i t1 = _mm_set_epi32(
+            *(const uint32_t*)(in + 0 * stride + i) );
+    __m128i t1 = _mm_set_epi32(
             *(const uint32_t*)(in + 7 * stride + i),
             *(const uint32_t*)(in + 6 * stride + i),
             *(const uint32_t*)(in + 5 * stride + i),
-            *(const uint32_t*)(in + 4 * stride + i)
-        );
-        __m128i t2 = _mm_set_epi32(
+            *(const uint32_t*)(in + 4 * stride + i) );
+    __m128i t2 = _mm_set_epi32(
             *(const uint32_t*)(in + 11 * stride + i),
             *(const uint32_t*)(in + 10 * stride + i),
             *(const uint32_t*)(in + 9 * stride + i),
-            *(const uint32_t*)(in + 8 * stride + i)
-        );
-    __m128i s0, s1, s2; // Shuffle blocks to correctly place them into interleaved structure
-       
+            *(const uint32_t*)(in + 8 * stride + i) );
+    __m128i s0, s1, s2; 
     s0 = _mm_shuffle_epi8(t0, _mm_set_epi8(13, 9, 5, 1, -1, -1, -1, -1, -1, -1, -1, -1, 12, 8, 4, 0));
     s1 = _mm_shuffle_epi8(t1, _mm_set_epi8(-1, -1, -1, -1, -1, -1, -1, -1, 12, 8, 4, 0, -1, -1, -1, -1));
     s2 = _mm_shuffle_epi8(t2, _mm_set_epi8(-1, -1, -1, -1, 12, 8, 4, 0, -1, -1, -1, -1, -1, -1, -1, -1));
@@ -204,7 +544,7 @@ void tpdec128v12(unsigned char *in, unsigned n, unsigned char *out) {
     s1 = _mm_shuffle_epi8(t1, _mm_set_epi8(-1, -1, -1, -1, 15, 11, 7, 3, -1, -1, -1, -1, -1, -1, -1, -1));
     s2 = _mm_shuffle_epi8(t2, _mm_set_epi8(15, 11, 7, 3, -1, -1, -1, -1, -1, -1, -1, -1, 14, 10, 6, 2));
     __m128i v2 = _mm_or_si128(_mm_or_si128(s0, s1), s2);
-    _mm_storeu_si128((__m128i*)(op + 0), v0); // Store interleaved output
+    _mm_storeu_si128((__m128i*)(op +  0), v0); 
     _mm_storeu_si128((__m128i*)(op + 16), v1);
     _mm_storeu_si128((__m128i*)(op + 32), v2);
   }
@@ -212,6 +552,159 @@ void tpdec128v12(unsigned char *in, unsigned n, unsigned char *out) {
     for (unsigned j = 0; j < 12; j++) *op++ = ip[j * stride];
   for (unsigned char *ip = in + 12 * stride; op < out + n;) *op++ = *ip++;
 }
+
+#define ESIZE 16
+#define TP128_16x16(r0, r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, r11, r12, r13, r14, r15) do { \
+    __m128i t0  = _mm_unpacklo_epi8(r0, r1); \
+    __m128i t1  = _mm_unpackhi_epi8(r0, r1); \
+    __m128i t2  = _mm_unpacklo_epi8(r2, r3); \
+    __m128i t3  = _mm_unpackhi_epi8(r2, r3); \
+    __m128i t4  = _mm_unpacklo_epi8(r4, r5); \
+    __m128i t5  = _mm_unpackhi_epi8(r4, r5); \
+    __m128i t6  = _mm_unpacklo_epi8(r6, r7); \
+    __m128i t7  = _mm_unpackhi_epi8(r6, r7); \
+    __m128i t8  = _mm_unpacklo_epi8(r8, r9); \
+    __m128i t9  = _mm_unpackhi_epi8(r8, r9); \
+    __m128i t10 = _mm_unpacklo_epi8(r10, r11); \
+    __m128i t11 = _mm_unpackhi_epi8(r10, r11); \
+    __m128i t12 = _mm_unpacklo_epi8(r12, r13); \
+    __m128i t13 = _mm_unpackhi_epi8(r12, r13); \
+    __m128i t14 = _mm_unpacklo_epi8(r14, r15); \
+    __m128i t15 = _mm_unpackhi_epi8(r14, r15); \
+    r0  = _mm_unpacklo_epi16(t0, t2); \
+    r1  = _mm_unpackhi_epi16(t0, t2); \
+    r2  = _mm_unpacklo_epi16(t1, t3); \
+    r3  = _mm_unpackhi_epi16(t1, t3); \
+    r4  = _mm_unpacklo_epi16(t4, t6); \
+    r5  = _mm_unpackhi_epi16(t4, t6); \
+    r6  = _mm_unpacklo_epi16(t5, t7); \
+    r7  = _mm_unpackhi_epi16(t5, t7); \
+    r8  = _mm_unpacklo_epi16(t8, t10); \
+    r9  = _mm_unpackhi_epi16(t8, t10); \
+    r10 = _mm_unpacklo_epi16(t9, t11); \
+    r11 = _mm_unpackhi_epi16(t9, t11); \
+    r12 = _mm_unpacklo_epi16(t12, t14); \
+    r13 = _mm_unpackhi_epi16(t12, t14); \
+    r14 = _mm_unpacklo_epi16(t13, t15); \
+    r15 = _mm_unpackhi_epi16(t13, t15); \
+    t0  = _mm_unpacklo_epi32(r0, r4); \
+    t1  = _mm_unpackhi_epi32(r0, r4); \
+    t2  = _mm_unpacklo_epi32(r1, r5); \
+    t3  = _mm_unpackhi_epi32(r1, r5); \
+    t4  = _mm_unpacklo_epi32(r2, r6); \
+    t5  = _mm_unpackhi_epi32(r2, r6); \
+    t6  = _mm_unpacklo_epi32(r3, r7); \
+    t7  = _mm_unpackhi_epi32(r3, r7); \
+    t8  = _mm_unpacklo_epi32(r8, r12); \
+    t9  = _mm_unpackhi_epi32(r8, r12); \
+    t10 = _mm_unpacklo_epi32(r9, r13); \
+    t11 = _mm_unpackhi_epi32(r9, r13); \
+    t12 = _mm_unpacklo_epi32(r10, r14); \
+    t13 = _mm_unpackhi_epi32(r10, r14); \
+    t14 = _mm_unpacklo_epi32(r11, r15); \
+    t15 = _mm_unpackhi_epi32(r11, r15); \
+    r0  = _mm_unpacklo_epi64(t0, t8); \
+    r1  = _mm_unpackhi_epi64(t0, t8); \
+    r2  = _mm_unpacklo_epi64(t1, t9); \
+    r3  = _mm_unpackhi_epi64(t1, t9); \
+    r4  = _mm_unpacklo_epi64(t2, t10); \
+    r5  = _mm_unpackhi_epi64(t2, t10); \
+    r6  = _mm_unpacklo_epi64(t3, t11); \
+    r7  = _mm_unpackhi_epi64(t3, t11); \
+    r8  = _mm_unpacklo_epi64(t4, t12); \
+    r9  = _mm_unpackhi_epi64(t4, t12); \
+    r10 = _mm_unpacklo_epi64(t5, t13); \
+    r11 = _mm_unpackhi_epi64(t5, t13); \
+    r12 = _mm_unpacklo_epi64(t6, t14); \
+    r13 = _mm_unpackhi_epi64(t6, t14); \
+    r14 = _mm_unpacklo_epi64(t7, t15); \
+    r15 = _mm_unpackhi_epi64(t7, t15); \
+} while(0)
+
+void tpenc128v16(unsigned char *in, unsigned n, unsigned char *out) {
+  unsigned stride = n / 16, i;
+  for(i = 0; i + 15 < stride; i += 16) {
+    __m128i r0  = _mm_loadu_si128((__m128i*)(in + (i +  0) * 16)),
+            r1  = _mm_loadu_si128((__m128i*)(in + (i +  1) * 16)),
+            r2  = _mm_loadu_si128((__m128i*)(in + (i +  2) * 16)),
+            r3  = _mm_loadu_si128((__m128i*)(in + (i +  3) * 16)),
+            r4  = _mm_loadu_si128((__m128i*)(in + (i +  4) * 16)),
+            r5  = _mm_loadu_si128((__m128i*)(in + (i +  5) * 16)),
+            r6  = _mm_loadu_si128((__m128i*)(in + (i +  6) * 16)),
+            r7  = _mm_loadu_si128((__m128i*)(in + (i +  7) * 16)),
+            r8  = _mm_loadu_si128((__m128i*)(in + (i +  8) * 16)),
+            r9  = _mm_loadu_si128((__m128i*)(in + (i +  9) * 16)),
+            r10 = _mm_loadu_si128((__m128i*)(in + (i + 10) * 16)),
+            r11 = _mm_loadu_si128((__m128i*)(in + (i + 11) * 16)),
+            r12 = _mm_loadu_si128((__m128i*)(in + (i + 12) * 16)),
+            r13 = _mm_loadu_si128((__m128i*)(in + (i + 13) * 16)),
+            r14 = _mm_loadu_si128((__m128i*)(in + (i + 14) * 16)),
+            r15 = _mm_loadu_si128((__m128i*)(in + (i + 15) * 16));
+    TP128_16x16(r0, r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, r11, r12, r13, r14, r15);
+    _mm_storeu_si128((__m128i*)(out +  0 * stride + i), r0),
+    _mm_storeu_si128((__m128i*)(out +  1 * stride + i), r1),
+    _mm_storeu_si128((__m128i*)(out +  2 * stride + i), r2),
+    _mm_storeu_si128((__m128i*)(out +  3 * stride + i), r3),
+    _mm_storeu_si128((__m128i*)(out +  4 * stride + i), r4),
+    _mm_storeu_si128((__m128i*)(out +  5 * stride + i), r5),
+    _mm_storeu_si128((__m128i*)(out +  6 * stride + i), r6),
+    _mm_storeu_si128((__m128i*)(out +  7 * stride + i), r7),
+    _mm_storeu_si128((__m128i*)(out +  8 * stride + i), r8),
+    _mm_storeu_si128((__m128i*)(out +  9 * stride + i), r9),
+    _mm_storeu_si128((__m128i*)(out + 10 * stride + i), r10),
+    _mm_storeu_si128((__m128i*)(out + 11 * stride + i), r11),
+    _mm_storeu_si128((__m128i*)(out + 12 * stride + i), r12),
+    _mm_storeu_si128((__m128i*)(out + 13 * stride + i), r13),
+    _mm_storeu_si128((__m128i*)(out + 14 * stride + i), r14),
+    _mm_storeu_si128((__m128i*)(out + 15 * stride + i), r15);
+  }
+  for(; i < stride; i++) 
+    for(unsigned j = 0; j < 16; j++) 
+      out[j * stride + i] = in[i * 16 + j];
+}
+
+void tpdec128v16(unsigned char *in, unsigned n, unsigned char *out) {
+  unsigned stride = n / 16, i;
+  for(i = 0; i + 15 < stride; i += 16) {
+    __m128i r0  = _mm_loadu_si128((__m128i*)(in +  0 * stride + i)),
+            r1  = _mm_loadu_si128((__m128i*)(in +  1 * stride + i)),
+            r2  = _mm_loadu_si128((__m128i*)(in +  2 * stride + i)),
+            r3  = _mm_loadu_si128((__m128i*)(in +  3 * stride + i)),
+            r4  = _mm_loadu_si128((__m128i*)(in +  4 * stride + i)),
+            r5  = _mm_loadu_si128((__m128i*)(in +  5 * stride + i)),
+            r6  = _mm_loadu_si128((__m128i*)(in +  6 * stride + i)),
+            r7  = _mm_loadu_si128((__m128i*)(in +  7 * stride + i)),
+            r8  = _mm_loadu_si128((__m128i*)(in +  8 * stride + i)),
+            r9  = _mm_loadu_si128((__m128i*)(in +  9 * stride + i)),
+            r10 = _mm_loadu_si128((__m128i*)(in + 10 * stride + i)),
+            r11 = _mm_loadu_si128((__m128i*)(in + 11 * stride + i)),
+            r12 = _mm_loadu_si128((__m128i*)(in + 12 * stride + i)),
+            r13 = _mm_loadu_si128((__m128i*)(in + 13 * stride + i)),
+            r14 = _mm_loadu_si128((__m128i*)(in + 14 * stride + i)),
+            r15 = _mm_loadu_si128((__m128i*)(in + 15 * stride + i));
+    TP128_16x16(r0, r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, r11, r12, r13, r14, r15);
+    _mm_storeu_si128((__m128i*)(out + (i +  0) * 16), r0);
+    _mm_storeu_si128((__m128i*)(out + (i +  1) * 16), r1);
+    _mm_storeu_si128((__m128i*)(out + (i +  2) * 16), r2);
+    _mm_storeu_si128((__m128i*)(out + (i +  3) * 16), r3);
+    _mm_storeu_si128((__m128i*)(out + (i +  4) * 16), r4);
+    _mm_storeu_si128((__m128i*)(out + (i +  5) * 16), r5);
+    _mm_storeu_si128((__m128i*)(out + (i +  6) * 16), r6);
+    _mm_storeu_si128((__m128i*)(out + (i +  7) * 16), r7);
+    _mm_storeu_si128((__m128i*)(out + (i +  8) * 16), r8);
+    _mm_storeu_si128((__m128i*)(out + (i +  9) * 16), r9);
+    _mm_storeu_si128((__m128i*)(out + (i + 10) * 16), r10);
+    _mm_storeu_si128((__m128i*)(out + (i + 11) * 16), r11);
+    _mm_storeu_si128((__m128i*)(out + (i + 12) * 16), r12);
+    _mm_storeu_si128((__m128i*)(out + (i + 13) * 16), r13);
+    _mm_storeu_si128((__m128i*)(out + (i + 14) * 16), r14);
+    _mm_storeu_si128((__m128i*)(out + (i + 15) * 16), r15);
+  }
+  for(; i < stride; i++) 
+    for(unsigned j = 0; j < 16; j++) 
+      out[i * 16 + j] = in[j * stride + i];
+}
+
 #endif
 
 //-- 24 bits / 3 bytes (scalar only) ----------------------
@@ -219,26 +712,26 @@ void tpdec128v12(unsigned char *in, unsigned n, unsigned char *out) {
 #define STRIDE ESIZE
 
 #define TP               tp
-#include "transpose.c"
+#include "tp.c"
 
 #define TP               tpz
-#include "transpose.c"
+#include "tp.c"
 
 #define TP               tpx
-#include "transpose.c"
+#include "tp.c"
 
 //-- 128 bits / 16 bytes (scalar) --------------------
 #define ESIZE  16
 #define STRIDE ESIZE
 
 #define TP               tp
-#include "transpose.c"
+#include "tp.c"
 
 #define TP               tpz
-#include "transpose.c"
+#include "tp.c"
 
 #define TP               tpx
-#include "transpose.c"
+#include "tp.c"
 
 // ### SIMD ################################################################################################
 #define LD128(_ip_)      _mm_loadu_si128((__m128i *)(_ip_))
@@ -259,10 +752,10 @@ void tpdec128v12(unsigned char *in, unsigned n, unsigned char *out) {
 #define VD256(_ov_,_vs_)
 #define STRIDE           ESIZE
 #define TP               tp
-#include "transpose.c"
+#include "tp.c"
 #define STRIDE 4
 #define TP               tp4
-#include "transpose.c"
+#include "tp.c"
 
 #define ISDELTA
 #define VINI128          __m128i vs = _mm_setzero_si128()
@@ -274,10 +767,10 @@ void tpdec128v12(unsigned char *in, unsigned n, unsigned char *out) {
 #define VD256(_v_,_vs_)  _v_ = mm256_zzagd_epi16(_v_); _vs_ = _v_ = mm256_scan_epi16(_v_,_vs_)
 #define STRIDE           ESIZE
 #define TP               tpz
-#include "transpose.c"
+#include "tp.c"
 #define STRIDE 4
 #define TP               tp4z
-#include "transpose.c"
+#include "tp.c"
 
 #define VE128(_v_,_vs_)  { __m128i _v = _v_; _v_ =    mm_xore_epi16(_v_,_vs_); _vs_ = _v; }
 #define VE256(_v_,_vs_)  { __m256i _v = _v_; _v_ = mm256_xore_epi16(_v_,_vs_); _vs_ = _v; }
@@ -285,10 +778,10 @@ void tpdec128v12(unsigned char *in, unsigned n, unsigned char *out) {
 #define VD256(_v_,_vs_)  _vs_ = _v_ = mm256_xord_epi16(_v_,_vs_)
 #define STRIDE           ESIZE
 #define TP               tpx
-#include "transpose.c"
+#include "tp.c"
 #define STRIDE 4
 #define TP               tp4x
-#include "transpose.c"
+#include "tp.c"
 
 // *** 32 bits ***************************************************************
 #define ESIZE 4
@@ -306,40 +799,40 @@ void tpdec128v12(unsigned char *in, unsigned n, unsigned char *out) {
 #define VDQ256(_v0_,_v1_,_v2_,_v3_,_vs_)
 #define STRIDE ESIZE
 #define TP               tp
-#include "transpose.c"
+#include "tp.c"
 #define STRIDE 8
 #define TP               tp4
-#include "transpose.c"
+#include "tp.c"
 
 #define ISDELTA
-#define VINI128          __m128i vs = _mm_setzero_si128()
-#define VINI256          __m256i vs = _mm256_setzero_si256()
+#define VINI128                          __m128i vs = _mm_setzero_si128()
+#define VINI256                          __m256i vs = _mm256_setzero_si256()
 
-#define VE128(_v_,_vs_) { __m128i _v = _v_; _v_ =    mm_delta_epi32(_v_,_vs_); _v_ =    mm_zzage_epi32(_v_); _vs_ = _v; }
-#define VE256(_v_,_vs_) { __m256i _v = _v_; _v_ = mm256_delta_epi32(_v_,_vs_); _v_ = mm256_zzage_epi32(_v_); _vs_ = _v; }
+#define VE128(_v_,_vs_)                  { __m128i _v = _v_; _v_ =    mm_delta_epi32(_v_,_vs_); _v_ =    mm_zzage_epi32(_v_); _vs_ = _v; }
+#define VE256(_v_,_vs_)                  { __m256i _v = _v_; _v_ = mm256_delta_epi32(_v_,_vs_); _v_ = mm256_zzage_epi32(_v_); _vs_ = _v; }
 #define VEQ128(_v0_,_v1_,_v2_,_v3_,_vs_)    MM_DELTAZQ_EPI32(_v0_,_v1_,_v2_,_v3_,_vs_)
 #define VEQ256(_v0_,_v1_,_v2_,_v3_,_vs_) MM256_DELTAZQ_EPI32(_v0_,_v1_,_v2_,_v3_,_vs_)
 #define VDQ128(_v0_,_v1_,_v2_,_v3_,_vs_)    MM_SCANZQ_EPI32(_v0_,_v1_,_v2_,_v3_,_vs_)
 #define VDQ256(_v0_,_v1_,_v2_,_v3_,_vs_) MM256_SCANZQ_EPI32(_v0_,_v1_,_v2_,_v3_,_vs_)
 #define STRIDE ESIZE
 #define TP               tpz
-#include "transpose.c"
+#include "tp.c"
 #define STRIDE 8
 #define TP               tp4z
-#include "transpose.c"
+#include "tp.c"
 
-#define VE128(_v_,_vs_) { __m128i _v = _v_; _v_ =    mm_xore_epi32(_v_,_vs_); _vs_ = _v; }
-#define VE256(_v_,_vs_) { __m256i _v = _v_; _v_ = mm256_xore_epi32(_v_,_vs_); _vs_ = _v; }
+#define VE128(_v_,_vs_)                  { __m128i _v = _v_; _v_ =    mm_xore_epi32(_v_,_vs_); _vs_ = _v; }
+#define VE256(_v_,_vs_)                  { __m256i _v = _v_; _v_ = mm256_xore_epi32(_v_,_vs_); _vs_ = _v; }
 #define VEQ128(_v0_,_v1_,_v2_,_v3_,_vs_)    MM_XOREQ_EPI32(_v0_,_v1_,_v2_,_v3_,_vs_)
 #define VEQ256(_v0_,_v1_,_v2_,_v3_,_vs_) MM256_XOREQ_EPI32(_v0_,_v1_,_v2_,_v3_,_vs_)
 #define VDQ128(_v0_,_v1_,_v2_,_v3_,_vs_)    MM_XORDQ_EPI32(_v0_,_v1_,_v2_,_v3_,_vs_)
 #define VDQ256(_v0_,_v1_,_v2_,_v3_,_vs_) MM256_XORDQ_EPI32(_v0_,_v1_,_v2_,_v3_,_vs_)
 #define STRIDE ESIZE
 #define TP               tpx
-#include "transpose.c"
+#include "tp.c"
 #define STRIDE 8
 #define TP               tp4x
-#include "transpose.c"
+#include "tp.c"
 
 // *** 64 bits *********************************************************************************************
 #define ESIZE 8
@@ -357,40 +850,40 @@ void tpdec128v12(unsigned char *in, unsigned n, unsigned char *out) {
 #define VDQ256(_v0_,_v1_,_v2_,_v3_,_vs_)
 #define STRIDE ESIZE
 #define TP               tp
-#include "transpose.c"
+#include "tp.c"
 #define STRIDE 16
 #define TP               tp4
-#include "transpose.c"
+#include "tp.c"
 
 #define ISDELTA
-#define VINI128          __m128i vs =    _mm_setzero_si128()
-#define VINI256          __m256i vs = _mm256_setzero_si256()
+#define VINI128                          __m128i vs =    _mm_setzero_si128()
+#define VINI256                          __m256i vs = _mm256_setzero_si256()
 
-#define VE128(_v_,_vs_)  { __m128i _v = mm_delta_epi64(_v_,_vs_); _vs_ = _v_; _v_ = mm_zzage_epi64(_v); }
-#define VE256(_v_,_vs_)  { __m256i _v = mm256_delta_epi64(_v_,_vs_); _vs_ = _v_; _v_ = mm256_zzage_epi64(_v); }
-#define VEQ128(_v0_,_v1_,_v2_,_v3_,_vs_)    MM_DELTAQ_EPI64(_v0_,_v1_,_v2_,_v3_,_vs_)
-#define VEQ256(_v0_,_v1_,_v2_,_v3_,_vs_) MM256_DELTAQ_EPI64(_v0_,_v1_,_v2_,_v3_,_vs_)
-#define VDQ128(_v0_,_v1_,_v2_,_v3_,_vs_)    MM_SCANZQ_EPI64(_v0_,_v1_,_v2_,_v3_,_vs_)
-#define VDQ256(_v0_,_v1_,_v2_,_v3_,_vs_) MM256_SCANZQ_EPI64(_v0_,_v1_,_v2_,_v3_,_vs_)
+#define VE128(_v_,_vs_)                  { __m128i _v =    mm_delta_epi64(_v_,_vs_); _v_ =    mm_zzage_epi64(_v); _vs_ = _v_; }
+#define VE256(_v_,_vs_)                  { __m256i _v = mm256_delta_epi64(_v_,_vs_); _v_ = mm256_zzage_epi64(_v); _vs_ = _v_; }
+#define VEQ128(_v0_,_v1_,_v2_,_v3_,_vs_)    MM_DELTAZQ_EPI64(_v0_,_v1_,_v2_,_v3_,_vs_)
+#define VEQ256(_v0_,_v1_,_v2_,_v3_,_vs_) MM256_DELTAZQ_EPI64(_v0_,_v1_,_v2_,_v3_,_vs_)
+#define VDQ128(_v0_,_v1_,_v2_,_v3_,_vs_)     MM_SCANZQ_EPI64(_v0_,_v1_,_v2_,_v3_,_vs_)
+#define VDQ256(_v0_,_v1_,_v2_,_v3_,_vs_)  MM256_SCANZQ_EPI64(_v0_,_v1_,_v2_,_v3_,_vs_)
 #define STRIDE ESIZE
 #define TP               tpz
-#include "transpose.c"
+#include "tp.c"
 #define STRIDE 16
 #define TP               tp4z
-#include "transpose.c"
+#include "tp.c"
 
-#define VE128(_v_,_vs_) { __m128i _v = _v_; _v_ =    mm_xore_epi64(_v_,_vs_); _vs_ = _v; }
-#define VE256(_v_,_vs_) { __m256i _v = _v_; _v_ = mm256_xore_epi64(_v_,_vs_); _vs_ = _v; }
+#define VE128(_v_,_vs_)                  { __m128i _v = _v_; _v_ =    mm_xore_epi64(_v_,_vs_); _vs_ = _v; }
+#define VE256(_v_,_vs_)                  { __m256i _v = _v_; _v_ = mm256_xore_epi64(_v_,_vs_); _vs_ = _v; }
 #define VEQ128(_v0_,_v1_,_v2_,_v3_,_vs_)    MM_XOREQ_EPI64(_v0_,_v1_,_v2_,_v3_,_vs_)
 #define VEQ256(_v0_,_v1_,_v2_,_v3_,_vs_) MM256_XOREQ_EPI64(_v0_,_v1_,_v2_,_v3_,_vs_)
 #define VDQ128(_v0_,_v1_,_v2_,_v3_,_vs_)    MM_XORDQ_EPI64(_v0_,_v1_,_v2_,_v3_,_vs_)
 #define VDQ256(_v0_,_v1_,_v2_,_v3_,_vs_) MM256_XORDQ_EPI64(_v0_,_v1_,_v2_,_v3_,_vs_)
 #define STRIDE ESIZE
 #define TP               tpx
-#include "transpose.c"
+#include "tp.c"
 #define STRIDE 16
 #define TP               tp4x
-#include "transpose.c"
+#include "tp.c"
 
 #else //*************************************************************  Templates ********************************************************************************************************
 
@@ -467,7 +960,7 @@ void T3(TP, enc256v, ESIZE)(unsigned char *__restrict in, unsigned n, unsigned c
                                  7,  6,  3,  2,  5,  4,  1,  0);
       #endif
     #endif
-    #if STRIDE > ESIZE // ------------------ byte transpose ----------------------------------
+    #if STRIDE > ESIZE // ------------------ byte ----------------------------------
   const __m256i cl = _mm256_set1_epi8( 0x0f),
           ch = _mm256_set1_epi8( 0xf0),
           cb = _mm256_set1_epi16(0xff);
@@ -570,7 +1063,7 @@ void T3(TP, enc256v, ESIZE)(unsigned char *__restrict in, unsigned n, unsigned c
           #endif
         #endif
 
-      #else //---------------------- Nibble Transpose ------------------------
+      #else //---------------------- Nibble ------------------------
     #define mm256_packus_epi16(a, b) _mm256_permute4x64_epi64(_mm256_packus_epi16(a, b), _MM_SHUFFLE(3, 1, 2, 0))
     #define ST128(_p_,_v_,_i_) _mm_storeu_si128((__m128i *)SIE(_p_,_i_), _mm256_castsi256_si128(_v_))
     #define ST1280(_p_,_v_)    _mm_storeu_si128((__m128i *)(_p_), _mm256_castsi256_si128(_v_))
@@ -1098,7 +1591,7 @@ void T3(TP, dec128v, ESIZE)(unsigned char *__restrict in, unsigned n, unsigned c
         #endif
     #endif
 
-      #if STRIDE > ESIZE //------------ Nibble transpose -------------------
+      #if STRIDE > ESIZE //------------ Nibble -------------------
     ov0 = _mm_loadl_epi64((__m128i *)    p   );
     ov1 = _mm_loadl_epi64((__m128i *)SID(p,1));
     ov2 = _mm_loadl_epi64((__m128i *)SID(p,2));
@@ -1153,7 +1646,7 @@ void T3(TP, dec128v, ESIZE)(unsigned char *__restrict in, unsigned n, unsigned c
     ov3 = _mm_unpacklo_epi8(ov3, mm_srli_epi16(ov3,4)); ov3 = _mm_and_si128(ov3, cl);
     iv7 = _mm_or_si128(mm_slli_epi16(ov3,4), ov2);
         #endif
-      #else // --------------------------- Byte transpose -------------------
+      #else // --------------------------- Byte -------------------
     iv0 = _mm_loadu_si128((__m128i *)    p   );
     iv1 = _mm_loadu_si128((__m128i *)SID(p,1));
         #if ESIZE > 2
