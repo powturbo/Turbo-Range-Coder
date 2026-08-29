@@ -34,6 +34,7 @@
 #include "include_/rcutil.h"
 #include "rcutil_.h"
 
+const char *turborc_version(void) { return BUILD_VERSION; }
 //-------------------------------- malloc ----------------------------------------
   #ifdef _WIN32
 #include <windows.h>
