@@ -32,6 +32,7 @@
   #endif
 
 #define TURBORC_VERSION_STR "2026.09.01"
+
 //----------- BWT -------------------
 #define BWT_RDONLY  (1<<30) // input is read only, no overwrite
 #define BWT_BWT16   (1<<29) // 16 bits bwt
