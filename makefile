@@ -34,6 +34,7 @@ DIRBIN ?= $(PREFIX)/bin
 DIRINC ?= $(PREFIX)/include
 DIRLIB ?= $(PREFIX)/lib
 SRC ?= lib/
+BUILD_DATE := $(shell date +%Y%m%d)
 
 #------- OS/ARCH -------------------
 ifneq (,$(filter Windows%,$(OS)))
@@ -115,7 +116,7 @@ ifeq ($(OS),Windows)
   LDFLAGS=-Wl,--stack,33554432 -lpowrprof
 endif
 
-CFLAGS+=$(_SSE) -w -Wall $(DDEBUG) 
+CFLAGS+=$(_SSE) -w -Wall $(DDEBUG) -DBUILD_VERSION="\"v$(BUILD_DATE)\""
 CXXFLAGS+=$(DDEBUG) -w -Wall -fpermissive  -fno-rtti
 
 ifeq ($(OS),$(filter $(OS),Linux GNU/kFreeBSD GNU OpenBSD FreeBSD DragonFly NetBSD MSYS_NT Haiku))
