@@ -1,5 +1,6 @@
-#include "include_/conf.h"
-#include "include_/cpu.h"
+#include <string.h>
+#include "conf.h"
+#include "cpu.h"
 static unsigned _cpuisa;
 //--------------------- CPU detection -------------------------------------------
     #if defined(__i386__) || defined(__x86_64__)
@@ -82,9 +83,9 @@ unsigned cpuisa(void) {
     #elif defined(__riscv_vector)
   _cpuisa = IS_RISCV; // risc-v
     #elif defined(__loongarch_asx)
-  _cpuisa = IS_ASX;  
+  _cpuisa = IS_ASX;
     #elif defined(__loongarch_lsx)
-  _cpuisa = IS_LSX;  
+  _cpuisa = IS_LSX;
     #endif
   return _cpuisa;
 }
@@ -137,3 +138,90 @@ char *cpustr(unsigned cpuisa) {
     #endif
    return "none";
 }
+
+#if defined(__x86_64__) || defined(_M_X64) || defined(__i386__) || defined(_M_IX86)
+  #if defined(_MSC_VER)
+#include <intrin.h>
+  #else
+#include <cpuid.h>
+  #endif
+
+char *cpubrand(char* brand, size_t max_len) {
+  unsigned int regs[4];
+  char temp[49];
+  for (int i = 0; i < 3; i++) { // CPUID leaves 0x80000002 to 0x80000004 contain the brand string
+    unsigned int leaf = 0x80000002 + i;
+      #if defined(_MSC_VER)
+    __cpuid((int*)regs, leaf);
+      #else
+    __get_cpuid(leaf, &regs[0], &regs[1], &regs[2], &regs[3]);
+      #endif
+    memcpy(temp + i * 16, regs, 16);
+  }
+  temp[48] = '\0';  
+  strncpy(brand, temp, max_len - 1);
+  brand[max_len - 1] = '\0';
+  max_len = strlen(brand);
+  while(max_len > 0 && brand[max_len - 1] == ' ') brand[--max_len] = 0;
+  return brand;
+}
+
+#elif defined(__aarch64__) || defined(_M_ARM64) || defined(__riscv) || defined(__arm__)
+  #if defined(__APPLE__)
+#include <sys/types.h>
+#include <sys/sysctl.h>
+
+char *cpubrand(char* brand, size_t max_len) {
+  size_t size = max_len;
+  if(sysctlbyname("machdep.cpu.brand_string", brand, &size, NULL, 0) != 0) {
+    strncpy(brand, "Apple Silicon (Unknown)", max_len - 1);
+    brand[max_len - 1] = '\0';
+  }
+  return brand;
+}
+  #elif defined(__linux__)
+char *cpubrand(char* brand, size_t max_len) {
+  FILE* fp = fopen("/proc/cpuinfo", "r");
+  if(!fp) {
+    strncpy(brand, "Unknown Linux CPU", max_len - 1);
+    brand[max_len - 1] = '\0';
+    return brand;
+  }
+  char line[256];
+  brand[0] = '\0';
+  while(fgets(line, sizeof(line), fp)) {
+    if(strncmp(line, "model name", 10) == 0 || strncmp(line, "Hardware", 8) == 0 || strncmp(line, "uarch", 5) == 0) {
+      char *colon = strchr(line, ':');
+      if(colon) {
+        colon++;
+        while (*colon == ' ' || *colon == '\t') colon++;
+        size_t len = strlen(colon);
+        if(len > 0 && colon[len-1] == '\n') colon[len-1] = '\0';
+        strncpy(brand, colon, max_len - 1);
+        brand[max_len - 1] = '\0';
+        break;
+      }
+    }
+  }
+  fclose(fp);
+  if(brand[0] == '\0') {
+    strncpy(brand, "Unknown Linux CPU", max_len - 1);
+    brand[max_len - 1] = '\0';
+  }
+  return brand;
+}
+    #else
+char *cpubrand(char* brand, size_t max_len) {
+  strncpy(brand, "Unknown OS on ARM/RISC-V", max_len - 1);
+  brand[max_len - 1] = '\0';
+  return brand;
+}
+    #endif
+  #else
+char *cpubrand(char* brand, size_t max_len) {
+  strncpy(brand, "Unkwoun Architecture", max_len - 1);
+  brand[max_len - 1] = '\0';
+  return brand;
+}
+  #endif
+
