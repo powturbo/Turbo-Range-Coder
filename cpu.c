@@ -1,6 +1,6 @@
 #include <string.h>
 #include "conf.h"
-#include "cpu.h"
+#include "include_/cpu.h"
 static unsigned _cpuisa;
 //--------------------- CPU detection -------------------------------------------
     #if defined(__i386__) || defined(__x86_64__)
