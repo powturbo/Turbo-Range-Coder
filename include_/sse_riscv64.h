@@ -325,9 +325,7 @@ static inline uint64_t  mm_movemask_epu64(__m128i v) { return __riscv_vmv_x_s_u6
 static inline uint64_t  mm_movemask4_epu8(__m128i v) { return 0; }*/
 
 // --- Swizzle : blendv / shuffle / unpacklo/unpackhi -----------------------------------------------------------------------------------
-static inline __m128i _mm_blend_epi16(__m128i a, __m128i b, const int imm8) {
-  return i16v(__riscv_vmerge_vvm_i16m1(vi16(a), vi16(b), __riscv_vreinterpret_v_i8m1_b16(__riscv_vmv_s_x_i8m1(imm8, 8)), 8));
-}
+static inline __m128i _mm_blend_epi16(__m128i a, __m128i b, const int imm8) { return i16v(__riscv_vmerge_vvm_i16m1(vi16(a), vi16(b), __riscv_vreinterpret_v_i8m1_b16(__riscv_vmv_s_x_i8m1(imm8, 8)), 8)); }
 static inline __m128i _mm_blendv_epi8(__m128i _u_, __m128i _v_, __m128i _vm_) { return i8v(__riscv_vmerge_vvm_i8m1(vi8(_u_), vi8(_v_), __riscv_vmslt_vx_i8m1_b8(vi8(_vm_), 0, 16), 16)); } 
 
 #define _MM_SHUFFLE(_u3_,_u2_,_u1_,_u0_)        ((_u3_) << 6 | (_u2_) << 4 | (_u1_) << 2 | (_u0_))
