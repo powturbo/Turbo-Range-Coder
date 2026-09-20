@@ -103,9 +103,9 @@
 #### - [Enceladus_Cassini_mosaic_global_100m_schenk2024](https://astrogeology.usgs.gov/search/map/enceladus-cassini-global-mosaic-100m-schenk) - 518.340.175 bytes
 |C Size|ratio%|C MB/s|D MB/s|Rank|Name 2026/09|
 |--------:|----:|---------:|---------:|-------|------------------|
-|320482718|61.83|$\color{green}{\textbf{8.35}}$|$\color{green}{\textbf{11.50}}$|5🥉|$\color{green}{\textbf{TurboRC-20e9}}$|
+|320482718|61.83|$\color{green}{\textbf{8.35}}$|$\color{green}{\textbf{11.50}}$|5🥉|$\color{green}{\textbf{TurboRC -20e9}}$|
 |321845846|62.09|7.75|8.03|8 |bsc 0e2|Enceladus_Cassini_mosaic_global_100m_schenk2024.tif|
-|324419314|62.59|$\color{green}{\textbf{10.63}}$|$\color{green}{\textbf{17.30}}$|1👑|$\color{green}{\textbf{TurboRC-20e8}}$|
+|324419314|62.59|$\color{green}{\textbf{10.63}}$|$\color{green}{\textbf{17.30}}$|1👑|$\color{green}{\textbf{TurboRC -20e8}}$|
 |324569678|62.62|10.42|15.37|4🥈|bsc 0|Enceladus_Cassini_mosaic_global_100m_schenk2024.tif|
 |324569678|62.62|10.34|15.08|6 |bsc 0e1|Enceladus_Cassini_mosaic_global_100m_schenk2024.tif|
 |329404800|63.55|$\color{green}{\textbf{12.46}}$|$\color{green}{\textbf{18.17}}$|2🏆|$\color{green}{\textbf{bsc 0e0}}$|
