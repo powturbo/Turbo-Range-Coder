@@ -87,7 +87,7 @@ enum { E_FOP=1, E_FCR, E_FRD, E_FWR, E_MEM, E_CORR, E_MAG, E_CODEC, E_FSAME };
 static char *errs[] = {"", "open error", "create error", "read error", "write error", "malloc failed", "file corrupted", "no TurboRc file", "no codec", "input and output files are same" };
 
 // program parameters
-static unsigned xnibble, lenmin = 1, lev=8, thnum=0, xtpbyte=-1;
+static unsigned xnibble, lenmin = 1, lev=9, thnum=0, xtpbyte=-1;
 unsigned prm1=5, prm2=6;
 
 //       0       1        2         3         4         5         6         7,       8        9        10      11      12      13      14       15
