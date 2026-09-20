@@ -95,13 +95,13 @@
 | 23521656| 23.52%|   50.43|   82.32|66:ansb    |  bitwise ans                |
 |100000012|100.00%|16495.29|16050.82|79:memcpy  |                             |
 
-## BWT Benchmark: TurboRC vs the best BWT compressors (2023.04)
+## BWT Benchmark: TurboRC vs the best BWT compressors (2026-09)
 - [bsc](https://github.com/IlyaGrebnov/libbsc)
 - [bzip3](https://github.com/kspalaiologos/bzip3)
 - [bzip2](https://github.com/asimonov-im/bzip2)
 
-#### - [Enceladus_Cassini_mosaic_global_100m_schenk2024](https://astrogeology.usgs.gov/search/map/enceladus-cassini-global-mosaic-100m-schenk) - 518.340.175 bytes
-|C Size|ratio%|C MB/s|D MB/s|Rank|Name 2026/09|
+#### - [Enceladus_Cassini_mosaic_global_100m_schenk2024.tif](https://astrogeology.usgs.gov/search/map/enceladus-cassini-global-mosaic-100m-schenk) - 518.340.175 bytes
+|C Size|ratio%|C MB/s|D MB/s|Rank|Name 2026-09|
 |--------:|----:|---------:|---------:|-------|------------------|
 |320482718|61.83|$\color{green}{\textbf{8.35}}$|$\color{green}{\textbf{11.50}}$|5🥉|$\color{green}{\textbf{TurboRC -20e9}}$|
 |321845846|62.09|7.75|8.03|8 |bsc 0e2|Enceladus_Cassini_mosaic_global_100m_schenk2024.tif|
