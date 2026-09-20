@@ -218,6 +218,9 @@ ifeq ($(ARCH),x86_64)
 tp256.o: tp.c
 	$(CC) -O3 $(CFLAGS) $(_AVX2) -c tp.c -o tp256.o
 
+rcutil.o: rcutil.c
+	$(CC) -O3 $(CFLAGS) $(_AVX2) -c rcutil.c -o rcutil.o
+
 #tp_.c: tp_.c
 #	$(CC) -O3 $(CFLAGS) $(_SSE) -c tp_.c -o tp_.c
 	
