@@ -125,6 +125,30 @@ size_t lzpenc(unsigned char *__restrict in, size_t inlen, unsigned char *__restr
     h4       = HASH(h4, cx);
     cp       = in + htab[h4];                                                        //cnt -= htab[h4] == 0; //if(cnt*100/(1<<hbits) != ocnt) { printf("%d ", cnt); ocnt=cnt*100/(1<<hbits); }                                                                    //unsigned p = cnt * 100 / (1<<hbits); if(lmin > 32 && lmin <= lenmin && ip - in > (1<<20)) { if(p < 70) lmin--; else lmin++; printf("l=%u ", lmin);}
     htab[h4] = ip - in;
+      #ifdef __AVX2__
+    __m256i x = _mm256_xor_si256(_mm256_loadu_si256((const __m256i *)ip), _mm256_loadu_si256((const __m256i *)cp));
+    if(_mm256_testz_si256(x, x)) {
+      unsigned char *ipe = in + inlen - 32;
+      for(cl = 32;;) {
+        if(ip+cl >= ipe) break;
+        __m256i a = _mm256_loadu_si256((const __m256i *)(ip+cl)), b = _mm256_loadu_si256((const __m256i *)(cp+cl));
+        unsigned m = ~(unsigned)_mm256_movemask_epi8(_mm256_cmpeq_epi8(a,b));
+        if(m) { cl += (unsigned)__builtin_ctz(m) & ~7u; break; }
+        cl += 32;
+      }
+      #elif 0 //def __SSE2__
+    if(_mm_movemask_epi8(_mm_and_si128(_mm_cmpeq_epi8(_mm_loadu_si128((__m128i *)ip), _mm_loadu_si128((__m128i *)cp)), _mm_cmpeq_epi8(_mm_loadu_si128((__m128i *)(ip+16)), _mm_loadu_si128((__m128i *)(cp+16))))) == 0xffff) {
+      unsigned char *ipe = in + inlen - 32;
+      unsigned cl = 32;
+      for(;;) {
+        if(ip+cl >= ipe) break;
+        unsigned m0 = (unsigned)_mm_movemask_epi8(_mm_cmpeq_epi8(_mm_loadu_si128((__m128i *)(ip+cl   )), _mm_loadu_si128((__m128i *)(cp+cl   ))))    ^ 0xffffu;
+        unsigned m1 = (unsigned)_mm_movemask_epi8(_mm_cmpeq_epi8(_mm_loadu_si128((__m128i *)(ip+cl+16)), _mm_loadu_si128((__m128i *)(cp+cl+16)))) ^ 0xffffu;
+        unsigned m  = m0 | (m1 << 16);                 // one 32-bit mask for both halves
+        if(m) { cl += (unsigned)__builtin_ctz(m) & ~7u; break; }
+        cl += 32;
+      }
+      #else
     if(ctou64(ip) == ctou64(cp) && ctou64(ip+8) == ctou64(cp+8) && ctou64(ip+16) == ctou64(cp+16) && ctou64(ip+24) == ctou64(cp+24)) { // match
       for(cl = 32;;) {
         if(ip+cl >= in+inlen-32) break;
@@ -132,7 +156,8 @@ size_t lzpenc(unsigned char *__restrict in, size_t inlen, unsigned char *__restr
         if(ctou64(ip+cl) != ctou64(cp+cl)) break; cl += 8;
         if(ctou64(ip+cl) != ctou64(cp+cl)) break; cl += 8;
         if(ctou64(ip+cl) != ctou64(cp+cl)) break; cl += 8;
-      }                                                                //unsigned x = PREDLEN(avg, cl); printf("%u,", x);
+      }    
+      #endif                                                            //unsigned x = PREDLEN(avg, cl); printf("%u,", x);
       if(cl >= lenmin) {
         for(; ip+cl < in+inlen && ip[cl] == cp[cl]; cl++);
         emitmatch(cl, op);
@@ -206,7 +231,7 @@ uint8_t *rcqlfc(uint8_t *__restrict in, size_t n, uint8_t *__restrict out, uint8
       #endif
     for(q = p; q > r2c; ) { // move to front
           #ifdef __AVX2__
-      q -= 32; _mm256_storeu_si256(q+1,_mm256_loadu_si256((__m256i*)q));
+      q -= 32; _mm256_storeu_si256((__m256i*)(q+1),_mm256_loadu_si256((__m256i*)q));
           #elif defined(__SSE2__) || defined(__ARM_NEON) || defined(__riscv_vector) || defined(__powerpc64__) || defined(__loongarch_sx)
       q -= 16; _mm_storeu_si128((__m128i *)(q+1),   _mm_loadu_si128((__m128i*)q));
           #else
