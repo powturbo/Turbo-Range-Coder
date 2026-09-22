@@ -1,7 +1,7 @@
 # powturbo (c) Copyright 2013-2026
 # Download or clone TurboRC:
 # git clone git://github.com/powturbo/Turbo-Range-Coder.git
-
+BUILD := build
 # fsm predictor
 #SF=1
 # include BWT 
@@ -35,6 +35,11 @@ DIRINC ?= $(PREFIX)/include
 DIRLIB ?= $(PREFIX)/lib
 SRC ?= lib/
 BUILD_DATE := $(shell date +%Y%m%d)
+
+# All object files that would normally be built next to their sources are
+# instead placed into $(BUILD). VPATH lets make locate the corresponding
+# source files in their original (sub)directories.
+VPATH := .:libdivsufsort:libdivsufsort/lib:libsais/src:../bwt
 
 #------- OS/ARCH -------------------
 ifneq (,$(filter Windows%,$(OS)))
@@ -157,52 +162,51 @@ CFLAGS+=-D_BWT
 ifeq ($(BWTDIV), 1)
 CFLAGS+=-DPROJECT_VERSION_FULL="20137" -DINLINE=inline -Ilibdivsufsort/include -Ilibdivsufsort/build/include 
 CFLAGS+=-D_BWTDIV
-LIBBWT+=libdivsufsort/unbwt.o 
+LIBBWT+=$(BUILD)/unbwt.o 
 ifeq ($(NOCOMP), 1)
 else
-LIBBWT+=libdivsufsort/lib/sssort.o libdivsufsort/lib/utils.o libdivsufsort/lib/daware.o 
-LIBBWT+=libdivsufsort/lib/divsufsort.o 
+LIBBWT+=$(BUILD)/sssort.o $(BUILD)/utils.o $(BUILD)/daware.o 
+LIBBWT+=$(BUILD)/divsufsort.o 
 endif
 else
 ifeq ($(BWTX), 1)
-LIBBWT =../bwt/sssort.o ../bwt/bwtxinv.o ../bwt/divsufsort.o ../bwt/trsort.o
+LIBBWT =$(BUILD)/sssort.o $(BUILD)/bwtxinv.o $(BUILD)/divsufsort.o $(BUILD)/trsort.o
 CFLAGS+=-D_BWTX
 else
 CFLAGS+=-D_LIBSAIS -Ilibsais/include
-LIBBWT+=$(B)libsais/src/libsais.o
+LIBBWT+=$(BUILD)/libsais.o
 ifeq ($(LIBSAIS16), 1)
 CFLAGS+=-D_LIBSAIS16
-LIBBWT+=$(B)libsais/src/libsais16.o
+LIBBWT+=$(BUILD)/libsais16.o
 endif
 endif
 endif
 endif
 
 ifneq ($(NOCOMP), 1)
-LIB=rc_ss.o rc_s.o rccdf.o rcutil.o bec_b.o rccm_s.o rccm_ss.o rcqlfc_s.o rcqlfc_ss.o rcqlfc_sf.o cpu.o
+LIB=$(addprefix $(BUILD)/,rc_ss.o rc_s.o rccdf.o rcutil.o bec_b.o rccm_s.o rccm_ss.o rcqlfc_s.o rcqlfc_ss.o rcqlfc_sf.o cpu.o)
 
 
 #ifeq ($(DELTA), 1)
 #CFLAGS+=-D_DELTA
-#LIB+=transform.o
+#LIB+=$(BUILD)/transform.o
 #endif
 
 ifeq ($(ANS), 1)
 CFLAGS+=-D_ANS
-L=./
-$(L)anscdf0.o: $(L)anscdf.c $(L)anscdf_.h
-	$(CC) -c -O3 $(CFLAGS) $(_SCALAR) -falign-loops=32 $(L)anscdf.c -o $(L)anscdf0.o  
+$(BUILD)/anscdf0.o: anscdf.c anscdf_.h | $(BUILD)
+	$(CC) -c -O3 $(CFLAGS) $(_SCALAR) -falign-loops=32 anscdf.c -o $(BUILD)/anscdf0.o  
 
-$(L)anscdfs.o: $(L)anscdf.c $(L)anscdf_.h
-	$(CC) -c -O3 $(CFLAGS) $(_SSE) -falign-loops=32 $(L)anscdf.c -o $(L)anscdfs.o  
+$(BUILD)/anscdfs.o: anscdf.c anscdf_.h | $(BUILD)
+	$(CC) -c -O3 $(CFLAGS) $(_SSE) -falign-loops=32 anscdf.c -o $(BUILD)/anscdfs.o  
 
-LIB+=$(L)anscdfs.o 
+LIB+=$(BUILD)/anscdfs.o 
 ifeq ($(ARCH), x86_64)
-$(L)anscdfx.o: $(L)anscdf.c $(L)anscdf_.h
-	$(CC) -c -O3 $(CFLAGS) -march=haswell -falign-loops=32 $(L)anscdf.c -o $(L)anscdfx.o
+$(BUILD)/anscdfx.o: anscdf.c anscdf_.h | $(BUILD)
+	$(CC) -c -O3 $(CFLAGS) -march=haswell -falign-loops=32 anscdf.c -o $(BUILD)/anscdfx.o
 
-LIB+=$(L)anscdfx.o 
-#$(L)anscdf0.o
+LIB+=$(BUILD)/anscdfx.o 
+#$(BUILD)/anscdf0.o
 else
 CFLAGS+=-D_NAVX2
 endif
@@ -210,59 +214,59 @@ endif
 
 ifeq ($(TURBORLE), 1)
 CFLAGS+=-D_TURBORLE
-LIB+=trlec.o trled.o
+LIB+=$(addprefix $(BUILD)/,trlec.o trled.o)
 endif
 
 ifeq ($(TP), 1)
 ifeq ($(ARCH),x86_64)
-tp256.o: tp.c
-	$(CC) -O3 $(CFLAGS) $(_AVX2) -c tp.c -o tp256.o
+$(BUILD)/tp256.o: tp.c | $(BUILD)
+	$(CC) -O3 $(CFLAGS) $(_AVX2) -c tp.c -o $(BUILD)/tp256.o
 
-rcutil.o: rcutil.c
-	$(CC) -O3 $(CFLAGS) $(_AVX2) -c rcutil.c -o rcutil.o
+$(BUILD)/rcutil.o: rcutil.c | $(BUILD)
+	$(CC) -O3 $(CFLAGS) $(_AVX2) -c rcutil.c -o $(BUILD)/rcutil.o
 
 #tp_.c: tp_.c
 #	$(CC) -O3 $(CFLAGS) $(_SSE) -c tp_.c -o tp_.c
 	
 endif
 CFLAGS+=-D_TP -D_NCPUISA
-LIB+=tp.o tp_.o
+LIB+=$(addprefix $(BUILD)/,tp.o tp_.o)
 
 ifeq ($(ARCH), x86_64)
-LIB+=tp256.o
+LIB+=$(BUILD)/tp256.o
 endif
 endif
 
 ifeq ($(V8), 1)
 CFLAGS+=-D_V8
-LIB+=v8.o
+LIB+=$(BUILD)/v8.o
 endif
-#trlec.o trled.o $(L)anscdfx.o $(L)anscdfs.o $(L)anscdf0.o 
+#trlec.o trled.o anscdfx.o anscdfs.o anscdf0.o 
 endif
 ifeq ($(BWT), 1)
-LIB+=rcbwt.o
+LIB+=$(BUILD)/rcbwt.o
 endif
 
 ifeq ($(SF), 1)
 CFLAGS+=-D_SF
-LIB+=rc_sf.o rccm_sf.o rcqlfc_sf.o
+LIB+=$(addprefix $(BUILD)/,rc_sf.o rccm_sf.o rcqlfc_sf.o)
 endif
 
 ifeq ($(NZ), 1)
-LIB+=rc_nz.o rccm_nz.o rcqlfc_nz.o
+LIB+=$(addprefix $(BUILD)/,rc_nz.o rccm_nz.o rcqlfc_nz.o)
 CFLAGS+=-D_NZ
 endif
 
 ifeq ($(SH), 1)
-LIB+=rc_sh.o
+LIB+=$(BUILD)/rc_sh.o
 CFLAGS+=-D_SH
 endif
 
 ifeq ($(EXT), 1)
 CFLAGS+=-D_EXT
-#LIB+=xrc.o
+#LIB+=$(BUILD)/xrc.o
 ifeq ($(BWT), 1)
-#LIB+=xrcbwt_sf.o
+#LIB+=$(BUILD)/xrcbwt_sf.o
 endif
 endif
 
@@ -272,26 +276,32 @@ endif
 
 #librc.a: $(LIB)
 #	ar cr $@ $+
-turborc.o: turborc.c
-	$(CC) -O3 $(CFLAGS) $(MARCH) -c turborc.c -o turborc.o
+$(BUILD)/turborc.o: turborc.c | $(BUILD)
+	$(CC) -O3 $(CFLAGS) $(MARCH) -c turborc.c -o $(BUILD)/turborc.o
 
-turborc: $(LIB) $(LIBBWT) turborc.o
-	$(CC) $^ $(LDFLAGS) -o turborc
+turborc: $(LIB) $(LIBBWT) $(BUILD)/turborc.o
+	$(CC) $^ $(LDFLAGS) -o $(BUILD)/turborc
 
-reorder: $(LIBDIV) reorder.o
-	$(CC) $^ $(LDFLAGS) -o reorder
+reorder: $(LIBDIV) $(BUILD)/reorder.o
+	$(CC) $^ $(LDFLAGS) -o $(BUILD)/reorder
 
-.c.o:
+# Directory creation
+$(BUILD):
+	mkdir -p $(BUILD)
+
+$(BUILD)/%.o: %.c | $(BUILD)
 	$(CC) -O3 $(CFLAGS) $(MARCH) $< -c -o $@
 
-.cpp.o:
+$(BUILD)/%.o: %.cpp | $(BUILD)
 	$(CXX) -O3 $(MARCH) $(CXXFLAGS) $< -c -o $@ 
 
 ifeq ($(OS),Windows_NT)
 clean:
 	del /S *.o
 	del /S *~
+	if exist $(BUILD) rd /S /Q $(BUILD)
 else
 clean:
-	@find . -type f -name "*\.o" -delete -or -name "*\~" -delete -or -name "core" -delete -or -name "turborc" -delete -or -name "librc.a" -delete
+	@find . -type f -name "*\.o" -delete -or -name "*\~" -delete -or -name "core" -delete -or -name "librc.a" -delete
+	@rm -rf $(BUILD)
 endif
