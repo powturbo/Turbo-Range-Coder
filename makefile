@@ -2,7 +2,8 @@
 # Download or clone TurboRC:
 # git clone git://github.com/powturbo/Turbo-Range-Coder.git
 BUILD := build
-CFLAGS := 
+CFLAGS :=
+DEFS :=
 # fsm predictor
 #SF=1
 # include BWT 
@@ -122,7 +123,7 @@ ifeq ($(OS),Windows)
   LDFLAGS=-Wl,--stack,33554432 -lpowrprof
 endif
 
-CFLAGS+=$(_SSE) -w -Wall $(DDEBUG) -DBUILD_VERSION="\"v$(BUILD_DATE)\""
+CFLAGS+=$(_SSE) -w -Wall $(DDEBUG) -DBUILD_VERSION="\"v$(BUILD_DATE)\"" $(DEFS)
 CXXFLAGS+=$(DDEBUG) -w -Wall -fpermissive  -fno-rtti
 
 ifeq ($(OS),$(filter $(OS),Linux GNU/kFreeBSD GNU OpenBSD FreeBSD DragonFly NetBSD MSYS_NT Haiku))
