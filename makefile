@@ -146,7 +146,7 @@ LDFLAGS+=-lm
 #-Wl,--stack_size -Wl,20971520
 endif
 
-all: turborc
+all: $(BUILD)/librc.a turborc
 
 ifeq ($(EXTRC), 1)
 CFLAGS+=-DEXTRC
@@ -274,12 +274,16 @@ ifeq ($(NOCOMP), 1)
 CFLAGS+=-DNO_COMP
 endif
 
-#librc.a: $(LIB)
-#	ar cr $@ $+
+$(BUILD)/librc.a: $(LIB) | $(BUILD)
+	$(AR) rcs $@ $^
+
+$(BUILD)/librc.so: $(LIB) | $(BUILD)
+	$(CC) -shared $+ -o $@
+
 $(BUILD)/turborc.o: turborc.c | $(BUILD)
 	$(CC) -O3 $(CFLAGS) $(MARCH) -c turborc.c -o $(BUILD)/turborc.o
 
-turborc: $(LIB) $(LIBBWT) $(BUILD)/turborc.o
+turborc: $(LIB) $(LIBBWT) $(BUILD)/librc.a $(BUILD)/turborc.o
 	$(CC) $^ $(LDFLAGS) -o $(BUILD)/turborc
 
 reorder: $(LIBDIV) $(BUILD)/reorder.o
