@@ -71,7 +71,7 @@
   }
 #elif defined(__SSE2__)
 #define O 32
-#define MTFD_old(_r2c_,_k_,_u_) do  {\
+#define MTFD0(_r2c_,_k_,_u_) do  {\
   if((_k_) <= O) {\
     unsigned char *_c = &(_r2c_)[_k_];\
     __m128i _v0 = _mm_loadu_si128((const __m128i*)(_c +  1)),\
@@ -90,7 +90,7 @@
     *_p = (_u_);\
   } } while(0)
 
-alignas(16) static const unsigned char mtf_shuffle_matrix[16][16] = {
+ALIGNED(static const unsigned char, mtf_shuffle_matrix[16][16],16) = {
     /* L =  0 (k = 32) */ { 0x80, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F },
     /* L =  1 (k = 33) */ { 0x01, 0x80, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F },
     /* L =  2 (k = 34) */ { 0x01, 0x02, 0x80, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F },
@@ -121,11 +121,11 @@ alignas(16) static const unsigned char mtf_shuffle_matrix[16][16] = {
     unsigned char *_b = &(_r2c_)[O];\
     __m128i _w0 = _mm_loadu_si128((const __m128i*)(_b +  1)),\
             _w1 = _mm_loadu_si128((const __m128i*)(_b + 17));\
+    __m128i _mask = _mm_load_si128((const __m128i*)mtf_shuffle_matrix[(_k_) - 32]);\
     _mm_storeu_si128((__m128i*)(_b +  0), _w0);\
     _mm_storeu_si128((__m128i*)(_b + 16), _w1);\
     unsigned char *_p = (_r2c_) + O + 32;\
     __m128i _tail = _mm_loadu_si128((const __m128i*)_p);\
-    __m128i _mask = _mm_load_si128((const __m128i*)mtf_shuffle_matrix[(_k_) - 32]);\
     _mm_storeu_si128((__m128i*)_p, _mm_shuffle_epi8(_tail, _mask));\
     _p[(_k_) - 32] = (_u_);\
   } } while(0)
