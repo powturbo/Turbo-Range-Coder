@@ -54,20 +54,55 @@
   #endif
 
 //---- reverse mtf (8 bits)
+#define MTFD1(_r2c_, _u_) _r2c_[O] = _r2c_[O+1], _r2c_[O+1] = _u_ // Fast path for rank 1 (adjacent swap) 
+
+#ifdef __AVX2__
+#define O 32               // uint8_t r2c[257+O];
+#define MTFD(_r2c_, _k_, _u_)\
+  if(_k_ <= O) {\
+    unsigned char *_c = &_r2c_[_k_];\
+    _mm256_storeu_si256((__m256i *)&_c[0], _mm256_loadu_si256((const __m256i *)&_c[1]));\
+    _c[O] = _u_;\
+  } else {\
+    _mm256_storeu_si256((__m256i *)&_r2c_[O+0], _mm256_loadu_si256((const __m256i *)&_r2c_[O+1]));\
+    unsigned char *_p;\
+    for(_p = _r2c_ + O + 32; _p != _r2c_ + O + _k_; ++_p) _p[0] = _p[1];\
+    *_p = _u_;\
+  }
+#elif defined(__SSE2__)
+#define O 32
+#define MTFD(_r2c_,_k_,_u_) do  {\
+  if((_k_) <= O) {\
+    unsigned char *_c = &(_r2c_)[_k_];\
+    __m128i _v0 = _mm_loadu_si128((const __m128i*)(_c +  1)),\
+            _v1 = _mm_loadu_si128((const __m128i*)(_c + 17));\
+    _mm_storeu_si128((__m128i*)(_c +  0), _v0);\
+    _mm_storeu_si128((__m128i*)(_c + 16), _v1);\
+    _c[O] = (_u_);\
+  } else {\
+    unsigned char *_b = &(_r2c_)[O];\
+    __m128i _w0 = _mm_loadu_si128((const __m128i*)(_b +  1)),\
+            _w1 = _mm_loadu_si128((const __m128i*)(_b + 17));\
+    _mm_storeu_si128((__m128i*)(_b +  0), _w0);\
+    _mm_storeu_si128((__m128i*)(_b + 16), _w1);\
+    unsigned char *_p;\
+    for(_p = (_r2c_)+O+32; _p != (_r2c_)+O+(_k_); ++_p) _p[0] = _p[1];\
+    *_p = (_u_);\
+  } } while(0)
+#else
 #define O 16     // declaration: uint8_t _r2c_[256+32], *r2c = _r2s+32
-#define MTFD1(_r2c_,_u_) _r2c_[O] = _r2c_[O+1], _r2c_[O+1] = _u_
-#if O == 16
-/*#define MTFD(_r2c_,_k_,_u_) if(_k_ <= O) { uint8_t *_mtf = &_r2c_[_k_]; ctou64(_mtf+0)=ctou64(_mtf+0+1); ctou64(_mtf+8)=ctou64(_mtf+8+1); _r2c_[O] = _u_; } \
-    else { ctou64(&_r2c_[O+0])=ctou64(&_r2c_[O+1]);ctou64(&_r2c_[O+8])=ctou64(&_r2c_[O+9]); uint8_t *_p; for(_p = _r2c_+O+16; _p != _r2c_+O+_k_; ++_p) _p[0] = _p[1]; *_p = _u_; /*memcpy(_r2c_+0, _r2c_+1, _k_); _r2c_[O+_k_] = _u_;*/  /*__builtin_prefetch(ip +512, 0);* /}
-*/
-#define MTFD(_r2c_,_k_,_u_)\
-  if(_k_ <= O) { unsigned char *_c = &_r2c_[_k_]; ctou64(&_c[ 0]) = ctou64(&_c[0+1]); ctou64(&_c[ 8]) = ctou64(&_c[8+1]); _c[O] = _u_; }\
-  else { ctou64(&_r2c_[O+0]) = ctou64(&_r2c_[O+1]); ctou64(&_r2c_[O+8]) = ctou64(&_r2c_[O+9]); unsigned char *_p; for(_p = _r2c_+O+16; _p != _r2c_+O+_k_; ++_p) _p[0] = _p[1]; *_p = _u_; }
-    #else
-#define MTFD(_r2c_,_k_,_u_) if(_k_ <= O) { unsigned char *_c = &_r2c_[_k_]; ctou64(&_c[0])=ctou64(&_c[0+1]); _r2c_[O] = _u_; } \
+  #if O == 16
+/*#define MTFD(_r2c_,_k_,_u_) if(_k_ <= O) { uint8_t *_mtf = &_r2c_[_k_]; ctou64(_mtf+0)=ctou64(_mtf+0+1); ctou64(_mtf+8)=ctou64(_mtf+8+1); _r2c_[O] = _u_; }\
+    else { ctou64(&_r2c_[O+0])=ctou64(&_r2c_[O+1]);ctou64(&_r2c_[O+8])=ctou64(&_r2c_[O+9]); uint8_t *_p; for(_p = _r2c_+O+16; _p != _r2c_+O+_k_; ++_p) _p[0] = _p[1]; *_p = _u_; /*memcpy(_r2c_+0, _r2c_+1, _k_); _r2c_[O+_k_] = _u_;*/  /*__builtin_prefetch(ip +512, 0);* /}*/
+    #define MTFD(_r2c_,_k_,_u_)\
+    if(_k_ <= O) { unsigned char *_c = &_r2c_[_k_]; ctou64(&_c[ 0]) = ctou64(&_c[0+1]); ctou64(&_c[ 8]) = ctou64(&_c[8+1]); _c[O] = _u_; }\
+    else { ctou64(&_r2c_[O+0]) = ctou64(&_r2c_[O+1]); ctou64(&_r2c_[O+8]) = ctou64(&_r2c_[O+9]); unsigned char *_p; for(_p = _r2c_+O+16; _p != _r2c_+O+_k_; ++_p) _p[0] = _p[1]; *_p = _u_; }
+  #else
+    #define MTFD(_r2c_,_k_,_u_) if(_k_ <= O) { unsigned char *_c = &_r2c_[_k_]; ctou64(&_c[0])=ctou64(&_c[0+1]); _r2c_[O] = _u_; }\
     else { ctou64(&_r2c_[O+0])=ctou64(&_r2c_[O+1]); unsigned char *_p; for(_p = _r2c_+O+8; _p != _r2c_+O+_k_; ++_p) _p[0] = _p[1]; *_p = _u_; /*memcpy(_r2c_+0, _r2c_+1, _k_); _r2c_[O+_k_] = _u_;*/  /*__builtin_prefetch(ip +512, 0);*/       }
-#endif
+  #endif
 //#define MTFD(_r2c_, r, _c_) { unsigned s = 0; do _r2c_[O+s] = _r2c_[O+s + 1]; while(++s < r); }
+#endif
 
 //------------------------- run length determination ----------------------------------------------------------
   #ifdef __AVX2__                                                   // declaration
