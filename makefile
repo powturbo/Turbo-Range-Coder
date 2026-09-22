@@ -2,6 +2,7 @@
 # Download or clone TurboRC:
 # git clone git://github.com/powturbo/Turbo-Range-Coder.git
 BUILD := build
+CFLAGS := 
 # fsm predictor
 #SF=1
 # include BWT 
@@ -85,7 +86,7 @@ else ifneq (,$(findstring riscv64,$(CC) $(ARCH)))
   ARCH = riscv64
 else ifneq (,$(findstring iPhone,$(ARCH)))
   ARCH = aarch64
-  CFLAGS=-DHAVE_MALLOC_MALLOC
+  CFLAGS+=-DHAVE_MALLOC_MALLOC
 else ifneq (,$(findstring powerpc64le,$(CC) $(ARCH)))
   ARCH = ppc64le
 else ifneq (,$(findstring loongarch64,$(CC) $(ARCH)))
@@ -96,16 +97,16 @@ endif
 
 ifeq ($(ARCH),aarch64)
   _SSE=-march=armv8-a
-  CFLAGS=$(_SSE)
+  CFLAGS+=$(_SSE)
 else ifeq ($(ARCH),riscv64)
-#  CFLAGS=-march=rv64gcv -mabi=lp64d
-  CFLAGS=-march=rv64gcv_zvbb -mabi=lp64d
+#  CFLAGS+=-march=rv64gcv -mabi=lp64d
+  CFLAGS+=-march=rv64gcv_zvbb -mabi=lp64d
 else ifeq ($(ARCH),ppc64le)
   _SSE=-D__SSE4_1__
-  CFLAGS=-mcpu=power9 -mtune=power9 $(_SSE)
+  CFLAGS+=-mcpu=power9 -mtune=power9 $(_SSE)
 else ifeq ($(ARCH),loongarch64)
   _SSE=-mlsx
-  CFLAGS=$(_SSE)
+  CFLAGS+=$(_SSE)
 else ifeq ($(ARCH),x86_64)
 # _SSE=-mssse3 
 # _SSE+=-mno-avx -mno-aes
