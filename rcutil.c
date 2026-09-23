@@ -107,9 +107,12 @@ void vfree(void *address) {
   #endif
 //--------------------------- lzp preprocessor (lenmin >= 32) ------------------------------------------------------------------------
   #ifndef NCOMP
-#define H_BITS              16                                       // hash table size
-#define emitmatch(_l_,_op_) { unsigned _l = _l_-lenmin+1; *_op_++ = 255; while(_l >= 254) { *_op_++ = 254; _l -= 254; OVERFLOW(in,inlen,out,op,goto end); } *_op_++ = _l; }
-#define emitch(_ch_,_op_)   { *_op_++ = _ch_; if(_ch_ == 255) *_op_++ = 0; OVERFLOW(in,inlen, out, op, goto end); }
+#define H_BITS          18                                       // LZP HASH table size
+#define LZPHASH(h4, cx) ((cx >> 15 ^ cx ^ cx >> 3) & ((1u << H_BITS) - 1))
+
+#define LZPMATCH 255
+#define emitmatch(_l_,_op_) { unsigned _l = _l_-lenmin+1; *_op_++ = LZPMATCH; while(_l >= 254) { *_op_++ = 254; _l -= 254; OVERFLOW(in,inlen,out,op,goto end); } *_op_++ = _l; }
+#define emitch(_ch_,_op_)   { *_op_++ = _ch_; if(_ch_ == LZPMATCH) *_op_++ = 0; OVERFLOW(in,inlen, out, op, goto end); }
 
 #define LZPINI(_n_) if(lenmin < 32) lenmin = 32;\
   if(_n_ < lenmin) { memcpy(out, in, _n_); return _n_;}\
@@ -118,11 +121,11 @@ void vfree(void *address) {
   if(hbits > H_BITS && !(htab = calloc(1<<hbits, 4))) { htab = _htab; hbits = H_BITS; }
 
 size_t lzpenc(unsigned char *__restrict in, size_t inlen, unsigned char *__restrict out, unsigned lenmin, unsigned hbits) { //printf("m=%u ", lenmin);
-  unsigned      _htab[1<<H_BITS] = {0}, *htab = _htab, cl, cx, h4 = 0;
+  unsigned      _htab[1<<H_BITS] = {0}, *htab = _htab, cl, h4 = 0;  uint32_t cx;
   unsigned char *ip = in, *cp, *op = out;
   LZPINI(inlen);                                        //unsigned cnt = 1<<hbits, lmin = lenmin, ocnt=0;
   for(cx = ctou32(ip), ctou32(op) = cx, cx = BSWAP32(cx), op += 4, ip += 4; ip < in+inlen-lenmin;) {
-    h4       = HASH(h4, cx);
+    h4       = LZPHASH(h4, cx);
     cp       = in + htab[h4];                                                        //cnt -= htab[h4] == 0; //if(cnt*100/(1<<hbits) != ocnt) { printf("%d ", cnt); ocnt=cnt*100/(1<<hbits); }                                                                    //unsigned p = cnt * 100 / (1<<hbits); if(lmin > 32 && lmin <= lenmin && ip - in > (1<<20)) { if(p < 70) lmin--; else lmin++; printf("l=%u ", lmin);}
     htab[h4] = ip - in;
       #ifdef __AVX2__
@@ -180,16 +183,16 @@ size_t lzpdec(unsigned char *in, size_t outlen, unsigned char *out, unsigned len
   unsigned char *ip = in, *op = out;
   LZPINI(outlen);
   for(cx = ctou32(ip), ctou32(op) = cx, cx = BSWAP32(cx), op += 4, ip += 4; op < out+outlen;) {
-    unsigned c;    h4 = HASH(h4, cx);
+    unsigned c;    h4 = LZPHASH(h4, cx);
     unsigned char *cp = out + htab[h4],*op_;
              htab[h4] = op - out;
-    if((c = *ip++) == 255)
-      if(*ip) {
+    if((c = *ip++) == LZPMATCH)
+      if(*ip) { 
         c = 0; do c += *ip; while(*ip++ == 254);
         for(op_ = op+c+lenmin-1; op < op_; *op++ = *cp++);
         cx = BSWAP32(ctou32(op-4));
         continue;
-      } else ip++, c = 255;
+      } else ip++, c = LZPMATCH;
     cx = cx << 8 | (*op++ = c);
   }
   if(htab != _htab) free(htab);
@@ -370,7 +373,7 @@ size_t utf8enc(unsigned char *__restrict in, size_t inlen, unsigned char *__rest
     }                                                                           // convert to code point + utf-8 validity check //if(c > cmax) cmax = c;
       #else
     if(!l) {                                                                    if(verbose) { printf("#"); fflush(stdout); }
-      if(++cinv > 16) { op = out+inlen;                                         if(verbose) { printf("invalid utf8 symbols"); fflush(stdout); }
+      if(++cinv > 16) { op = out+inlen;                                         if(verbose) { printf("invalid utf8 symbols "); fflush(stdout); }
         goto e;
       }
     } else if(c >= UTF8_INV && c <= UTF8_INV+0xff) { op = out+inlen;            if(verbose) { printf("?"); fflush(stdout); } goto e; } // symbol not allowed
