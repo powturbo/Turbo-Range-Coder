@@ -106,7 +106,7 @@ void vfree(void *address) {
 #define BSWAP64(a) bswap64(a)
   #endif
 //--------------------------- lzp preprocessor (lenmin >= 32) ------------------------------------------------------------------------
-  #ifndef NCOMP
+//  #ifndef NCOMP
 #define H_BITS          18                                       // LZP HASH table size
 #define LZPHASH(h4, cx) ((cx >> 15 ^ cx ^ cx >> 3) & ((1u << H_BITS) - 1))
 
@@ -120,6 +120,61 @@ void vfree(void *address) {
   hbits = hbits>12?hbits:12;\
   if(hbits > H_BITS && !(htab = calloc(1<<hbits, 4))) { htab = _htab; hbits = H_BITS; }
 
+#define NREVERSE 
+#ifdef NREVERSE
+size_t lzpenc(unsigned char *__restrict in, size_t inlen, unsigned char *__restrict out, unsigned lenmin, unsigned hbits) {
+  unsigned      _htab[1<<H_BITS] = {0}, *htab = _htab, cl, h4 = 0;  uint32_t cx;
+  unsigned char *ip = in+inlen, *cp, *op = out, *inend = in+inlen;
+  LZPINI(inlen);
+  for(cx = ctou32(ip-4), ctou32(op) = cx, op += 4, ip -= 4; ip > in+lenmin;) {
+    h4       = LZPHASH(h4, cx);
+    cp       = inend - htab[h4];                  // end-anchored: default 0 -> cp = inend (safe sentinel)
+    htab[h4] = inend - ip;
+    if(ctou64(ip-8)  == ctou64(cp-8)  && ctou64(ip-16) == ctou64(cp-16) &&
+       ctou64(ip-24) == ctou64(cp-24) && ctou64(ip-32) == ctou64(cp-32)) { // match (32 bytes immediately before ip)
+      for(cl = 32;;) {
+        if(ip-cl <= in+32) break;
+        if(ctou64(ip-cl-8) != ctou64(cp-cl-8)) break; cl += 8;
+        if(ctou64(ip-cl-8) != ctou64(cp-cl-8)) break; cl += 8;
+        if(ctou64(ip-cl-8) != ctou64(cp-cl-8)) break; cl += 8;
+        if(ctou64(ip-cl-8) != ctou64(cp-cl-8)) break; cl += 8;
+      }
+      if(cl >= lenmin) {
+        for(; ip-cl > in && *(ip-cl-1) == *(cp-cl-1); cl++);
+        emitmatch(cl, op);
+        ip -= cl;
+        cx  = ctou32(ip);                          // no BSWAP32 needed: direction flip cancels it
+        continue;
+      }
+    }
+    unsigned ch = *--ip; emitch(ch, op); cx = cx<<8 | ch; // literal (walking backwards)
+  }
+  while(ip > in) { unsigned c = *--ip; emitch(c, op); }
+  end:if(htab != _htab) free(htab);
+  return op - out;
+}
+
+size_t lzpdec(unsigned char *in, size_t outlen, unsigned char *out, unsigned lenmin, unsigned hbits) {
+  unsigned      _htab[1<<H_BITS] = {0}, *htab = _htab, cx, h4 = 0;
+  unsigned char *ip = in, *op = out+outlen, *outend = out+outlen;
+  LZPINI(outlen);
+  for(cx = ctou32(ip), ctou32(op-4) = cx, op -= 4, ip += 4; op > out;) {
+    unsigned c;    h4 = LZPHASH(h4, cx);
+    unsigned char *cp = outend - htab[h4], *op_;   // end-anchored, mirrors lzpenc
+             htab[h4] = outend - op;
+    if((c = *ip++) == LZPMATCH)
+      if(*ip) {                                                             
+        c = 0; do c += *ip; while(*ip++ == 254);
+        for(op_ = op-c-lenmin+1; op > op_; ) *--op = *--cp;   // copy backwards
+        cx = ctou32(op);                            //PREFETCH(ip+512, 0);  
+        continue;
+      } else ip++, c = LZPMATCH;
+    cx = cx << 8 | (*--op = c);                   // literal, writing backwards
+  }
+  if(htab != _htab) free(htab);
+  return ip - in;
+}
+#else
 size_t lzpenc(unsigned char *__restrict in, size_t inlen, unsigned char *__restrict out, unsigned lenmin, unsigned hbits) { //printf("m=%u ", lenmin);
   unsigned      _htab[1<<H_BITS] = {0}, *htab = _htab, cl, h4 = 0;  uint32_t cx;
   unsigned char *ip = in, *cp, *op = out;
@@ -175,7 +230,6 @@ size_t lzpenc(unsigned char *__restrict in, size_t inlen, unsigned char *__restr
   end:if(htab != _htab) free(htab);
   return op - out;
 }
-  #endif
 
   #ifndef NDECOMP
 size_t lzpdec(unsigned char *in, size_t outlen, unsigned char *out, unsigned lenmin, unsigned hbits) {
@@ -199,6 +253,7 @@ size_t lzpdec(unsigned char *in, size_t outlen, unsigned char *out, unsigned len
   return ip - in;
 }
   #endif
+#endif
 
   #ifndef NCOMP
 // --------------------------------- QLFC - Quantized Local Frequency Coding ------------------------------------------
