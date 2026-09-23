@@ -19,8 +19,14 @@
 #include "libsais/include/libsais16.h"
 typedef int32_t saidx_t;
   #endif
-#define LZPREV(a) a////
-#define OUT       out //in //
+#define NREVERSE 
+#ifdef NREVERSE
+#define LZPREV(a) 
+#define OUT       in //
+#else
+#define LZPREV(a) a
+#define OUT     out
+#endif
 static int bwtx, forcelzp;
 static unsigned calcmod(size_t len) { return 1<<__bsr32(len); }
 #define SR 16
