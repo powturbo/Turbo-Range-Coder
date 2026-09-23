@@ -109,7 +109,7 @@ ALIGNED(static const unsigned char, mtf_shuffle_matrix[16][16],16) = {
     /* L = 15 (k = 47) */ { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x80 }
 };
 
-#define MTFD0(_r2c_,_k_,_u_) do  {\
+#define MTFD0(_r2c_,_k_,_u_) do  { /*crashing*/\
   if((_k_) <= O) {\
     unsigned char *_c = &(_r2c_)[_k_];\
     __m128i _v0 = _mm_loadu_si128((const __m128i*)(_c +  1)),\
