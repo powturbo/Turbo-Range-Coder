@@ -27,13 +27,15 @@ typedef int32_t saidx_t;
 #define LZPREV(a) a
 #define OUT       out
 #endif
+
 static int bwtx, forcelzp;
 static unsigned calcmod(size_t len) { return 1<<__bsr32(len); }
 #define SR 16
 
   #ifndef NCOMP
+#define LM 32
 static unsigned lenmins[64] = { 0,  0,  0,  0,   0,  0,  0,  0,     0,  0,  0,  0,   0,  0,  0,  0,    0,  0,  0,  0,   0,  0,  0,  0,     0,  0,  0,  0,   0,   0,   0,   0,
-                               40, 40, 40, 40,  40, 40, 40, 40,    40, 40, 40, 40,  40, 40, 40, 40,   40, 40, 40, 40,  40, 40, 40, 96,    96, 96, 96, 96, 128, 144, 144, 144 };
+                               LM, LM, LM, LM,  LM, LM, LM, LM,    LM, LM, LM, LM,  LM, LM, LM, LM,   LM, LM, LM, LM,  LM, LM, 64,104,   104,104,104,104, 128, 144, 144, 144 };
 // MB                           0   0   0   0    0   0   0   0      1   1   2   3    4   6   8  12    16  24  32  48   64  96 128 192    256 384 512 768 1024 1536 2048 3072
 
 size_t rcbwtenc(unsigned char *in, size_t inlen, unsigned char *out, unsigned lev, unsigned thnum, unsigned _lenmin) { //char *ipp = malloc(inlen); memcpy(ipp,in,inlen);
