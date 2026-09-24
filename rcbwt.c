@@ -8,7 +8,7 @@
 #include "include_/vlcbit.h"
 
 #include "rcutil_.h"
-#include "mb_vint.h"
+#include "mb_vint.h" 
 
 //------------------------------------------- bwt ----------------------------------------------------------
   #ifdef _BWTDIV
@@ -19,13 +19,13 @@
 #include "libsais/include/libsais16.h"
 typedef int32_t saidx_t;
   #endif
-#define NREVERSE 
-#ifdef NREVERSE
+
+#ifndef LZPREVERSE
 #define LZPREV(a) 
-#define OUT       in //
+#define OUT       in
 #else
 #define LZPREV(a) a
-#define OUT     out
+#define OUT       out
 #endif
 static int bwtx, forcelzp;
 static unsigned calcmod(size_t len) { return 1<<__bsr32(len); }
