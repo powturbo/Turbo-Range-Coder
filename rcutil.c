@@ -105,17 +105,20 @@ void vfree(void *address) {
 #define BSWAP32(a) bswap32(a)
 #define BSWAP64(a) bswap64(a)
   #endif
-//--------------------------- lzp preprocessor (lenmin >= 32) ------------------------------------------------------------------------
-//  #ifndef NCOMP
-#define H_BITS          19                                       // LZP HASH table size
-//#define LZPHASH(h4, cx) ((cx >> 15 ^ cx ^ cx >> 3) & ((1u << H_BITS) - 1))
-#define LZPHASH(_h_, _x_)   (((_x_) * 123456791) >> (32-H_BITS))
 
+//--------------------------- lzp preprocessor (lenmin >= 32) ------------------------------------------------------------------------
+#define H_BITS          19                                       // LZP HASH table size
+//#define C32  0x9E3779B9u           // 2654435769  (φ × 2³²) Closest integer to 2^32/φ (Fibonacci / golden-ratio multiplier) φ = (√5 + 1)/2 ≈ 1.6180339887
+#define C32  123456791
+#define LZPHASH(_x_)   (((_x_) * C32) >> (32-H_BITS)) //#define LZPHASH(cx) ((cx >> 15 ^ cx ^ cx >> 3) & ((1u << H_BITS) - 1))
 #define LZPMATCH 255
+
+#ifndef NCOMP
 #define emitmatch(_l_,_op_) { unsigned _l = _l_-lenmin+1; *_op_++ = LZPMATCH; while(_l >= 254) { *_op_++ = 254; _l -= 254; OVERFLOW(in,inlen,out,op,goto end); } *_op_++ = _l; }
 #define emitch(_ch_,_op_)   { *_op_++ = _ch_; if(_ch_ == LZPMATCH) *_op_++ = 0; OVERFLOW(in,inlen, out, op, goto end); }
 
-#define LZPINI(_n_) if(lenmin < 32) lenmin = 32;\
+#define LM 32
+#define LZPINI(_n_) if(lenmin < LM) lenmin = LM;\
   if(_n_ < lenmin) { memcpy(out, in, _n_); return _n_;}\
   if(!hbits) { hbits = _n_ >= (1<<24)?21:H_BITS; }\
   hbits = hbits>12?hbits:12;\
@@ -127,12 +130,12 @@ size_t lzpenc(unsigned char *__restrict in, size_t inlen, unsigned char *__restr
   unsigned char *ip = in+inlen, *cp, *op = out, *inend = in+inlen;
   LZPINI(inlen);
   for(cx = ctou32(ip-4), ctou32(op) = cx, op += 4, ip -= 4; ip > in+lenmin;) {
-    h4       = LZPHASH(h4, cx);
+    h4       = LZPHASH(cx);
     cp       = inend - htab[h4];             
     htab[h4] = inend - ip;
     if(ctou64(ip-8)  == ctou64(cp-8)  && ctou64(ip-16) == ctou64(cp-16) && ctou64(ip-24) == ctou64(cp-24) && ctou64(ip-32) == ctou64(cp-32)) { 
-      for(cl = 32;;) {
-        if(ip-cl <= in+32) break;
+      for(cl = LM;;) {
+        if(ip-cl <= in+LM) break;
         if(ctou64(ip-cl-8) != ctou64(cp-cl-8)) break; cl += 8;   if(ctou64(ip-cl-8) != ctou64(cp-cl-8)) break; cl += 8;
         if(ctou64(ip-cl-8) != ctou64(cp-cl-8)) break; cl += 8;   if(ctou64(ip-cl-8) != ctou64(cp-cl-8)) break; cl += 8;
       }
@@ -150,35 +153,13 @@ size_t lzpenc(unsigned char *__restrict in, size_t inlen, unsigned char *__restr
   end:if(htab != _htab) free(htab);
   return op - out;
 }
-
-size_t lzpdec(unsigned char *in, size_t outlen, unsigned char *out, unsigned lenmin, unsigned hbits) {
-  unsigned      _htab[1<<H_BITS] = {0}, *htab = _htab, cx, h4 = 0;
-  unsigned char *ip = in, *op = out+outlen, *outend = out+outlen;
-  LZPINI(outlen);
-  for(cx = ctou32(ip), ctou32(op-4) = cx, op -= 4, ip += 4; op > out;) {
-    unsigned c;    h4 = LZPHASH(h4, cx);
-    unsigned char *cp = outend - htab[h4], *op_;   // end-anchored, mirrors lzpenc
-             htab[h4] = outend - op;
-    if((c = *ip++) == LZPMATCH)
-      if(*ip) {                                                             
-        c = 0; do c += *ip; while(*ip++ == 254);
-        op_ = op - c - lenmin + 1;
-        while(op > op_) *--op = *--cp;          
-        cx = ctou32(op);                            //PREFETCH(ip+512, 0);  
-        continue;
-      } else ip++, c = LZPMATCH;
-    cx = cx << 8 | (*--op = c);                   // literal, writing backwards
-  }
-  if(htab != _htab) free(htab);
-  return ip - in;
-}
 #else
 size_t lzpenc(unsigned char *__restrict in, size_t inlen, unsigned char *__restrict out, unsigned lenmin, unsigned hbits) { //printf("m=%u ", lenmin);
   unsigned      _htab[1<<H_BITS] = {0}, *htab = _htab, cl, h4 = 0;  uint32_t cx;
   unsigned char *ip = in, *cp, *op = out;
   LZPINI(inlen);                                        //unsigned cnt = 1<<hbits, lmin = lenmin, ocnt=0;
   for(cx = ctou32(ip), ctou32(op) = cx, cx = BSWAP32(cx), op += 4, ip += 4; ip < in+inlen-lenmin;) {
-    h4       = LZPHASH(h4, cx);
+    h4       = LZPHASH(cx);
     cp       = in + htab[h4];                                                        //cnt -= htab[h4] == 0; //if(cnt*100/(1<<hbits) != ocnt) { printf("%d ", cnt); ocnt=cnt*100/(1<<hbits); }                                                                    //unsigned p = cnt * 100 / (1<<hbits); if(lmin > 32 && lmin <= lenmin && ip - in > (1<<20)) { if(p < 70) lmin--; else lmin++; printf("l=%u ", lmin);}
     htab[h4] = ip - in;
       #ifdef __AVX2__
@@ -228,14 +209,39 @@ size_t lzpenc(unsigned char *__restrict in, size_t inlen, unsigned char *__restr
   end:if(htab != _htab) free(htab);
   return op - out;
 }
+  #endif
+#endif
 
-  #ifndef NDECOMP
+#ifndef NDECOMP
+  #ifndef LZPREVERSE
+size_t lzpdec(unsigned char *in, size_t outlen, unsigned char *out, unsigned lenmin, unsigned hbits) {
+  unsigned      _htab[1<<H_BITS] = {0}, *htab = _htab, cx, h4 = 0;
+  unsigned char *ip = in, *op = out+outlen, *outend = out+outlen;
+  LZPINI(outlen);
+  for(cx = ctou32(ip), ctou32(op-4) = cx, op -= 4, ip += 4; op > out;) {
+    unsigned c;    h4 = LZPHASH(cx);
+    unsigned char *cp = outend - htab[h4], *op_;   // end-anchored, mirrors lzpenc
+             htab[h4] = outend - op;
+    if((c = *ip++) == LZPMATCH)
+      if(*ip) {                                                             
+        c = 0; do c += *ip; while(*ip++ == 254);
+        op_ = op - c - lenmin + 1;
+        while(op > op_) *--op = *--cp;          
+        cx = ctou32(op);                            //PREFETCH(ip+512, 0);  
+        continue;
+      } else ip++, c = LZPMATCH;
+    cx = cx << 8 | (*--op = c);                   // literal, writing backwards
+  }
+  if(htab != _htab) free(htab);
+  return ip - in;
+}
+  #else
 size_t lzpdec(unsigned char *in, size_t outlen, unsigned char *out, unsigned lenmin, unsigned hbits) {
   unsigned      _htab[1<< H_BITS] = {0}, *htab = _htab, cx, h4 = 0;
   unsigned char *ip = in, *op = out;
   LZPINI(outlen);
   for(cx = ctou32(ip), ctou32(op) = cx, cx = BSWAP32(cx), op += 4, ip += 4; op < out+outlen;) {
-    unsigned c;    h4 = LZPHASH(h4, cx);
+    unsigned c;    h4 = LZPHASH(cx);
     unsigned char *cp = out + htab[h4],*op_;
              htab[h4] = op - out;
     if((c = *ip++) == LZPMATCH)
