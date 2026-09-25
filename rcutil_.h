@@ -36,7 +36,7 @@
 #define PREFETCH(_ip_,_rw_) __builtin_prefetch(_ip_,_rw_)
   #endif
 
-//#define LZPREVERSE  // forward lzp
+//#define LZPREVERSE  // reverse lzp (R -> L )
 //-------------------------- mtf: move to front (8 bits) -----------------------------------------------------------
   #ifdef __AVX2__ // Get position of existing c
 #define MEMGET8(_in_,_ip_,_cv_,_c_) do { for(;;) { unsigned m = _mm256_movemask_epi8(_mm256_cmpeq_epi8(_mm256_loadu_si256((__m256i*)_ip_), _cv_)); if(m) { _ip_ += ctz32(m); break; } _ip_ += 32;} while(*_ip_ != _c_) _ip_++; } while(0)
@@ -200,8 +200,15 @@ static ALWAYS_INLINE size_t memrun16(uint16_t const *in, uint16_t const *in_) { 
 
 //-------------- misc --------------------------------------------------------------------------------------------------
 //#define EMA(  _n_,_x_,_a_,_y_) (((_x_)*_a_ + ((1<<(_n_)) -_a_)*(_y_) ) >>(_n_)) // Exponential moving average EMA2=1->2 EMA4=2->4 EMA8=3->8,...
-#define EMA( _n_,_x_,_a_,_y_) (((_x_)*_a_ + ((1ull<<(_n_)) -_a_)*(_y_) + (1ull<<((_n_)-2)) ) >>(_n_)) // Exponential moving average + rounding EMA2=1->2 EMA4=2->4 EMA8=3->8,...
+//#define EMA( _n_,_x_,_a_,_y_) ((((_x_)*(_a_)) + ((1ull<<(_n_)) - (_a_))*(_y_) + (1ull<<((_n_)-2))) >> (_n_)) // 2<=n<64. Exponential moving average + rounding EMA2=1->2 EMA4=2->4 EMA8=3->8,...
 #define RICEK(_x_)             __bsr32((_x_)+1)                                // Rice parameter
+
+static inline int32_t EMA(uint32_t n, uint32_t a, int32_t x, int32_t y ) { // Round-to-nearest bias: 1 << (n - 1) (+0.5)
+    int64_t diff = (int64_t)x - (int64_t)y;
+    int64_t product = (int64_t)a * diff;
+    int64_t biased = product + (1LL << (n - 1));
+    return (int32_t)(y + (biased >> n));
+}
 
 #define OVERFLOW0( _in_,_inlen_,_out_, _op_, _goto_) if( _op_               >= _out_+(_inlen_*255)/256-8) _goto_;
 #define OVERFLOW( _in_,_inlen_,_out_, _op_, _goto_) if( _op_                >= _out_+(_inlen_*255)/256-8) { memcpy(_out_,_in_,_inlen_); _op_ = _out_+_inlen_; _goto_; }
