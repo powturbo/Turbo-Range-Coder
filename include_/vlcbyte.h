@@ -1,16 +1,43 @@
+/**
+    Copyright (C) powturbo 2013-2026
+    GPL v2 License
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License along
+    with this program; if not, write to the Free Software Foundation, Inc.,
+    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+
+    - homepage : https://sites.google.com/site/powturbo/
+    - github   : https://github.com/powturbo
+    - twitter  : https://twitter.com/powturbo
+    - email    : powturbo [_AT_] gmail [_DOT_] com
+**/
 //---- "Integer Compression" scalar variable byte -------------------------------
 #include "conf.h"
 //----------------------------------- Variable byte: single value macros (low level) -----------------------------------------------
 //------------- 32 bits -------------
 extern unsigned char _vtab32_[];
-#define _vbxvlen32(_x_) _vtab32_[(unsigned char)(_x_)>>4] // (clz32((_x_) ^ 0xff) - 23) //
-#define _vbxlen32(_x_) ((bsr32(_x_|1)+6)/7)
+#define vbxvlen32(_x_) _vtab32_[(unsigned char)(_x_)>>4] // (clz32((_x_) ^ 0xff) - 23) //
+#define vbxlen64(_x_)  ((bsr64(_x_|1)+6)/7)
+#define vbxlen32(_x_)  ((bsr32(_x_|1)+6)/7)
+#define vbxlen16(_x_)  vbxlen32(_x_)
+#define vbxlen8(_x_)   vbxlen32(_x_)
+
 
 #define _vbxput32(_op_, _x_, _act_) {\
-       if(likely((_x_) < (1<< 7))) {        *_op_++ = _x_;                                               _act_;}\
-  else if(likely((_x_) < (1<<14))) { ctou16(_op_)   = bswap16((_x_) | 0x8000u);               _op_ += 2; _act_;}\
-  else if(likely((_x_) < (1<<21))) {        *_op_++ = _x_ >> 16  | 0xc0u; ctou16(_op_) = _x_; _op_ += 2; _act_;}\
-  else if(likely((_x_) < (1<<28))) { ctou32(_op_)   = bswap32((_x_) | 0xe0000000u);              _op_ += 4; _act_;}\
+       if(/*likely*/((_x_) < (1<< 7))) {        *_op_++ = _x_;                                               _act_;}\
+  else if(/*likely*/((_x_) < (1<<14))) { ctou16(_op_)   = bswap16((_x_) | 0x8000u);               _op_ += 2; _act_;}\
+  else if(/*likely*/((_x_) < (1<<21))) {        *_op_++ = _x_ >> 16  | 0xc0u; ctou16(_op_) = _x_; _op_ += 2; _act_;}\
+  else if(/*likely*/((_x_) < (1<<28))) { ctou32(_op_)   = bswap32((_x_) | 0xe0000000u);              _op_ += 4; _act_;}\
   else                             {        *_op_++ = (unsigned long long)(_x_) >> 32 | 0xf0u; ctou32(_op_) = _x_; _op_ += 4; _act_;}\
 }
 
@@ -27,10 +54,10 @@ extern unsigned char _vtab32_[];
 #define _vbxvlen64(_x_) ((_x_)==0xff?9:clz32((_x_) ^ 0xff) - 23)
 
 #define _vbxput64(_op_, _x_, _act_) {\
-       if(likely(_x_ < (1<< 7))) {        *_op_++ = _x_;                                                                                          _act_;}\
-  else if(likely(_x_ < (1<<14))) { ctou16(_op_)   =        bswap16(_x_| 0x8000);                                                       _op_ += 2; _act_;}\
-  else if(likely(_x_ < (1<<21))) {        *_op_++ =        _x_ >> 16  | 0xc0;      ctou16(_op_) = _x_;                                 _op_ += 2; _act_;}\
-  else if(likely(_x_ < (1<<28))) { ctou32(_op_)   =        bswap32(_x_| 0xe0000000);                                                   _op_ += 4; _act_;}\
+       if(/*likely*/(_x_ < (1<< 7))) {        *_op_++ = _x_;                                                                                          _act_;}\
+  else if(/*likely*/(_x_ < (1<<14))) { ctou16(_op_)   =        bswap16(_x_| 0x8000);                                                       _op_ += 2; _act_;}\
+  else if(/*likely*/(_x_ < (1<<21))) {        *_op_++ =        _x_ >> 16  | 0xc0;      ctou16(_op_) = _x_;                                 _op_ += 2; _act_;}\
+  else if(/*likely*/(_x_ < (1<<28))) { ctou32(_op_)   =        bswap32(_x_| 0xe0000000);                                                   _op_ += 4; _act_;}\
   else if(       _x_ < 1ull<<35) {        *_op_++ =         _x_ >> 32 | 0xf0;                                      ctou32(_op_) = _x_; _op_ += 4; _act_;}\
   else if(       _x_ < 1ull<<42) { ctou16(_op_)   = bswap16(_x_ >> 32 | 0xf800);                        _op_ += 2; ctou32(_op_) = _x_; _op_ += 4; _act_;}\
   else if(       _x_ < 1ull<<49) {        *_op_++ =         _x_ >> 48 | 0xfc; ctou16(_op_) = _x_ >> 32; _op_ += 2; ctou32(_op_) = _x_; _op_ += 4; _act_;}\
@@ -67,15 +94,15 @@ extern unsigned char _vtab32_[];
 #define _vso2(_vsmax_,_vsb2_) (_vso1(_vsmax_,_vsb2_) + (1 << (8+(_vsb2_))))
 
 #define _vsput(_op_, _x_, _vsmax_,_vsb2_, _act_) { \
-  if(likely((_x_) < _vso1(_vsmax_,_vsb2_))){ *_op_++ = (_x_);																                                _act_}\
-  else if  ((_x_) < _vso2(_vsmax_,_vsb2_)) { ctou16(_op_) = bswap16((_vso1(_vsmax_,_vsb2_)<<8)+((_x_)-_vso1(_vsmax_,_vsb2_)));                  _op_  += 2; _act_}\
-  else                                     { *_op_++ = _vsba2(_vsmax_,_vsb2_) + (((_x_) -= _vso2(_vsmax_,_vsb2_)) >> 16); ctou16(_op_) = (_x_); _op_  += 2; _act_}\
+  if(/*likely*/((_x_) < _vso1(_vsmax_,_vsb2_))){ *_op_++ = (_x_);																_act_	}\
+  else if  ((_x_) < _vso2(_vsmax_,_vsb2_)) { ctou16(_op_) = bswap16((_vso1(_vsmax_,_vsb2_)<<8)+((_x_)-_vso1(_vsmax_,_vsb2_)));                _op_  += 2; _act_}\
+  else                                       { *_op_++ = _vsba2(_vsmax_,_vsb2_) + (((_x_) -= _vso2(_vsmax_,_vsb2_)) >> 16); ctou16(_op_) = (_x_); _op_  += 2; _act_}\
 }
 
 #define _vsget(_ip_, _x_, _vsmax_,_vsb2_, _act_) do { _x_ = *_ip_++;\
-       if(likely(_x_ < _vso1(_vsmax_,_vsb2_))) { _act_ }\
-  else if(likely(_x_ < _vsba2(_vsmax_,_vsb2_))){ _x_ = ((_x_<<8) + (*_ip_)) + (_vso1(_vsmax_,_vsb2_) - (_vso1(_vsmax_,_vsb2_) <<  8)); _ip_++;    _act_} \
-  else                                         { _x_ = ctou16(_ip_) + ((_x_ - _vsba2(_vsmax_,_vsb2_) ) << 16) + _vso2(_vsmax_,_vsb2_); _ip_ += 2; _act_}\
+       if(/*likely*/(_x_ < _vso1(_vsmax_,_vsb2_))) { _act_ }\
+  else if(/*likely*/(_x_ < _vsba2(_vsmax_,_vsb2_)))  { _x_ = ((_x_<<8) + (*_ip_)) + (_vso1(_vsmax_,_vsb2_) - (_vso1(_vsmax_,_vsb2_) <<  8)); _ip_++; _act_} \
+  else                                           { _x_ = ctou16(_ip_) + ((_x_ - _vsba2(_vsmax_,_vsb2_) ) << 16) + _vso2(_vsmax_,_vsb2_); _ip_ += 2; _act_}\
 } while(0)
 
 #define _vslen(_x_,_vsmax_,_vsb2_) ((_x_) < _vbo1(_vsmax_,_vsb2_)?1:((_x_) < _vbo2(_vsmax_,_vsb2_)?2):3)
@@ -84,28 +111,23 @@ extern unsigned char _vtab32_[];
 #define VS22MAX            4276351
 #define vslen22(_x_)       _vslen(_x_,0xff,6)
 #define vsput22(_op_, _x_) _vsput(_op_, _x_, 0xff, 6, ;)
-#define vsget22(_ip_, _x_) _vsget(_ip_, _x_, 0xff, 6, ;) 
+#define vsget22(_ip_, _x_) _vsget(_ip_, _x_, 0xff, 6, ;)
 
 #define VS21MAX            2171071
 #define vslen21(_x_)       _vslen(_x_,       0xff, 5)
 #define vsput21(_op_, _x_) _vsput(_op_, _x_, 0xff, 5, ;)
-#define vsget21(_ip_, _x_) _vsget(_ip_, _x_, 0xff, 5, ;) 
+#define vsget21(_ip_, _x_) _vsget(_ip_, _x_, 0xff, 5, ;)
 
 #define VS20MAX            1118431
 #define vslen20(_x_)       _vslen(_x_,0xff,4)
 #define vsput20(_op_, _x_) _vsput(_op_, _x_, 0xff, 4, ;)
-#define vsget20(_ip_, _x_) _vsget(_ip_, _x_, 0xff, 4, ;) 
-
-//#define VS12MAX            1118431
-#define vslen12(_x_)       _vslen(_x_,0xff,2)
-#define vsput12(_op_, _x_) _vsput(_op_, _x_, 0xff, 2, ;)
-#define vsget12(_ip_, _x_) _vsget(_ip_, _x_, 0xff, 2, ;) 
+#define vsget20(_ip_, _x_) _vsget(_ip_, _x_, 0xff, 4, ;)
  #else
  #endif
 
 //----------------------------------------------------- 32/64 integer 1,2,3,4,5 bytes----------------------------------------------------------------------------------------
 #define _vbba3(_vbsize_,_vbmax_)                    (_vbmax_ - (_vbsize_/8 - 3))
-#define _vbba2(_vbsize_,_vbmax_,_vbb3_)             (_vbba3(_vbsize_,_vbmax_) - (1<<_vbb3_))  
+#define _vbba2(_vbsize_,_vbmax_,_vbb3_)             (_vbba3(_vbsize_,_vbmax_) - (1<<_vbb3_))
 
 #define _vbo1(_vbsize_,_vbmax_,_vbb2_,_vbb3_)       (_vbba2( _vbsize_,_vbmax_,       _vbb3_) - (1<<_vbb2_))
 #define _vbo2(_vbsize_,_vbmax_,_vbb2_,_vbb3_)       (_vbo1(_vbsize_,_vbmax_,_vbb2_,_vbb3_) + (1 << ( 8+_vbb2_)))
@@ -114,42 +136,90 @@ extern unsigned char _vtab32_[];
 #define _vblen(_x_, _vbsize_,_vbmax_,_vbb2_,_vbb3_) ((_x_) < _vbo1(_vbsize_,_vbmax_,_vbb2_,_vbb3_)?1:\
                                                     ((_x_) < _vbo2(_vbsize_,_vbmax_,_vbb2_,_vbb3_)?2:\
 													((_x_) < _vbo3(_vbsize_,_vbmax_,_vbb2_,_vbb3_)?3:((T2(bsr,_vbsize_)(_x_)+7)/8+1))))
-													
+
 #define _vbvlen(_x_,_vbsize_,_vbmax_,_vbb2_,_vbb3_) ((_x_) < _vbo1(_vbsize_,_vbmax_,_vbb2_,_vbb3_)?1:((_x_) < _vbba2(_vbsize_,_vbmax_,_vbb3_)?2:((_x_) < _vbba3(_vbsize_,_vbmax_))?3:((_x_)-_vbba3(_vbsize_,_vbmax_))))
 
+#if 1
 #define _vbput(_op_, _x_, _vbsize_,_vbmax_,_vbb2_,_vbb3_, _act_) do {\
-  if(likely((_x_) < _vbo1(_vbsize_,_vbmax_,_vbb2_,_vbb3_))){ *_op_++ = (_x_);																	                                                    _act_;}\
+  if(/*likely*/((_x_) < _vbo1(_vbsize_,_vbmax_,_vbb2_,_vbb3_))){ *_op_++ = (_x_); _act_;}\
+  else if  ((_x_) < _vbo2(_vbsize_,_vbmax_,_vbb2_,_vbb3_)) { ctou16(_op_) = bswap16((_vbo1(_vbsize_,_vbmax_,_vbb2_,_vbb3_)<<8)+((_x_)-_vbo1(_vbsize_,_vbmax_,_vbb2_,_vbb3_))); _op_ += 2; _act_; }\
+  else if  ((_x_) < _vbo3(_vbsize_,_vbmax_,_vbb2_,_vbb3_)) { *_op_++ = _vbba2(_vbsize_,_vbmax_,_vbb3_) + (((_x_) -= _vbo2(_vbsize_,_vbmax_,_vbb2_,_vbb3_)) >> 16); ctou16(_op_) = (_x_); _op_ += 2; _act_;}\
+  else { unsigned _b = (T2(bsr,_vbsize_)(_x_)+7)/8; *_op_++ = _vbba3(_vbsize_,_vbmax_) + (_b - 3); T2(ctou,_vbsize_)(_op_) = (_x_); _op_ += _b; _act_; }\
+} while(0)
+
+// FIXED _vbget macro (safe mask calculation ~0ull >> (40 - 8 * _b) to avoid shift UB)
+#define _vbget(_ip_, _x_, _vbsize_,_vbmax_,_vbb2_,_vbb3_, _act_) do { _x_ = *_ip_++;\
+       if(/*likely*/(_x_ < _vbo1(_vbsize_,_vbmax_,_vbb2_,_vbb3_))) { _act_ ;}\
+  else if(/*likely*/(_x_ < _vbba2( _vbsize_,_vbmax_,_vbb3_)))      { _x_ = ((_x_<<8) + (*_ip_)) + (_vbo1(_vbsize_,_vbmax_,_vbb2_,_vbb3_) - (_vbo1(_vbsize_,_vbmax_,_vbb2_,_vbb3_) <<  8)); _ip_++; _act_;} \
+  else if(/*likely*/(_x_ < _vbba3( _vbsize_,_vbmax_)))             { _x_ = ctou16(_ip_) + ((_x_ - _vbba2(_vbsize_,_vbmax_,_vbb3_) ) << 16) + _vbo2(_vbsize_,_vbmax_,_vbb2_,_vbb3_); _ip_ += 2; _act_;}\
+  else { unsigned _b = _x_-_vbba3(_vbsize_,_vbmax_);  _x_ = T2(ctou,_vbsize_)(_ip_) & (~0ull >> (40 - 8 * _b)); _ip_ += 3 + _b; _act_;}\
+} while(0)
+#else
+#define _vbput(_op_, _x_, _vbsize_,_vbmax_,_vbb2_,_vbb3_, _act_) do {\
+  if(/*likely*/((_x_) < _vbo1(_vbsize_,_vbmax_,_vbb2_,_vbb3_))){ *_op_++ = (_x_);																	                                                    _act_;}\
   else if  ((_x_) < _vbo2(_vbsize_,_vbmax_,_vbb2_,_vbb3_)) { ctou16(_op_) = bswap16((_vbo1(_vbsize_,_vbmax_,_vbb2_,_vbb3_)<<8)+((_x_)-_vbo1(_vbsize_,_vbmax_,_vbb2_,_vbb3_)));           _op_ += 2; /*(_x_) -= _vbo1; *_op_++ = _vbo1 + ((_x_) >> 8); *_op_++ = (_x_);*/ _act_; }\
   else if  ((_x_) < _vbo3(_vbsize_,_vbmax_,_vbb2_,_vbb3_)) { *_op_++ = _vbba2(_vbsize_,_vbmax_,_vbb3_) + (((_x_) -= _vbo2(_vbsize_,_vbmax_,_vbb2_,_vbb3_)) >> 16); ctou16(_op_) = (_x_); _op_ += 2;  _act_;}\
   else { unsigned _b = (T2(bsr,_vbsize_)(_x_)+7)/8; *_op_++ = _vbba3(_vbsize_,_vbmax_) + (_b - 3); T2(ctou,_vbsize_)(_op_) = (_x_); _op_  += _b; _act_; }\
 } while(0)
 
 #define _vbget(_ip_, _x_, _vbsize_,_vbmax_,_vbb2_,_vbb3_, _act_) do { _x_ = *_ip_++;\
-       if(likely(_x_ < _vbo1(_vbsize_,_vbmax_,_vbb2_,_vbb3_))) { _act_ ;}\
-  else if(likely(_x_ < _vbba2( _vbsize_,_vbmax_,_vbb3_)))      { _x_ = /*bswap16(ctou16(_ip_-1))*/ ((_x_<<8) + (*_ip_)) + (_vbo1(_vbsize_,_vbmax_,_vbb2_,_vbb3_) - (_vbo1(_vbsize_,_vbmax_,_vbb2_,_vbb3_) <<  8)); _ip_++; _act_;} \
-  else if(likely(_x_ < _vbba3( _vbsize_,_vbmax_)))             { _x_ = ctou16(_ip_) + ((_x_ - _vbba2(_vbsize_,_vbmax_,_vbb3_) ) << 16) + _vbo2(_vbsize_,_vbmax_,_vbb2_,_vbb3_); _ip_ += 2; _act_;}\
+       if(/*likely*/(_x_ < _vbo1(_vbsize_,_vbmax_,_vbb2_,_vbb3_))) { _act_ ;}\
+  else if(/*likely*/(_x_ < _vbba2( _vbsize_,_vbmax_,_vbb3_)))      { _x_ = /*bswap16(ctou16(_ip_-1))*/ ((_x_<<8) + (*_ip_)) + (_vbo1(_vbsize_,_vbmax_,_vbb2_,_vbb3_) - (_vbo1(_vbsize_,_vbmax_,_vbb2_,_vbb3_) <<  8)); _ip_++; _act_;} \
+  else if(/*likely*/(_x_ < _vbba3( _vbsize_,_vbmax_)))             { _x_ = ctou16(_ip_) + ((_x_ - _vbba2(_vbsize_,_vbmax_,_vbb3_) ) << 16) + _vbo2(_vbsize_,_vbmax_,_vbb2_,_vbb3_); _ip_ += 2; _act_;}\
   else { unsigned _b = _x_-_vbba3(_vbsize_,_vbmax_);  _x_ = T2(ctou,_vbsize_)(_ip_) & ((1ull << 8 * _b << 24) - 1); _ip_ += 3 + _b; _act_;}\
 } while(0)
+#endif
+
+
+#define _vbrput(_op_, _x_, _vbsize_,_vbmax_,_vbb2_,_vbb3_, _act_) do { /*PUT:L->R, GET:L->R*/\
+       if((_x_) < _vbo1(_vbsize_,_vbmax_,_vbb2_,_vbb3_)) { *--_op_ = _x_;												                   _act_;}\
+  else if((_x_) < _vbo2(_vbsize_,_vbmax_,_vbb2_,_vbb3_)) {   _op_ -= 2; ctou16(_op_) = ((_vbo1(_vbsize_,_vbmax_,_vbb2_,_vbb3_)<<8)+((_x_)-_vbo1(_vbsize_,_vbmax_,_vbb2_,_vbb3_)));         _act_;}\
+  else if((_x_) < _vbo3(_vbsize_,_vbmax_,_vbb2_,_vbb3_)) { *--_op_ =    _vbba2(_vbsize_,_vbmax_,_vbb3_) + (((_x_) -= _vbo2(_vbsize_,_vbmax_,_vbb2_,_vbb3_)) >> 16); ctou16(_op_-=2) = _x_; _act_;}\
+  else { unsigned _b = (T2(bsr,_vbsize_)(_x_)+7)/8; *--_op_ = _vbba3(_vbsize_,_vbmax_) + (_b - 3); _op_  -= _b; T2(ctou,_vbsize_)(_op_) = (_x_); _act_; }\
+} while(0)
+
+#define _vbrputr(_op_, _x_, _vbsize_,_vbmax_,_vbb2_,_vbb3_, _act_) do { /*PUT:L->R, GET:R->L*/\
+  if(/*likely*/((_x_) < _vbo1(_vbsize_,_vbmax_,_vbb2_,_vbb3_))){ *--_op_ = _x_;													           _act_;}\
+  else if((_x_) < _vbo2(_vbsize_,_vbmax_,_vbb2_,_vbb3_)) { _op_ -= 2; ctou16(_op_) = ((_vbo1(_vbsize_,_vbmax_,_vbb2_,_vbb3_)<<8)+((_x_)-_vbo1(_vbsize_,_vbmax_,_vbb2_,_vbb3_)));           _act_;}\
+  else if((_x_) < _vbo3(_vbsize_,_vbmax_,_vbb2_,_vbb3_)) { *--_op_ = _vbba2(_vbsize_,_vbmax_,_vbb3_) + (((_x_) -= _vbo2(_vbsize_,_vbmax_,_vbb2_,_vbb3_)) >> 16); ctou16(_op_-=2) = bswap16(_x_);  _act_;}\
+  else { /*printf("#");fflush(stdout);*/ unsigned _b = (T2(bsr,_vbsize_)(_x_)+7)/8; *--_op_ = _vbba3(_vbsize_,_vbmax_) + (_b - 3); _op_  -= _b; T2(ctou,_vbsize_)(_op_) = (_x_); _act_; }\
+} while(0)
+
+
+#define _vbrget(_ip_, _x_, _vbsize_,_vbmax_,_vbb2_,_vbb3_, _act_) do { _x_ = *--_ip_;\
+       if(_x_ < _vbo1(_vbsize_,_vbmax_,_vbb2_,_vbb3_)) { _act_ ;}\
+  else if(_x_ < _vbba2( _vbsize_,_vbmax_,_vbb3_))      { _x_ = ((_x_<<8) + (*--_ip_)) + (_vbo1(_vbsize_,_vbmax_,_vbb2_,_vbb3_) - (_vbo1(_vbsize_,_vbmax_,_vbb2_,_vbb3_) <<  8)); _act_;} \
+  else if(_x_ < _vbba3( _vbsize_,_vbmax_))             { _x_ = ctou16((_ip_-=2)) + ((_x_ - _vbba2(_vbsize_,_vbmax_,_vbb3_) ) << 16) + _vbo2(_vbsize_,_vbmax_,_vbb2_,_vbb3_); _act_;}\
+  else { unsigned _b = _x_-_vbba3(_vbsize_,_vbmax_);  _x_ = T2(ctou,_vbsize_)(_ip_-=3+_b) & ((1ull << 8 * _b << 24) - 1); _act_;}\
+} while(0)
+
+#define _VBLEN_ unsigned _vblen_[65] = { 1,                                /* 0   */\
+                                         1,1,1,1,1,1,1,2, 2,2,2,2,2,2,3,3, /* 1-16*/\
+  			                 3,3,3,3,3,4,4,4, 5,5,5,5,5,5,5,5, /*17-32*/ \
+			                 6,6,6,6,6,6,6,6, 7,7,7,7,7,7,7,7, /*33-48*/\
+					 8,8,8,8,8,8,8,8, 9,9,9,9,9,9,9,9} /*49-64*/
+							 
+#define VBLEN(_x_) _vblen_[_x_]							 
 
 #ifndef VB_MAX
-#define VB_MAX 0xff
+#define VB_MAX 0xfd  // reserved : 0xfe=all zeros, 0xff=overflow
 #endif
 
   #ifndef NMACROS
-//-- 64 bits -----  
-#define vblen64(_x_)               _vblen( _x_,      64, VB_MAX, 6, 5) 
-#define vbvlen64(_x_)              _vbvlen(_x_,      64, VB_MAX, 6, 5) 
+//-- 64 bits -----
+#define vblen64(_x_)               _vblen( _x_,      64, VB_MAX, 6, 5)
+#define vbvlen64(_x_)              _vbvlen(_x_,      64, VB_MAX, 6, 5)
 #define _vbput64(_op_, _x_, _act_) _vbput(_op_, _x_, 64, VB_MAX, 6, 5, _act_)
-#define _vbget64(_ip_, _x_, _act_) _vbget(_ip_, _x_, 64, VB_MAX, 6, 5, _act_) 
-#define vbput64(_op_, _x_)         do { unsigned long long _x = _x_; _vbput64(_op_, _x_, ;); } while(0)
+#define _vbget64(_ip_, _x_, _act_) _vbget(_ip_, _x_, 64, VB_MAX, 6, 5, _act_)
+#define vbput64(_op_, _x_)         do { uint64_t _x = _x_; _vbput64(_op_, _x_, ;); } while(0)
 #define vbget64(_ip_, _x_)         _vbget64(_ip_, _x_, ;)
 //-- 32 bits -----
-#define vblen32(      _x_)         _vblen(      _x_, 32, VB_MAX, 6, 5) 
-#define vbvlen32(     _x_)         _vbvlen(     _x_, 32, VB_MAX, 6, 5) 
+#define vblen32(      _x_)         _vblen(      _x_, 32, VB_MAX, 6, 5)
+#define vbvlen32(     _x_)         _vbvlen(     _x_, 32, VB_MAX, 6, 5)
 #define _vbput32(_op_, _x_, _act_) _vbput(_op_, _x_, 32, VB_MAX, 6, 5, _act_)
-#define _vbget32(_ip_, _x_, _act_) _vbget(_ip_, _x_, 32, VB_MAX, 6, 5, _act_) 
+#define _vbget32(_ip_, _x_, _act_) _vbget(_ip_, _x_, 32, VB_MAX, 6, 5, _act_)
 #define vbput32(_op_, _x_)         do { unsigned _x = _x_; _vbput32(_op_, _x, ;); } while(0)
-#define vbget32(_ip_, _x_)         _vbget32(_ip_, _x_, ;) 
+#define vbget32(_ip_, _x_)         _vbget32(_ip_, _x_, ;)
 //-- 16 bits -----
 #define vblen16( _x_)              vblen32(_x_)
 #define vbvlen16(_x_)              vbvlen32(_x_)
@@ -161,11 +231,20 @@ extern unsigned char _vtab32_[];
 #define vblen8(_x_)  1
 #define _vbput8(_op_, _x_, _act_)  { *_op_++ = _x_; _act_; }
 #define _vbget8(_ip_, _x_, _act_)  { _x_ = *_ip_++; _act_; }
+#define vbput8(_op_, _x_)          vbput32(_op_, _x_)
+#define vbget8(_ip_, _x_)          vbget32(_ip_, _x_)
 #define vbvlen8(_x_) 1
 
-#define vllen32(_x_)                                _vblen(       _x_, 32, VB_MAX, 4, 3) 
-#define vlput32(_op_, _x_)  do { unsigned _x = _x_; _vbput(_op_, _x,  32, VB_MAX, 4, 3, ;); } while(0)
-#define vlget32(_ip_, _x_)                          _vbget(_ip_, _x_, 32, VB_MAX, 4, 3, ;) 
+#define vllen32(_x_)                                        _vblen(       _x_, 32, VB_MAX, 4, 3)
+#define _vlput32(_op_, _x_,_act_)   do { unsigned _x = _x_; _vbput( _op_, _x,  32, VB_MAX, 4, 3, _act_); } while(0)
+#define _vlget32(_ip_, _x_,_act_)                           _vbget( _ip_, _x_, 32, VB_MAX, 4, 3, _act_)
+#define vlput32(_op_, _x_)          _vlput32(_op_, _x_,;) 
+#define vlget32(_ip_, _x_)          _vlget32(_ip_, _x_,;)                   
+
+#define _vlrput32(_op_, _x_,_act_)  do { unsigned _x = _x_; _vbrput(_op_, _x,  32, VB_MAX, 4, 3, _act_); } while(0)
+#define _vlrget32(_ip_, _x_,_act_)                          _vbrget(_ip_, _x_, 32, VB_MAX, 4, 3, _act_)
+#define vlrput32(_op_, _x_)         _vlrput32(_op_, _x_,;) 
+#define vlrget32(_ip_, _x_)         _vlrget32(_ip_, _x_,;)                   
   #else
 static ALWAYS_INLINE unsigned vblen32(unsigned       x) { return _vblen(      x, 32, VB_MAX, 6, 5); }
 #define vbput32(_op_, _x_) _vbput(_op_, _x_, 32, VB_MAX, 6, 5, ;)
@@ -173,3 +252,56 @@ static ALWAYS_INLINE void vbget32(unsigned char **_ip, unsigned *_x)  { unsigned
 static ALWAYS_INLINE unsigned vlget32(unsigned char **_ip)  { unsigned char *ip = *_ip; unsigned x; _vbget(ip, x, 32, VB_MAX, 4, 3, ;); *_ip = ip; return x; }
 static ALWAYS_INLINE unsigned vllen32(unsigned       x) { return _vblen(      x, 32, VB_MAX, 4, 3); }
   #endif
+
+#ifdef TEST
+void test_val(uint64_t val) {
+    unsigned char buf[16] = {0};
+    unsigned char *op = buf;
+    const unsigned char *ip = buf;
+    uint64_t decoded = 0;
+
+    // Work on a copy because macro modifies value for 3-byte branch
+    uint64_t val_copy = val;
+    vbput64(op, val_copy);
+    vbget64(ip, decoded);
+
+    if (val != decoded) {
+        printf("[FAIL] Original: 0x%llx (%llu) | Decoded: 0x%llx (%llu)\n",
+               (unsigned long long)val, (unsigned long long)val,
+               (unsigned long long)decoded, (unsigned long long)decoded);
+        exit(1);
+    }
+}
+
+int main(void) {
+    printf("Starting verification tests...\n");
+
+    // 1. Edge case values & Boundary powers of 2
+    uint64_t test_cases[] = {
+        0, 1, 127, 238, 239, 255, 256, 1000, 1774, 1775, 329454, 329455,
+        (1ull << 8) - 1,   (1ull << 8),
+        (1ull << 16) - 1,  (1ull << 16),
+        (1ull << 24) - 1,  (1ull << 24),
+        (1ull << 32) - 1,  (1ull << 32),
+        (1ull << 40) - 1,  (1ull << 40),
+        (1ull << 48) - 1,  (1ull << 48),
+        (1ull << 56) - 1,  (1ull << 56),
+        0xFFFFFFFFull,
+        0x100000000ull,
+        0xFFFFFFFFFFFFFFFFull
+    };
+
+    size_t num_tests = sizeof(test_cases) / sizeof(test_cases[0]);
+    for (size_t i = 0; i < num_tests; i++) {
+        test_val(test_cases[i]);
+    }
+
+    // 2. Sequential sweep over large range
+    for (uint64_t i = 0; i < 1000000; i += 97) {
+        test_val(i);
+    }
+
+    printf("All verification tests passed successfully!\n");
+    return 0;
+}
+#endif
