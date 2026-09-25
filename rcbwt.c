@@ -20,7 +20,7 @@
 typedef int32_t saidx_t;
   #endif
 
-#ifndef LZPREVERSE
+#ifdef LZPREVERSE   // use reverse lzp 
 #define LZPREV(a) 
 #define OUT       in
 #else
@@ -33,7 +33,7 @@ static unsigned calcmod(size_t len) { return 1<<__bsr32(len); }
 #define SR 16
 
   #ifndef NCOMP
-#define LM 32
+#define LM 40
 static unsigned lenmins[64] = { 0,  0,  0,  0,   0,  0,  0,  0,     0,  0,  0,  0,   0,  0,  0,  0,    0,  0,  0,  0,   0,  0,  0,  0,     0,  0,  0,  0,   0,   0,   0,   0,
                                LM, LM, LM, LM,  LM, LM, LM, LM,    LM, LM, LM, LM,  LM, LM, LM, LM,   LM, LM, LM, LM,  LM, LM, 64,104,   104,104,104,104, 128, 144, 144, 144 };
 // MB                           0   0   0   0    0   0   0   0      1   1   2   3    4   6   8  12    16  24  32  48   64  96 128 192    256 384 512 768 1024 1536 2048 3072
@@ -55,10 +55,10 @@ size_t rcbwtenc(unsigned char *in, size_t inlen, unsigned char *out, unsigned le
     else {
       lenmin = ((lenmin>384?384:lenmin)+3)/4;
       ip     = bwt;                                                             LZPREV(if(lev==9) { memcpy(out, in, inlen); memrev(out, inlen); } );
-      iplen  = lzpenc(lev==9?OUT:in, inlen, ip, lenmin*4, lev > 8?1:0);
+      iplen  = lzpenc(lev==9?OUT:in, inlen, ip, lenmin*4, lev > 8?0:16);
       if(iplen == inlen || iplen+(inlen>>7)+256 > inlen && !forcelzp) { /*Not enough saving*/       if(verbose) { printf("NoLzp=%.2f%% ", (double)iplen*100.0/inlen);fflush(stdout); }
         ip = in; iplen = inlen; lenmin = 0;
-      } else {                                                                  if(verbose) { printf("Lzp=%.2f%% ",   (double)iplen*100.0/inlen);fflush(stdout); }
+      } else {                                                                  if(verbose) { printf("Lzp=%zu %.2f%% ",  iplen, (double)iplen*100.0/inlen);fflush(stdout); }
                                                                                 LZPREV(if(lev==9) memrev(ip, iplen));
       }
     }
@@ -155,7 +155,8 @@ size_t rcbwtdec(unsigned char *in, size_t outlen, unsigned char *out, unsigned l
       case 127: utf8dec(op, outlen, out);  break;
       //case 126: fastadec(op, outlen, out); break;
       default:                                                                  LZPREV(if(lev==9) memrev(op, oplen));
-        lzpdec(op, outlen, out, lenmin*4, lev > 8?1:0);                         LZPREV(if(lev==9) memrev(out, outlen));
+//        lzpdec(op, outlen, out, lenmin*4, lev > 8?1:0);                       LZPREV(if(lev==9) memrev(out, outlen));
+        lzpdec(op, oplen, out, outlen, lenmin*4, lev > 8?0:16);                 LZPREV(if(lev==9) memrev(out, outlen));
     }
   }
   vfree(_bwt);
