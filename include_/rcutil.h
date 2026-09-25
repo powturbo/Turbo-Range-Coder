@@ -53,7 +53,8 @@ typedef unsigned long long uint64_t;
 extern "C" {
 #endif
 size_t lzpenc(unsigned char *__restrict in, size_t inlen,  unsigned char *__restrict out, unsigned lenmin, unsigned h_bits);
-size_t lzpdec(unsigned char *__restrict in, size_t outlen, unsigned char *__restrict out, unsigned lenmin, unsigned h_bits);
+//size_t lzpdec(unsigned char *__restrict in, size_t outlen, unsigned char *__restrict out, unsigned lenmin, unsigned h_bits);
+size_t lzpdec(unsigned char *__restrict in, size_t inlen, unsigned char *__restrict out, size_t outlen, unsigned lenmin, unsigned h_bits);
 
 unsigned char *rcqlfc(unsigned char *__restrict in, size_t n, unsigned char *__restrict out, unsigned char *__restrict r2c);
 
