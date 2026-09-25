@@ -125,7 +125,7 @@ size_t lzpenc(unsigned char *__restrict in, size_t inlen, unsigned char *__restr
   unsigned      _htab[1<<H_BITS] = {0}, *htab = _htab, cl, h4 = 0;  uint32_t cx;
   unsigned char *inend = in+inlen, *ip = inend, *cp, *op = out, *out_ = out + inlen;
   if(lenmin < LM) lenmin = LM;
-  if(inlen < lenmin) { size_t i; for(i = 0; i < inlen; i++) out[i] = in[n-1-i]; return inlen; }
+  if(inlen < lenmin) { size_t i; for(i = 0; i < inlen; i++) out[i] = in[inlen-1-i]; return inlen; }
   LZPINI(inlen);
   for(cx = ctou32(ip-4), ctou32(op) = BSWAP32(cx), op += 4, ip -= 4; ip > in+lenmin;) {
     h4       = LZPHASH(cx, hbits);
@@ -158,7 +158,9 @@ size_t lzpenc(unsigned char *__restrict in, size_t inlen, unsigned char *__restr
 size_t lzpdec(unsigned char *in, size_t inlen, unsigned char *out, size_t outlen, unsigned lenmin, unsigned hbits) {
   unsigned      _htab[1<< H_BITS] = {0}, *htab = _htab, cx, h4 = 0;
   unsigned char *ip = in, *outend = out+outlen, *op = outend;
-  LZPINIR(outlen);
+  if(lenmin < LM) lenmin = LM;
+  if(inlen >= outlen) { memcpy(out, in, outlen); return inlen; }
+  LZPINI(outlen);
   for(cx = BSWAP32(ctou32(ip)), ctou32(op-4) = cx, op -= 4, ip += 4; op > out;) {
     unsigned c;    h4 = LZPHASH(cx, hbits);
     unsigned char *cp = outend - htab[h4], *op_;
