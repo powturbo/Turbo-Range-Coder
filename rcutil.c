@@ -352,7 +352,7 @@ static ALWAYS_INLINE unsigned cid(unsigned c) {                            // ut
   if(c >=  0x2E80 && c <=   0x2F00) return 2; // cjk radicals supplement
   if(c >=  0x3400 && c <=   0x4DC0) return 2; // 2 bytes
   if(c >=  0x4E00 && c <=   0xA000) return 2;
-  if(c >=  0x9FA6 && c <=   0x9FCC) return 2;
+//if(c >=  0x9FA6 && c <=   0x9FCC) return 2;
   if(c >=  0xF900 && c <=   0xFB00) return 2; // compatibility ideographs
   if(c >     0xff && c <=   0xffff) return 1;
   if(c >= 0x20000 && c <=  0x2A6E0) return 3; // 3 bytes
@@ -363,7 +363,6 @@ static ALWAYS_INLINE unsigned cid(unsigned c) {                            // ut
   if(c >   0xffff && c <= 0xffffff) return 4;
   return 5;                                   // 4 bytes
 }
-
 // qsort compare functions --------------------------------
 #define SC(_x_) cid(_x_)
 
