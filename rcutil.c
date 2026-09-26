@@ -184,7 +184,7 @@ size_t lzpenc(unsigned char *__restrict in, size_t inlen, unsigned char *__restr
   unsigned char *ip = in, *cp, *op = out, *out_ = out + inlen;
   if(lenmin < LM) lenmin = LM;
   if(inlen < lenmin) { memcpy(out, in, inlen); return inlen;}
-  LZPINI(inlen);              
+  LZPINI(inlen);          //printf("$%d ", hbits);    
                         
   for(cx = ctou32(ip), ctou32(op) = cx, cx = BSWAP32(cx), op += 4, ip += 4; ip < in+inlen-lenmin;) {
     h4       = LZPHASH(cx, hbits);
