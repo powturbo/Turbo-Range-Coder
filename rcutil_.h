@@ -200,7 +200,7 @@ static ALWAYS_INLINE size_t memrun16(uint16_t const *in, uint16_t const *in_) { 
 
 //-------------- misc --------------------------------------------------------------------------------------------------
 //#define EMA(  _n_,_x_,_a_,_y_) (((_x_)*_a_ + ((1<<(_n_)) -_a_)*(_y_) ) >>(_n_)) // Exponential moving average EMA2=1->2 EMA4=2->4 EMA8=3->8,...
-#define EMA( _n_,_x_,_a_,_y_) ((((_x_)*(_a_)) + ((1ull<<(_n_)) - (_a_))*(_y_) + (1ull<<((_n_)-1))) >> (_n_)) // 2<=n<64. Exponential moving average + rounding EMA2=1->2 EMA4=2->4 EMA8=3->8,...
+//#define EMA( _n_,_x_,_a_,_y_) ((((_x_)*(_a_)) + ((1ull<<(_n_)) - (_a_))*(_y_) + (1ull<<((_n_)-1))) >> (_n_)) // 2<=n<64. Exponential moving average + rounding EMA2=1->2 EMA4=2->4 EMA8=3->8,...
 #define RICEK(_x_)             __bsr32((_x_)+1)                                // Rice parameter
 
 /*static inline int32_t EMA(uint32_t n, uint32_t a, int32_t x, int32_t y ) { // Round-to-nearest bias: 1 << (n - 1) (+0.5)
@@ -209,6 +209,7 @@ static ALWAYS_INLINE size_t memrun16(uint16_t const *in, uint16_t const *in_) { 
     int64_t biased = product + (1LL << (n - 1));
     return (int32_t)(y + (biased >> n));
 }*/
+#define EMA( _n_,_x_,_a_,_y_) (((int64_t)(_x_) * (_a_) + ((1ll << (_n_)) - (_a_)) * (_y_) + (1ll << ((_n_) - 1))) >> (_n_)) //2 <= N <= 30
 
 #define OVERFLOW0( _in_,_inlen_,_out_, _op_, _goto_) if( _op_               >= _out_+(_inlen_*255)/256-8) _goto_;
 #define OVERFLOW( _in_,_inlen_,_out_, _op_, _goto_) if( _op_                >= _out_+(_inlen_*255)/256-8) { memcpy(_out_,_in_,_inlen_); _op_ = _out_+_inlen_; _goto_; }
