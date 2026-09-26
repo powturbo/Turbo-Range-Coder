@@ -44,11 +44,17 @@
   #ifdef __AVX2__
 #define CDF16DEF __m256i _cmv = _mm256_set1_epi16(MIXD), _crv = _mm256_set_epi16(15*IC,14*IC,13*IC,12*IC,11*IC,10*IC, 9*IC, 8*IC, 7*IC, 6*IC, 5*IC, 4*IC, 3*IC, 2*IC, 1*IC, 0)
 #if 0
+static ALIGNED(const int16_t, _cdf16_gt[32], 64) = { 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1 };
+#define cdf16upd(_mb_, _x_) {\
+  __m256i _mv = _mm256_loadu_si256((const __m256i *)(_mb_)), _gt = _mm256_loadu_si256((const __m256i *)&_cdf16_gt[15 - (_x_)]);\
+  _mv = _mm256_add_epi16(_mv, _mm256_srai_epi16( _mm256_add_epi16(_mm256_sub_epi16(_crv,_mv), _mm256_and_si256(_gt,_cmv)), CDFRATE));\
+  _mm256_storeu_si256((__m256i *)(_mb_), _mv);\
+}
+#elif 1
 /*static int16_t _cdf16_tgt[16][16] __attribute__((aligned(32)));
 static void cdf16_tgt_init(void) { for(int x = 0; x < 16; x++) for(int i = 0; i < 16; i++) _cdf16_tgt[x][i] = (int16_t)(CRV[i] + (i > x ? (int16_t)MIXD : 0));
 }*/
-
-static int16_t _cdf16_tgt[16][16] __attribute__((aligned(32))) = {
+static ALIGNED(const int16_t, _cdf16_tgt[16][16], 64) = {
   {     0,  32746,  32756,  32766, -32760, -32750, -32740, -32730, -32720, -32710, -32700, -32690, -32680, -32670, -32660, -32650},  // x=0
   {     0,     10,  32756,  32766, -32760, -32750, -32740, -32730, -32720, -32710, -32700, -32690, -32680, -32670, -32660, -32650},  // x=1
   {     0,     10,     20,  32766, -32760, -32750, -32740, -32730, -32720, -32710, -32700, -32690, -32680, -32670, -32660, -32650},  // x=2
@@ -79,18 +85,30 @@ static int16_t _cdf16_tgt[16][16] __attribute__((aligned(32))) = {
   _mm256_storeu_si256((__m256i *)(_mb_), _mv);\
 }
 #endif
+#if 1
+#define cdf16ansdec(_mb_, _st_, _x_) do { \
+  __m256i   _mv = _mm256_loadu_si256((const __m256i *)(_mb_)); \
+  uint32_t _val = _BZHI32(_st_, ANS_BITS); \
+  __m256i   _gv = _mm256_cmpgt_epi16(_mv, _mm256_set1_epi16(_val)); \
+  uint32_t _idx = ctz32(_mm256_movemask_epi8(_gv)) >> 1; \
+  _x_ = _idx - 1; \
+  _st_ = (state_t)((_mb_)[_idx] - (_mb_)[_x_]) * ((_st_) >> ANS_BITS) + _val - (_mb_)[_x_]; \
+  _mv = _mm256_add_epi16(_mv, _mm256_srai_epi16( _mm256_sub_epi16(_mm256_andnot_si256(_gv, _crv), _mv), CDFRATE )  ); \
+  _mm256_storeu_si256((__m256i *)(_mb_), _mv); \
+} while(0)
+#else
 #define cdf16ansdec(_mb_, _st_, _x_) {\
   __m256i _mv = _mm256_loadu_si256((const __m256i *)(_mb_)),\
-          _gv = _mm256_cmpgt_epi16(_mv, _mm256_set1_epi16(BZHI32(_st_, ANS_BITS)));\
+          _gv = _mm256_cmpgt_epi16(_mv, _mm256_set1_epi16(_BZHI32(_st_, ANS_BITS)));\
   _x_  = ctz32(_mm256_movemask_epi8(_gv))>>1;\
   _st_ = STATEUPD((_mb_), _st_,_x_);\
   _mv  = _mm256_add_epi16(_mv,_mm256_srai_epi16(_mm256_add_epi16(_mm256_sub_epi16(_crv,_mv),_mm256_and_si256(_gv,_cmv)), CDFRATE));\
   _mm256_storeu_si256((__m256i *)(_mb_), _mv);\
 }
-
+#endif
 #define cdf16sansdec(_mb_, _st_, _x_) {\
   __m256i _mv = _mm256_loadu_si256((const __m256i *)(_mb_)), \
-          _gv = _mm256_cmpgt_epi16(_mv, _mm256_set1_epi16(BZHI32(_st_, ANS_BITS))); \
+          _gv = _mm256_cmpgt_epi16(_mv, _mm256_set1_epi16(_BZHI32(_st_, ANS_BITS))); \
   _x_  = (ctz32(_mm256_movemask_epi8(_gv))>>1); \
   _st_ = STATEUPD((_mb_), _st_,_x_);\
 }
