@@ -186,7 +186,7 @@ endif
 endif
 
 ifneq ($(NOCOMP), 1)
-LIB=$(addprefix $(BUILD)/,rc_ss.o rc_s.o rccdf.o rcutil.o bec_b.o rccm_s.o rccm_ss.o rcqlfc_s.o rcqlfc_ss.o rcqlfc_sf.o cpu.o worddict.o)
+LIB=$(addprefix $(BUILD)/,rc_ss.o rc_s.o rccdf.o rcutil.o bec_b.o rccm_s.o rccm_ss.o rcqlfc_s.o rcqlfc_ss.o rcqlfc_sf.o cpu.o)
 
 
 #ifeq ($(DELTA), 1)
