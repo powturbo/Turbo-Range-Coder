@@ -108,31 +108,125 @@ void vfree(void *address) {
   #endif
 
 //--------------------------- lzp preprocessor (lenmin >= 32) ------------------------------------------------------------------------
-#define LZPMATCH 255
-#define emitmatch(_l_,_op_) { unsigned _l = _l_-lenmin+1; *_op_++ = LZPMATCH; while(_l >= 254) { *_op_++ = 254; _l -= 254; if(op >= out_) goto end; } *_op_++ = _l; }
-#define emitch(_ch_,_op_)   { *_op_++ = _ch_; if(_ch_ == LZPMATCH) *_op_++ = 0; if(op >= out_) goto end; }
+#define LZPESC                 255
+#define emitmatch(_l_,_op_)    { unsigned _l = _l_-lenmin+1; *_op_++ = LZPESC; while(_l >= 254) { *_op_++ = 254; _l -= 254; if(op >= out_) goto end; } *_op_++ = _l; }
+#define emitch(_ch_,_op_)      { *_op_++ = _ch_; if(_ch_ == LZPESC) *_op_++ = 0; if(op >= out_) goto end; }
 
-#define C32     123456791
+#define C32                    123456791u
 #define LZPHASH(_x_, _hbits_)  (((_x_) * C32) >> (32-_hbits_))
-#define H_BITS  18                                       // LZP HASH table size
-#define LM      32
-#define LZPINI(_n_) hbits = hbits?hbits:(_n_ >= (1<<24)?21:H_BITS);\
-  hbits = hbits>12?hbits:12;\
-  if(hbits > H_BITS && !(htab = calloc(1<<hbits, 4))) { htab = _htab; hbits = H_BITS; }
+#define LZPINI(_n_) hbits = hbits?hbits:(_n_ >= (1<<24)?21:LZPHBITS);\
+  hbits = hbits<12?12:hbits;\
+  if(hbits > LZPHBITS && !(htab = calloc(1<<hbits, 4))) { htab = _htab; hbits = LZPHBITS; }
+
+#ifdef __AVX2__
+#define matchlen(ip, cp, cl) \
+  unsigned char *ip_ = in + inlen - 32;\
+  for(;;) {\
+    if(ip+cl >= ip_) break;\
+    __m256i a = _mm256_loadu_si256((const __m256i *)(ip+cl)), b = _mm256_loadu_si256((const __m256i *)(cp+cl));\
+    unsigned m = ~(unsigned)_mm256_movemask_epi8(_mm256_cmpeq_epi8(a,b));\
+    if(m) { cl += (unsigned)__builtin_ctz(m) & ~7u; break; }\
+    cl += 32;\
+  }\
+  for(; ip+cl < in+inlen && ip[cl] == cp[cl]; cl++);      
+#elif 0 //defined(__SSE2__)
+#define matchlen(ip, cp, cl) \
+    unsigned char *ip_ = in + inlen - 16;\
+    for(;;) {\
+      if(ip+cl >= ip_) break;\
+      unsigned m = ~((unsigned)_mm_movemask_epi8(_mm_cmpeq_epi8(_mm_loadu_si128((__m128i *)(ip+cl   )), _mm_loadu_si128((__m128i *)(cp+cl   )))));\
+      if(m) { cl += (unsigned)__builtin_ctz(m) & ~7u; break; }\
+      cl += 16;\
+    }
+#else
+#define matchlen(ip, cp, cl) \
+  unsigned char *ip_ = in + inlen - 32;\
+  for(;;) {\
+    if(ip+cl > ip_) break;\
+    if(ctou64(ip+cl) != ctou64(cp+cl)) break; cl += 8;\
+    if(ctou64(ip+cl) != ctou64(cp+cl)) break; cl += 8;\
+    if(ctou64(ip+cl) != ctou64(cp+cl)) break; cl += 8;\
+    if(ctou64(ip+cl) != ctou64(cp+cl)) break; cl += 8;\
+  }\
+  for(; ip+cl < in+inlen && ip[cl] == cp[cl]; cl++);      
+#endif                                                            
+
+#define LZPMAXBIN 64
+
+typedef struct {
+  char     *s;
+  unsigned sizeo;
+  int      optlen[2];
+  unsigned h[64];
+} hist_t;
+
+hist_t hists[] = {
+  "log",    205242368, { 36,  8}, {0,147273,324119,1439153,606950,617760,529579,511325,825290,702566,489411,169899,65322,33008,52575,29928,27984,14577,13727,10073,7890,3996,2077,1438,1177,972,680,433,248,266,240,199,138,41,11,11,7,6,8,8,6,4,4,4,4,6,4,4,1,2,2,1,2,1,1,1,1,1,1,1,1,0,0,19},  
+  "dna",    686876180, { 20, 16}, {0,126921,244809,94564,47919,26318,17045,12383,9835,8328,6948,5117,3890,3089,2490,2060,1766,1452,1255,1179,997,803,664,673,527,543,487,449,412,389,320,274,292,271,273,212,208,189,179,144,190,149,157,161,100,117,112,121,100,93,78,76,67,85,57,62,86,69,47,59,77,46,55,1947},
+  "engl",   104857600, { 28, 24}, {0,183929,283974,86339,24361,10377,5294,3291,2128,1811,1369,1004,871,713,614,511,655,418,380,762,1663,516,219,182,146,139,129,110,133,132,130,120,110,94,100,93,72,93,72,72,87,65,69,79,76,69,67,58,69,69,64,57,60,77,56,62,56,57,60,48,57,49,49,6450},
+  "enwik8", 100000000, { 32, 28}, {0,292279,576275,206814,107728,58520,36911,22097,13888,13922,12573,7070,11034,12533,2876,2167,1819,1284,1037,917,661,659,534,597,419,349,318,316,220,206,195,158,115,135,101,112,115,169,117,103,99,125,64,54,39,53,38,44,62,110,145,79,144,105,29,20,96,51,76,43,23,11,14,659},
+  "html",   100000000, { 28, 28}, {0,180686,494279,264566,174029,127303,97787,76687,62199,52500,45102,37887,33181,28734,26402,23536,20115,18641,17487,13967,12598,10927,10778,8740,8513,8168,7005,6505,5562,5155,4531,4154,4072,3657,3429,2939,2950,2645,2319,2215,2126,2057,1877,1774,1695,1591,1524,1381,1349,1259,1115,1130,1016,855,799,687,813,763,604,661,617,508,627,15535},
+  "json",   104857640, { 28, 32}, {0,65806,192418,241502,180992,67625,98733,70831,14654,33636,6671,7915,7849,13197,17009,12753,12136,8659,7233,2018,5183,24634,30775,5188,553,3257,10708,1793,208,182,216,91,62,20,13,8,14,7,0,0,1,0,0,0,0,4,9,14,5,3,2,6,4,1,0,1,1,0,0,0,0,0,0,0},
+  "diff",   98304,     { 72, 48}, {0,15,164,192,97,66,57,54,37,38,34,35,14,23,21,14,15,15,13,15,18,11,10,10,11,5,11,8,17,5,8,4,7,6,7,5,5,4,2,4,2,3,4,1,1,4,1,3,3,1,1,1,0,2,1,3,4,4,1,5,1,0,2,69},
+  "silesia",211948544, { 92, 92}, {0,312435,1197021,719699,454204,215736,161423,89337,62356,53042,102161,38503,35923,99295,80508,19509,15991,8687,6065,5648,6699,4249,3057,2151,1690,1924,2307,1738,1045,842,987,2794,905,1265,1139,636,591,1134,541,959,483,616,658,962,393,406,456,485,827,810,419,786,339,517,372,246,255,173,183,310,227,189,177,23813},
+  "enwik9", 1000000000,{112,112}, {0,2619104,5302118,2171880,1436997,877117,567341,418962,284477,264975,262638,214858,424633,244717,93776,64608,40824,57454,33165,27456,24075,44949,39420,25196,22248,14671,12910,21210,12149,12433,13497,8111,6380,8677,5861,8438,6274,3685,3934,3291,3093,4160,2643,2330,2499,2771,2912,2231,2110,2144,1450,1473,1487,1311,1037,1079,1375,1799,1624,1470,949,804,845,20440,}
+};
+#define NHISTS    ((int)(sizeof(hists) / sizeof(hists[0])))
+
+static int histoptlen(unsigned hist[64], unsigned inlen) {
+  int      bestidx = 0;
+  double   mindist = 1e30;
+  uint64_t totin = 0;
+
+  for(int i = 0; i < LZPMAXBIN; i++) totin += hist[i];
+  for(int i = 0; i < NHISTS; i++) {
+    uint64_t totref = 0;
+    for(int j = 0; j < LZPMAXBIN; j++) totref += hists[i].h[j];     
+    double hist_dist = 0;
+    for(int j = 0; j < LZPMAXBIN; j++) 
+      hist_dist += fabs((double)hist[j] / totin - (double)hists[i].h[j] / totref);
+        
+    double sizedist = fabs(log((double)inlen + 1) - log((double)hists[i].sizeo + 1));
+    double totdist = hist_dist + (sizedist * 0.05); // Combined heuristic: weighted sum
+    if(totdist < mindist) mindist = totdist, bestidx = i;
+  }  
+  return bestidx; 
+}
+
+int histopt(const unsigned char *in, int inlen, int lev) {
+  unsigned      htab[1<<LZPHBITS] = {0};  uint32_t cx;
+  unsigned char *ip = in, *cp;
+  unsigned      histlen[LZPMAXBIN+1] = {0};
+
+  for(cx = ctou32(ip), cx = BSWAP32(cx), ip += 4; ip < in+inlen-64/8;) {
+    int h4   = LZPHASH(cx, LZPHBITS);
+        cp   = in + htab[h4];
+    htab[h4] = ip - in;
+    if(ctou64(ip) == ctou64(cp)) { int cl = 64/8;
+      matchlen(ip, cp, cl);
+      unsigned l = cl>=256?LZPMAXBIN:(cl+3)/4; histlen[l-1]++;
+      ip += cl;
+      cx  = BSWAP32(ctou32(ip-4));
+      continue;
+    }
+    unsigned ch = *ip++; cx = cx<<8 | ch;       
+  }                                                                             //int minl; //printf("\n{", inlen);  for(int i = 0; i < LZPMAXBIN; i++) printf("%u,", histlen[i]);  printf("},\n");  
+  return hists[histoptlen(histlen, inlen)].optlen[lev]; 
+}
 
 #ifdef LZPREVERSE
 size_t lzpenc(unsigned char *__restrict in, size_t inlen, unsigned char *__restrict out, unsigned lenmin, unsigned hbits) {
-  unsigned      _htab[1<<H_BITS] = {0}, *htab = _htab, cl, h4 = 0;  uint32_t cx;
+  unsigned      _htab[1<<LZPHBITS] = {0}, *htab = _htab, cl, h4 = 0;  uint32_t cx;
   unsigned char *inend = in+inlen, *ip = inend, *cp, *op = out, *out_ = out + inlen;
-  if(lenmin < LM) lenmin = LM;
+  if(lenmin < LZPLENMIN) lenmin = LZPLENMIN;
   if(inlen < lenmin) { size_t i; for(i = 0; i < inlen; i++) out[i] = in[inlen-1-i]; return inlen; }
   LZPINI(inlen);
   for(cx = ctou32(ip-4), ctou32(op) = BSWAP32(cx), op += 4, ip -= 4; ip > in+lenmin;) {
     h4       = LZPHASH(cx, hbits);
     cp       = inend - htab[h4];             
     htab[h4] = inend - ip;
-    if(ctou64(ip-8)  == ctou64(cp-8)  && ctou64(ip-16) == ctou64(cp-16) && ctou64(ip-24) == ctou64(cp-24) && ctou64(ip-32) == ctou64(cp-32)) { // match
-      for(cl = 32;;) {
+    if(ctou64(ip-8)  == ctou64(cp-8) ) { // match
+      for(cl = 8;;) {
         if(ip-cl <= in+32) break;
         if(ctou64(ip-cl-8) != ctou64(cp-cl-8)) break; cl += 8;
         if(ctou64(ip-cl-8) != ctou64(cp-cl-8)) break; cl += 8;
@@ -156,104 +250,72 @@ size_t lzpenc(unsigned char *__restrict in, size_t inlen, unsigned char *__restr
 }
 
 size_t lzpdec(unsigned char *in, size_t inlen, unsigned char *out, size_t outlen, unsigned lenmin, unsigned hbits) {
-  unsigned      _htab[1<< H_BITS] = {0}, *htab = _htab, cx, h4 = 0;
+  unsigned      _htab[1<< LZPHBITS] = {0}, *htab = _htab, cx, h4 = 0;
   unsigned char *ip = in, *outend = out+outlen, *op = outend;
-  if(lenmin < LM) lenmin = LM;
+  if(lenmin < LZPLENMIN) lenmin = LZPLENMIN;
   if(inlen >= outlen) { memcpy(out, in, outlen); return inlen; }
   LZPINI(outlen);
   for(cx = BSWAP32(ctou32(ip)), ctou32(op-4) = cx, op -= 4, ip += 4; op > out;) {
     unsigned c;    h4 = LZPHASH(cx, hbits);
     unsigned char *cp = outend - htab[h4], *op_;
              htab[h4] = outend - op;
-    if((c = *ip++) == LZPMATCH)
+    if((c = *ip++) == LZPESC)
       if(*ip) { 
         c = 0; do c += *ip; while(*ip++ == 254);
         for(op_ = op-(c+lenmin-1); op > op_; *--op = *--cp);
         cx = ctou32(op);
         continue;
-      } else ip++, c = LZPMATCH;
+      } else ip++, c = LZPESC;
     cx = cx << 8 | (*--op = c);
   }
   if(htab != _htab) free(htab);
   return ip - in;
 }
-
 #else
-size_t lzpenc(unsigned char *__restrict in, size_t inlen, unsigned char *__restrict out, unsigned lenmin, unsigned hbits) {
-  unsigned      _htab[1<<H_BITS] = {0}, *htab = _htab, cl, h4 = 0;  uint32_t cx;
+size_t lzpenc(unsigned char *__restrict in, size_t inlen, unsigned char *__restrict out, unsigned lenmin, unsigned hbits) { 
+  unsigned      _htab[1<<LZPHBITS] = {0}, *htab = _htab, cx;
   unsigned char *ip = in, *cp, *op = out, *out_ = out + inlen;
-  if(lenmin < LM) lenmin = LM;
-  if(inlen < lenmin) { memcpy(out, in, inlen); return inlen;}
-  LZPINI(inlen);          //printf("$%d ", hbits);    
-                        
+
+  if(lenmin < LZPLENMIN) lenmin = LZPLENMIN;
+  if(inlen < lenmin) { memcpy(out, in, inlen); return inlen; }
+  LZPINI(inlen); 
   for(cx = ctou32(ip), ctou32(op) = cx, cx = BSWAP32(cx), op += 4, ip += 4; ip < in+inlen-lenmin;) {
-    h4       = LZPHASH(cx, hbits);
-    cp       = in + htab[h4];
+    int h4   = LZPHASH(cx, hbits);
+        cp   = in + htab[h4];
     htab[h4] = ip - in;
-      #ifdef __AVX2__
-    __m256i x = _mm256_xor_si256(_mm256_loadu_si256((const __m256i *)ip), _mm256_loadu_si256((const __m256i *)cp));
-    if(_mm256_testz_si256(x, x)) {
-      unsigned char *ipe = in + inlen - 32;
-      for(cl = 32;;) {
-        if(ip+cl >= ipe) break;
-        __m256i a = _mm256_loadu_si256((const __m256i *)(ip+cl)), b = _mm256_loadu_si256((const __m256i *)(cp+cl));
-        unsigned m = ~(unsigned)_mm256_movemask_epi8(_mm256_cmpeq_epi8(a,b));
-        if(m) { cl += (unsigned)__builtin_ctz(m) & ~7u; break; }
-        cl += 32;
-      }
-      #elif 0 //def __SSE2__
-    if(_mm_movemask_epi8(_mm_and_si128(_mm_cmpeq_epi8(_mm_loadu_si128((__m128i *)ip), _mm_loadu_si128((__m128i *)cp)), _mm_cmpeq_epi8(_mm_loadu_si128((__m128i *)(ip+16)), _mm_loadu_si128((__m128i *)(cp+16))))) == 0xffff) {
-      unsigned char *ipe = in + inlen - 32;
-      unsigned cl = 32;
-      for(;;) {
-        if(ip+cl >= ipe) break;
-        unsigned m0 = (unsigned)_mm_movemask_epi8(_mm_cmpeq_epi8(_mm_loadu_si128((__m128i *)(ip+cl   )), _mm_loadu_si128((__m128i *)(cp+cl   ))))    ^ 0xffffu;
-        unsigned m1 = (unsigned)_mm_movemask_epi8(_mm_cmpeq_epi8(_mm_loadu_si128((__m128i *)(ip+cl+16)), _mm_loadu_si128((__m128i *)(cp+cl+16)))) ^ 0xffffu;
-        unsigned m  = m0 | (m1 << 16);                
-        if(m) { cl += (unsigned)__builtin_ctz(m) & ~7u; break; }
-        cl += 32;
-      }
-      #else
-    if(ctou64(ip) == ctou64(cp) && ctou64(ip+8) == ctou64(cp+8) && ctou64(ip+16) == ctou64(cp+16) && ctou64(ip+24) == ctou64(cp+24)) { // match
-      for(cl = 32;;) {
-        if(ip+cl >= in+inlen-32) break;
-        if(ctou64(ip+cl) != ctou64(cp+cl)) break; cl += 8;
-        if(ctou64(ip+cl) != ctou64(cp+cl)) break; cl += 8;
-        if(ctou64(ip+cl) != ctou64(cp+cl)) break; cl += 8;
-        if(ctou64(ip+cl) != ctou64(cp+cl)) break; cl += 8;
-      }    
-      #endif                                                            
+    if(ctou64(ip) == ctou64(cp)) { int cl = 64/8;
+      matchlen(ip, cp, cl);
       if(cl >= lenmin) {
-        for(; ip+cl < in+inlen && ip[cl] == cp[cl]; cl++);
         emitmatch(cl, op);
         ip += cl;
-        cx  = BSWAP32(ctou32(ip-4));
+        cx  = BSWAP32(ctou32(ip-4));  
         continue;
       }
     }
-    unsigned ch = *ip++; emitch(ch, op); cx = cx<<8 | ch;       // literal
+    unsigned ch = *ip++; emitch(ch, op); cx = cx<<8 | ch;       
   }
-  while(ip < in+inlen) { unsigned c = *ip++; emitch(c, op); }   
+  while(ip < in+inlen) { unsigned c = *ip++; emitch(c, op); }                                   
   end:if(htab != _htab) free(htab);
   if(op >= out_) { memcpy(out, in, inlen); op = out_; }
   return op - out;
 }
 
 size_t lzpdec(unsigned char *in, size_t inlen, unsigned char *out, size_t outlen, unsigned lenmin, unsigned hbits) {
-  unsigned      _htab[1<< H_BITS] = {0}, *htab = _htab, cx, h4 = 0;
+  unsigned      _htab[1<< LZPHBITS] = {0}, *htab = _htab, cx, h4 = 0;
   unsigned char *ip = in, *op = out;
-  LZPINI(outlen);
+  if(lenmin < LZPLENMIN) lenmin = LZPLENMIN;
+  LZPINI(outlen);                                  
   for(cx = ctou32(ip), ctou32(op) = cx, cx = BSWAP32(cx), op += 4, ip += 4; op < out+outlen;) {
     unsigned c;    h4 = LZPHASH(cx, hbits);
     unsigned char *cp = out + htab[h4],*op_;
              htab[h4] = op - out;
-    if((c = *ip++) == LZPMATCH)
-      if(*ip) { 
-        c = 0; do c += *ip; while(*ip++ == 254);
-        for(op_ = op+c+lenmin-1; op < op_; *op++ = *cp++);
-        cx = BSWAP32(ctou32(op-4));
-        continue;
-      } else ip++, c = LZPMATCH;
+    if((c = *ip++) != LZPESC) { cx = cx << 8 | (*op++ = c); continue; }
+    if(*ip) { 
+      c = 0; do c += *ip; while(*ip++ == 254);
+      for(op_ = op+c+lenmin-1; op < op_; *op++ = *cp++);
+      cx = BSWAP32(ctou32(op-4));
+      continue;
+    } else ip++, c = LZPESC;
     cx = cx << 8 | (*op++ = c);
   }
   if(htab != _htab) free(htab);
@@ -349,20 +411,20 @@ typedef struct { unsigned c, cnt; /*unsigned short v;*/ } _PACKED sym_t;  // c=k
 
 static ALWAYS_INLINE unsigned cid(unsigned c) {                            // utf-8 classification
   if(c >=      0  && c <=     0xff) return 0; // 1 byte
-  if(c >=  0x2E80 && c <=   0x2F00) return 2; // cjk radicals supplement
-  if(c >=  0x3400 && c <=   0x4DC0) return 2; // 2 bytes
-  if(c >=  0x4E00 && c <=   0xA000) return 2;
-//if(c >=  0x9FA6 && c <=   0x9FCC) return 2;
-  if(c >=  0xF900 && c <=   0xFB00) return 2; // compatibility ideographs
+  if(c >=  0x2E80 && c <=   0x2F00 || // cjk radicals supplement
+     c >=  0x3400 && c <=   0x4DC0 || // 2 bytes
+     c >=  0x4E00 && c <=   0xA000 ||
+     c >=  0xF900 && c <=   0xFB00) return 2; // compatibility ideographs
   if(c >     0xff && c <=   0xffff) return 1;
-  if(c >= 0x20000 && c <=  0x2A6E0) return 3; // 3 bytes
-  if(c >= 0x2A700 && c <   0x2B740) return 3;
-  if(c >= 0x2B740 && c <   0x2B820) return 3;
-  if(c >= 0x2B820 && c <=  0x2CEB0) return 3; //included as of Unicode 8.0
-  if(c >= 0x2F800 && c <=  0x2FA20) return 3;
+  if(c >= 0x20000 && c <=  0x2A6E0 ||         // 3 bytes
+     c >= 0x2A700 && c <   0x2B740 ||        
+     c >= 0x2B740 && c <   0x2B820 ||        
+     c >= 0x2B820 && c <=  0x2CEB0 ||         //included as of Unicode 8.0
+     c >= 0x2F800 && c <=  0x2FA20) return 3;
   if(c >   0xffff && c <= 0xffffff) return 4;
   return 5;                                   // 4 bytes
 }
+
 // qsort compare functions --------------------------------
 #define SC(_x_) cid(_x_)
 
@@ -1047,7 +1109,7 @@ _Float16 _fprazor16(_Float16 d, float e, int lg2e) {
 void fprazor16(_Float16 *in, unsigned n, _Float16 *out, float e) {
   int lg2e = -log(e)/log(2.0); _Float16 *ip;
 
-  for (ip = in; ip < in+n; ip++,out++)
+  for(ip = in; ip < in+n; ip++,out++)
     *out = _fprazor16(*ip, e, lg2e);
 }
   #endif
