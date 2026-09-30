@@ -1012,8 +1012,9 @@ int main(int argc, char* argv[]) {
       for(i = 0; i < 20; i++)
         if(lens[i].len != -1)
           printf("%s%d", i?",":"", lens[i].id);
-      }                                                                                                                               //if(fdbg) fclose(fdbg);
-      printf("\n"); exit(0);
+      }                                                                                                                              //if(fdbg) fclose(fdbg);
+      printf("\n");
+      exit(0);
     }
     #endif
   //---------------------------------- File Compression/Decompression -----------------------------------------------------
