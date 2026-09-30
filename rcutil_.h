@@ -37,6 +37,9 @@
   #endif
 
 //#define LZPREVERSE  // reverse lzp (R -> L )
+#define LZPLENMIN 8
+#define LZPHBITS 16
+
 //-------------------------- mtf: move to front (8 bits) -----------------------------------------------------------
   #ifdef __AVX2__ // Get position of existing c
 #define MEMGET8(_in_,_ip_,_cv_,_c_) do { for(;;) { unsigned m = _mm256_movemask_epi8(_mm256_cmpeq_epi8(_mm256_loadu_si256((__m256i*)_ip_), _cv_)); if(m) { _ip_ += ctz32(m); break; } _ip_ += 32;} while(*_ip_ != _c_) _ip_++; } while(0)
