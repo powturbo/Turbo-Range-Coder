@@ -30,6 +30,7 @@
 
 #include "rcutil_.h"
 #include "mb_vint.h" 
+#include "worddict.h" 
 
 //------------------------------------------- bwt : with libdivsort or libsais ----------------------------------------------------------
   #ifdef _BWTDIV                                // use libdivsort library
@@ -54,32 +55,41 @@ static unsigned calcmod(size_t len) { return 1<<__bsr32(len); }
 #define SR 16
 
   #ifndef NCOMP
-#define LM 32
-static unsigned lenmins[64] = { 0,  0,  0,  0,   0,  0,  0,  0,     0,  0,  0,  0,   0,  0,  0,  0,    0,  0,  0,  0,   0,  0,  0,  0,     0,  0,  0,  0,   0,   0,   0,   0,
-                               LM, LM, LM, LM,  LM, LM, LM, LM,    LM, LM, LM, LM,  LM, LM, LM, LM,   LM, LM, LM, LM,  LM, LM, 64,104,   104,104,104,104, 128, 144, 144, 144 };
-// MB                           0   0   0   0    0   0   0   0      1   1   2   3    4   6   8  12    16  24  32  48   64  96 128 192    256 384 512 768 1024 1536 2048 3072
+int histopt(const char *in, int inlen, int lev);
+
+static int sample(char *in, size_t n, int i, int j, char *out) {
+  if(n < j) { memcpy(out, in, n); return n; }
+  size_t segment_size = n / (size_t)i;
+  for (int k = 0; k < i; k++) {
+    size_t start = (size_t)k * segment_size; /* copy first j consecutive bytes of segment k */
+    memcpy(out + (size_t)k * (size_t)j, in + start, (size_t)j);
+  }
+  return n;
+}
 
 size_t rcbwtenc(unsigned char *in, size_t inlen, unsigned char *out, unsigned lev, unsigned thnum, unsigned _lenmin) {
   size_t        iplen  = inlen;
   unsigned      lenmin = _lenmin & 0x3ff, xbwt16 = (_lenmin & BWT_BWT16)?0x80:0, verbose = _lenmin & BWT_VERBOSE, nutf8 = _lenmin & BWT_NUTF8;
-  unsigned char *op    = out, *out_ = out+inlen, *bwt   = vmalloc(inlen+1024), *ip = in;  if(!bwt) { op = out_; goto e; }  // inlen + space for bwt indexes idxns
-  if(lenmin==1) lenmin = lenmins[vlcexpo(inlen,1)];
-                                                                                if(verbose) { printf("\nlev=%u MB=%zu expo=%u nutf8=%d ", lev, inlen/(1<<20), vlcexpo(inlen,1), nutf8?1:0);fflush(stdout); }
+  unsigned char *op    = out, *out_ = out+inlen, *bwt   = vmalloc(inlen+1024), *ip = in;  if(!bwt) { op = out_; goto e; }  // inlen + space for bwt indexes idxns  //if(lenmin==1) lenmin = lenmins[vlcexpo(inlen,1)];  //memcpy(out, in, inlen); memrev(out,inlen);
+  if(lenmin == 1) { 
+    lenmin = sample(in, inlen, 16, 16*1024, out); 
+    lenmin = histopt(out, lenmin, lev==9); 
+  }                                                                             if(verbose) { printf("\nlev=%u MB=%zu nutf8=%d ", lev, inlen/(1<<20), nutf8?1:0); fflush(stdout); }
   if(lenmin) {                                                                  if(verbose) { printf("lenmin=%u ", lenmin);fflush(stdout); }
     ip = bwt;
     switch(lenmin) {
       //case 2  : iplen = fastaenc(in, inlen, ip);                              if(verbose) { printf("GenTR %u->%u ", inlen, iplen); fflush(stdout); } break;
       default : if(!nutf8) { iplen = utf8enc(in, inlen, ip, _lenmin);           if(verbose) { if(iplen == inlen) printf("NoUTF8 "); else printf("UTF8:%zu->%zu ", inlen, iplen); fflush(stdout); }} break;                  // try utf8 preprocessing
     }
-    if(lenmin < 15 || iplen != inlen && iplen != -1)
-      lenmin = lenmin<15?128-lenmin:127;                                        // lenmin = 127-15 for other preprocessing ids
+    if(lenmin < LZPLENMIN || iplen != inlen && iplen != -1)
+      lenmin = lenmin<LZPLENMIN?128-lenmin:127;                                // lenmin = 127-LM for other preprocessing ids
     else {
       lenmin = ((lenmin>384?384:lenmin)+3)/4;
       ip     = bwt;                                                             LZPREV(if(lev==9) { memcpy(out, in, inlen); memrev(out, inlen); } );
-      iplen  = lzpenc(lev==9?OUT:in, inlen, ip, lenmin*4, lev > 8?0:16);
-      if(iplen == inlen || iplen+(inlen>>7)+256 > inlen && !forcelzp) {         if(verbose) { printf("NoLzp=%.2f%% ", (double)iplen*100.0/inlen);fflush(stdout); }  //Not enough saving
+      iplen  = lzpenc(lev==9?OUT:in, inlen, ip, lenmin*4, lev > 8?0:LZPHBITS);
+      if(iplen == inlen || iplen+(inlen>>7)+256 > inlen && !forcelzp) {         if(verbose) printf("No");  //Not enough saving
         ip = in; iplen = inlen; lenmin = 0;
-      } else {                                                                  if(verbose) { printf("Lzp=%zu %.2f%% ",  iplen, (double)iplen*100.0/inlen);fflush(stdout); }
+      } else {                                                                  if(verbose) { printf("Lzp=%zu=%.2f%% ", iplen, (double)iplen*100.0/inlen);fflush(stdout); }
                                                                                 LZPREV(if(lev==9) memrev(ip, iplen));
       }
     }
@@ -173,10 +183,17 @@ size_t rcbwtdec(unsigned char *in, size_t outlen, unsigned char *out, unsigned l
   if(lenmin) {
     switch(lenmin) {
       case 127: utf8dec(op, outlen, out);  break;
+      case 126: { wd_dict_t dict; size_t pos = 0; bool ok;
+        ok = wd_deserialize(op, outlen, &pos, &dict); //    assert(ok && "wd_deserialize failed");    assert(dict2.num_words == dict.num_words);    assert(pos == hdr.size);
+        wd_buf_t d; d.data = out; d.size = oplen; d.capacity = outlen; 
+        ok = wd_decode(op+pos, outlen-pos, &dict, &d);    //assert(ok && "wd_decode failed");
+       printf("$%zu,%zu, %zu ", d.size, d.capacity, pos ); fflush(stdout);
+        wd_dict_free(&dict); 
+      } break;
       //case 126: fastadec(op, outlen, out); break;
       default:                                                                  LZPREV(if(lev==9) memrev(op, oplen));
 //        lzpdec(op, outlen, out, lenmin*4, lev > 8?1:0);                       LZPREV(if(lev==9) memrev(out, outlen));
-        lzpdec(op, oplen, out, outlen, lenmin*4, lev > 8?0:16);                 LZPREV(if(lev==9) memrev(out, outlen));
+        lzpdec(op, oplen, out, outlen, lenmin*4, lev > 8?0:LZPHBITS);             LZPREV(if(lev==9) memrev(out, outlen));
     }
   }
   vfree(_bwt);
