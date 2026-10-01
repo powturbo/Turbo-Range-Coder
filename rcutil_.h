@@ -204,7 +204,8 @@ static ALWAYS_INLINE size_t memrun16(uint16_t const *in, uint16_t const *in_) { 
 //-------------- misc --------------------------------------------------------------------------------------------------
 //#define EMA(  _n_,_x_,_a_,_y_) (((_x_)*_a_ + ((1<<(_n_)) -_a_)*(_y_) ) >>(_n_)) // Exponential moving average EMA2=1->2 EMA4=2->4 EMA8=3->8,...
 #define EMA( _n_,_x_,_a_,_y_) ((((_x_)*(_a_)) + ((1ull<<(_n_)) - (_a_))*(_y_) + (1ull<<((_n_)-1))) >> (_n_)) // 2<=n<64. Exponential moving average + rounding EMA2=1->2 EMA4=2->4 EMA8=3->8,...
-#define RICEK(_x_)             __bsr32((_x_)+1)                                // Rice parameter
+#define RICEK(_x_)             __bsr32((_x_)+1)       // Rice parameter = floor(log2(x + 1)),   x:       0 | 1..2 | 3..6 | 7..14 | 15..30 | 31
+                                                                                              //RICEK:   0 |   1  |   2  |   3   |    4   |  5
 
 /*static inline int32_t EMA(uint32_t n, uint32_t a, int32_t x, int32_t y ) { // Round-to-nearest bias: 1 << (n - 1) (+0.5)
     int64_t diff = (int64_t)x - (int64_t)y;
