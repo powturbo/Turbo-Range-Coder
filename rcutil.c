@@ -202,24 +202,12 @@ int histopt(const unsigned char *in, int inlen, int lev) {
     unsigned      h4  = LZPHASH(cx, LZPHBITS);
     unsigned char *cp = in + htab[h4];
              htab[h4] = ip - in;
-      #if 1
     if(ctou64(ip) != ctou64(cp)) { cx = cx<<8 | (*ip++); continue; }  
     int cl = 64/8;
     matchlen(ip, cp, cl);
     unsigned l = cl>=256?LZPMAXBIN:(cl+3)/4; histlen[l-1]++;
     ip += cl;
     cx  = BSWAP32(ctou32(ip-4));  
-      #else
-    if(ctou64(ip) == ctou64(cp)) 
-    { int cl = 64/8;
-      matchlen(ip, cp, cl);
-      unsigned l = cl>=256?LZPMAXBIN:(cl+3)/4; histlen[l-1]++;
-      ip += cl;
-      cx  = BSWAP32(ctou32(ip-4));
-      continue;
-    }
-    unsigned ch = *ip++; cx = cx<<8 | ch;
-      #endif       
   }                                                                             //int minl; //printf("\n{", inlen);  for(int i = 0; i < LZPMAXBIN; i++) printf("%u,", histlen[i]);  printf("},\n");  
   return hists[histoptlen(histlen, inlen)].optlen[lev]; 
 }
