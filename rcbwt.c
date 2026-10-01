@@ -60,7 +60,7 @@ static int sample(char *in, size_t n, int i, int j, char *out) {
   if(n < j) { memcpy(out, in, n); return n; }
   size_t segment_size = n / (size_t)i;
   for (int k = 0; k < i; k++) {
-    size_t start = (size_t)k * segment_size; /* copy first j consecutive bytes of segment k */
+    size_t start = (size_t)k * segment_size; // copy first j consecutive bytes of segment k
     memcpy(out + (size_t)k * (size_t)j, in + start, (size_t)j);
   }
   return n;
@@ -69,7 +69,7 @@ static int sample(char *in, size_t n, int i, int j, char *out) {
 size_t rcbwtenc(unsigned char *in, size_t inlen, unsigned char *out, unsigned lev, unsigned thnum, unsigned _lenmin) {
   size_t        iplen  = inlen;
   unsigned      lenmin = _lenmin & 0x3ff, xbwt16 = (_lenmin & BWT_BWT16)?0x80:0, verbose = _lenmin & BWT_VERBOSE, nutf8 = _lenmin & BWT_NUTF8;
-  unsigned char *op    = out, *out_ = out+inlen, *bwt   = vmalloc(inlen+1024), *ip = in;  if(!bwt) { op = out_; goto e; }  // inlen + space for bwt indexes idxns  //if(lenmin==1) lenmin = lenmins[vlcexpo(inlen,1)];  //memcpy(out, in, inlen); memrev(out,inlen);
+  unsigned char *op    = out, *out_ = out+inlen, *bwt   = vmalloc(inlen+1024), *ip = in;  if(!bwt) { op = out_; goto e; } // inlen + space for bwt indexes idxns  
   if(lenmin == 1) { 
     lenmin = sample(in, inlen, 16, 16*1024, out); 
     lenmin = histopt(out, lenmin, lev==9); 
@@ -80,17 +80,15 @@ size_t rcbwtenc(unsigned char *in, size_t inlen, unsigned char *out, unsigned le
       //case 2  : iplen = fastaenc(in, inlen, ip);                              if(verbose) { printf("GenTR %u->%u ", inlen, iplen); fflush(stdout); } break;
       default : if(!nutf8) { iplen = utf8enc(in, inlen, ip, _lenmin);           if(verbose) { if(iplen == inlen) printf("NoUTF8 "); else printf("UTF8:%zu->%zu ", inlen, iplen); fflush(stdout); }} break;                  // try utf8 preprocessing
     }
-    if(lenmin < LZPLENMIN || iplen != inlen && iplen != -1)
-      lenmin = lenmin<LZPLENMIN?128-lenmin:127;                                 if(verbose) printf("No Lzp run"); // lenmin = 127-LM for other preprocessing ids
-    else {
-      lenmin = ((lenmin>384?384:lenmin)+3)/4;
+    if(lenmin < LZPLENMIN || iplen != inlen && iplen != -1) {
+      lenmin = lenmin<LZPLENMIN?128-lenmin:127;                                 if(verbose) printf("No Lzp run %d %d ", lenmin, iplen); // lenmin = 127-LM for other preprocessing ids
+    } else {
+      lenmin = ((lenmin>384?384:lenmin)+3)/4;                                   if(verbose) { printf("Lzp: minlen=%d ", lenmin*4); fflush(stdout); } 
       ip     = bwt;                                                             LZPREV(if(lev==9) { memcpy(out, in, inlen); memrev(out, inlen); } );
-      iplen  = lzpenc(lev==9?OUT:in, inlen, ip, lenmin*4, lev > 8?0:LZPHBITS);
-      if(iplen == inlen || iplen+(inlen>>7)+256 > inlen && !forcelzp) {         if(verbose) printf("No");  //Not enough saving
+      iplen  = lzpenc(lev==9?OUT:in, inlen, ip, lenmin*4, lev > 8?0:LZPHBITS);  if(verbose) { printf("Lzp=%zu=%.2f%% ", iplen, (double)iplen*100.0/inlen);fflush(stdout); }
+      if(iplen == inlen || iplen+(inlen>>7)+256 > inlen && !forcelzp) {         if(verbose) { printf("Not enough saving ");fflush(stdout); }  //Not enough saving
         ip = in; iplen = inlen; lenmin = 0;
-      } else {                                                                  if(verbose) { printf("Lzp=%zu=%.2f%% ", iplen, (double)iplen*100.0/inlen);fflush(stdout); }
-                                                                                LZPREV(if(lev==9) memrev(ip, iplen));
-      }
+      } else {                                                                  LZPREV(if(lev==9) memrev(ip, iplen));  }
     }
   }
   *op++ = xbwt16 | lenmin;
