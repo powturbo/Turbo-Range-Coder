@@ -156,22 +156,22 @@ void vfree(void *address) {
 typedef struct {
   char     *s;
   unsigned sizeo;
-  int      optlen[2];
+  uint16_t optlen[2];
   unsigned h[64];
 } hist_t;
 
 hist_t hists[] = {
+  "json",   104857640, { 28, 32}, {0,65806,192418,241502,180992,67625,98733,70831,14654,33636,6671,7915,7849,13197,17009,12753,12136,8659,7233,2018,5183,24634,30775,5188,553,3257,10708,1793,208,182,216,91,62,20,13,8,14,7,0,0,1,0,0,0,0,4,9,14,5,3,2,6,4,1,0,1,1,0,0,0,0,0,0,0},
   "log",    205242368, { 36,  8}, {0,147273,324119,1439153,606950,617760,529579,511325,825290,702566,489411,169899,65322,33008,52575,29928,27984,14577,13727,10073,7890,3996,2077,1438,1177,972,680,433,248,266,240,199,138,41,11,11,7,6,8,8,6,4,4,4,4,6,4,4,1,2,2,1,2,1,1,1,1,1,1,1,1,0,0,19},  
   "dna",    686876180, { 20, 16}, {0,126921,244809,94564,47919,26318,17045,12383,9835,8328,6948,5117,3890,3089,2490,2060,1766,1452,1255,1179,997,803,664,673,527,543,487,449,412,389,320,274,292,271,273,212,208,189,179,144,190,149,157,161,100,117,112,121,100,93,78,76,67,85,57,62,86,69,47,59,77,46,55,1947},
   "engl",   104857600, { 28, 24}, {0,183929,283974,86339,24361,10377,5294,3291,2128,1811,1369,1004,871,713,614,511,655,418,380,762,1663,516,219,182,146,139,129,110,133,132,130,120,110,94,100,93,72,93,72,72,87,65,69,79,76,69,67,58,69,69,64,57,60,77,56,62,56,57,60,48,57,49,49,6450},
-  "enwik8", 100000000, { 32, 28}, {0,292279,576275,206814,107728,58520,36911,22097,13888,13922,12573,7070,11034,12533,2876,2167,1819,1284,1037,917,661,659,534,597,419,349,318,316,220,206,195,158,115,135,101,112,115,169,117,103,99,125,64,54,39,53,38,44,62,110,145,79,144,105,29,20,96,51,76,43,23,11,14,659},
+  "enwikM", 100000000, { 32, 28}, {0,292279,576275,206814,107728,58520,36911,22097,13888,13922,12573,7070,11034,12533,2876,2167,1819,1284,1037,917,661,659,534,597,419,349,318,316,220,206,195,158,115,135,101,112,115,169,117,103,99,125,64,54,39,53,38,44,62,110,145,79,144,105,29,20,96,51,76,43,23,11,14,659},
   "html",   100000000, { 28, 28}, {0,180686,494279,264566,174029,127303,97787,76687,62199,52500,45102,37887,33181,28734,26402,23536,20115,18641,17487,13967,12598,10927,10778,8740,8513,8168,7005,6505,5562,5155,4531,4154,4072,3657,3429,2939,2950,2645,2319,2215,2126,2057,1877,1774,1695,1591,1524,1381,1349,1259,1115,1130,1016,855,799,687,813,763,604,661,617,508,627,15535},
-  "json",   104857640, { 28, 32}, {0,65806,192418,241502,180992,67625,98733,70831,14654,33636,6671,7915,7849,13197,17009,12753,12136,8659,7233,2018,5183,24634,30775,5188,553,3257,10708,1793,208,182,216,91,62,20,13,8,14,7,0,0,1,0,0,0,0,4,9,14,5,3,2,6,4,1,0,1,1,0,0,0,0,0,0,0},
   "diff",   98304,     { 72, 48}, {0,15,164,192,97,66,57,54,37,38,34,35,14,23,21,14,15,15,13,15,18,11,10,10,11,5,11,8,17,5,8,4,7,6,7,5,5,4,2,4,2,3,4,1,1,4,1,3,3,1,1,1,0,2,1,3,4,4,1,5,1,0,2,69},
-  "silesia",211948544, { 92, 92}, {0,312435,1197021,719699,454204,215736,161423,89337,62356,53042,102161,38503,35923,99295,80508,19509,15991,8687,6065,5648,6699,4249,3057,2151,1690,1924,2307,1738,1045,842,987,2794,905,1265,1139,636,591,1134,541,959,483,616,658,962,393,406,456,485,827,810,419,786,339,517,372,246,255,173,183,310,227,189,177,23813},
-  "enwik9", 1000000000,{112,112}, {0,2619104,5302118,2171880,1436997,877117,567341,418962,284477,264975,262638,214858,424633,244717,93776,64608,40824,57454,33165,27456,24075,44949,39420,25196,22248,14671,12910,21210,12149,12433,13497,8111,6380,8677,5861,8438,6274,3685,3934,3291,3093,4160,2643,2330,2499,2771,2912,2231,2110,2144,1450,1473,1487,1311,1037,1079,1375,1799,1624,1470,949,804,845,20440,}
+  "mixed",  211948544, { 92, 92}, {0,312435,1197021,719699,454204,215736,161423,89337,62356,53042,102161,38503,35923,99295,80508,19509,15991,8687,6065,5648,6699,4249,3057,2151,1690,1924,2307,1738,1045,842,987,2794,905,1265,1139,636,591,1134,541,959,483,616,658,962,393,406,456,485,827,810,419,786,339,517,372,246,255,173,183,310,227,189,177,23813},
+  "enwikL", 1000000000,{112,112}, {0,2619104,5302118,2171880,1436997,877117,567341,418962,284477,264975,262638,214858,424633,244717,93776,64608,40824,57454,33165,27456,24075,44949,39420,25196,22248,14671,12910,21210,12149,12433,13497,8111,6380,8677,5861,8438,6274,3685,3934,3291,3093,4160,2643,2330,2499,2771,2912,2231,2110,2144,1450,1473,1487,1311,1037,1079,1375,1799,1624,1470,949,804,845,20440,}
 };
-#define NHISTS    ((int)(sizeof(hists) / sizeof(hists[0])))
+#define NHISTS ((int)(sizeof(hists) / sizeof(hists[0])))
 
 static int histoptlen(unsigned hist[64], unsigned inlen) {
   int      bestidx = 0;
@@ -189,27 +189,37 @@ static int histoptlen(unsigned hist[64], unsigned inlen) {
     double sizedist = fabs(log((double)inlen + 1) - log((double)hists[i].sizeo + 1));
     double totdist = hist_dist + (sizedist * 0.05); // Combined heuristic: weighted sum
     if(totdist < mindist) mindist = totdist, bestidx = i;
-  }  
+  }
   return bestidx; 
 }
 
 int histopt(const unsigned char *in, int inlen, int lev) {
   unsigned      htab[1<<LZPHBITS] = {0};  uint32_t cx;
-  unsigned char *ip = in, *cp;
+  unsigned char *ip = in;
   unsigned      histlen[LZPMAXBIN+1] = {0};
 
   for(cx = ctou32(ip), cx = BSWAP32(cx), ip += 4; ip < in+inlen-64/8;) {
-    int h4   = LZPHASH(cx, LZPHBITS);
-        cp   = in + htab[h4];
-    htab[h4] = ip - in;
-    if(ctou64(ip) == ctou64(cp)) { int cl = 64/8;
+    unsigned      h4  = LZPHASH(cx, LZPHBITS);
+    unsigned char *cp = in + htab[h4];
+             htab[h4] = ip - in;
+      #if 1
+    if(ctou64(ip) != ctou64(cp)) { cx = cx<<8 | (*ip++); continue; }  
+    int cl = 64/8;
+    matchlen(ip, cp, cl);
+    unsigned l = cl>=256?LZPMAXBIN:(cl+3)/4; histlen[l-1]++;
+    ip += cl;
+    cx  = BSWAP32(ctou32(ip-4));  
+      #else
+    if(ctou64(ip) == ctou64(cp)) 
+    { int cl = 64/8;
       matchlen(ip, cp, cl);
       unsigned l = cl>=256?LZPMAXBIN:(cl+3)/4; histlen[l-1]++;
       ip += cl;
       cx  = BSWAP32(ctou32(ip-4));
       continue;
     }
-    unsigned ch = *ip++; cx = cx<<8 | ch;       
+    unsigned ch = *ip++; cx = cx<<8 | ch;
+      #endif       
   }                                                                             //int minl; //printf("\n{", inlen);  for(int i = 0; i < LZPMAXBIN; i++) printf("%u,", histlen[i]);  printf("},\n");  
   return hists[histoptlen(histlen, inlen)].optlen[lev]; 
 }
@@ -274,39 +284,38 @@ size_t lzpdec(unsigned char *in, size_t inlen, unsigned char *out, size_t outlen
 #else
 size_t lzpenc(unsigned char *__restrict in, size_t inlen, unsigned char *__restrict out, unsigned lenmin, unsigned hbits) { 
   unsigned      _htab[1<<LZPHBITS] = {0}, *htab = _htab, cx;
-  unsigned char *ip = in, *cp, *op = out, *out_ = out + inlen;
-
+  unsigned char *ip = in, *op = out, *out_ = out + inlen;
   if(lenmin < LZPLENMIN) lenmin = LZPLENMIN;
   if(inlen < lenmin) { memcpy(out, in, inlen); return inlen; }
-  LZPINI(inlen); 
+  LZPINI(inlen);
+ 
   for(cx = ctou32(ip), ctou32(op) = cx, cx = BSWAP32(cx), op += 4, ip += 4; ip < in+inlen-lenmin;) {
-    int h4   = LZPHASH(cx, hbits);
-        cp   = in + htab[h4];
+    unsigned       h4 = LZPHASH(cx, hbits);
+    unsigned char *cp = in + htab[h4];
     htab[h4] = ip - in;
-    if(ctou64(ip) == ctou64(cp)) { int cl = 64/8;
-      matchlen(ip, cp, cl);
-      if(cl >= lenmin) {
-        emitmatch(cl, op);
-        ip += cl;
-        cx  = BSWAP32(ctou32(ip-4));  
-        continue;
-      }
-    }
-    unsigned ch = *ip++; emitch(ch, op); cx = cx<<8 | ch;       
+    if(ctou64(ip) != ctou64(cp)) {  unsigned c = *ip++; emitch(c, op); cx = cx<<8 | c; continue; }  
+    int cl = 64/8;
+    matchlen(ip, cp, cl);
+    if(cl >= lenmin) {
+      emitmatch(cl, op);
+      ip += cl;
+      cx  = BSWAP32(ctou32(ip-4));  
+    } else { unsigned c = *ip++; emitch(c, op); cx = cx<<8 | c; }       
   }
   while(ip < in+inlen) { unsigned c = *ip++; emitch(c, op); }                                   
-  end:if(htab != _htab) free(htab);
+  end: if(htab != _htab) free(htab);
   if(op >= out_) { memcpy(out, in, inlen); op = out_; }
   return op - out;
 }
 
 size_t lzpdec(unsigned char *in, size_t inlen, unsigned char *out, size_t outlen, unsigned lenmin, unsigned hbits) {
-  unsigned      _htab[1<< LZPHBITS] = {0}, *htab = _htab, cx, h4 = 0;
-  unsigned char *ip = in, *op = out;
+  unsigned char *ip = in, *op = out, *out_ = out+outlen;
+  unsigned      _htab[1<< LZPHBITS] = {0}, *htab = _htab, cx;
   if(lenmin < LZPLENMIN) lenmin = LZPLENMIN;
-  LZPINI(outlen);                                  
-  for(cx = ctou32(ip), ctou32(op) = cx, cx = BSWAP32(cx), op += 4, ip += 4; op < out+outlen;) {
-    unsigned c;    h4 = LZPHASH(cx, hbits);
+  LZPINI(outlen);     
+                             
+  for(cx = ctou32(ip), ctou32(op) = cx, cx = BSWAP32(cx), op += 4, ip += 4; op < out_;) {
+    unsigned    c, h4 = LZPHASH(cx, hbits);
     unsigned char *cp = out + htab[h4],*op_;
              htab[h4] = op - out;
     if((c = *ip++) != LZPESC) { cx = cx << 8 | (*op++ = c); continue; }
@@ -314,9 +323,7 @@ size_t lzpdec(unsigned char *in, size_t inlen, unsigned char *out, size_t outlen
       c = 0; do c += *ip; while(*ip++ == 254);
       for(op_ = op+c+lenmin-1; op < op_; *op++ = *cp++);
       cx = BSWAP32(ctou32(op-4));
-      continue;
-    } else ip++, c = LZPESC;
-    cx = cx << 8 | (*op++ = c);
+    } else ip++, cx = cx << 8 | (*op++ = LZPESC);
   }
   if(htab != _htab) free(htab);
   return ip - in;
