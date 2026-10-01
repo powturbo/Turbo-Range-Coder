@@ -50,6 +50,19 @@
 
 #define PREDEMAK(_avg_,_x_) EMA(3, _avg_,  5,  _x_)                                                     // 3 bits
 #define PREDEMAR(_avg_,_x_) EMA(5, _avg_, 23, (_x_)>31?31:(_x_))                                        // 5 bits
+
+/*#define F 4                       // fractional bits
+// state: uint16_t, value*16
+#define EMAF(s,y,sh)  ((s) + ((int)(((y)<<F) - (s) + (1<<((sh)-1))) >> (sh)))
+// sh=1 → a=1/2, sh=2 → 1/4, sh=3 → 1/8, sh=4 → 1/16 ...
+// context: quantise the log of the average, with a half-step
+static inline unsigned qlog(unsigned s){        // s has F frac bits
+  unsigned v = s + (1<<F), b = __bsr32(v);       // >= F
+  return ((b-F)<<1) | ((v>>(b-1))&1);            // 2 steps per octave
+}*/
+
+
+
 #define CXK                 unsigned cxk = RICEK(K[u]>31?31:K[u]) << 8 | u                              // cxk: 3+8bits
 #define CXR                 unsigned cxr = RICEK(R[u])            << 8 | u, ku = RICEK(K[u]>14?14:K[u]) // cxr: 3+8 = 11, ku:2bits
 enum { KU0=11, KU=11, KB=11,
@@ -62,15 +75,15 @@ size_t T3(rcqlfc,RC_PRD,enc)(uint8_t *in, size_t inlen, unsigned char *out RCPRM
   MBG_DEC2(mbg0r, 1<<RU0, mbgur, 1<<RU, mbgbr, 1<<RB, 33, 33);                  //run length
   rcencdec(rcrange,rclow,rcilow);                                                   //range coder
 
-  uint8_t   K[1<<8], R[1<<8] = {1};
+  uint8_t   K[1<<8], R[1<<8];  for(int i = 0; i < 256; i++) R[i]=1;
   unsigned cx;
   rk = rcqlfc(in, inlen, _rk, r2cr);
   for(cx = 0; cx < (1<<8); cx++) { mbgenc(rcrange,rclow,rcilow, &mbg0a, mbgua, mbgba, RCPRM0,RCPRM1,op, r2cr[cx]); K[cx] = r2cr[cx]; }
   for(ip = in, in_ = in+inlen; ip < in_;) {
     unsigned k = *--rk,r;
     uint8_t  u = *ip++, *p = ip; while(ip < in_ && *ip == u) ip++; r = ip - p;  // run length encoding  //uint8_t  u = *ip; r = memrun8(ip, in_); ip += r--;
-    CXK; mbgxenc(rcrange,rclow,rcilow, &mbg0c[       cxk], mbguc[           cxk], mbgbc[cxk], RCPRM0K,RCPRM1K,op, k); K[u] = PREDEMAK(K[u],k);
-    CXR; mbgxenc(rcrange,rclow,rcilow, &mbg0r[ku<<11|cxr], mbgur[(ku>0)<<11|cxr], mbgbr[u  ], RCPRM0R,RCPRM1R,op, r); R[u] = PREDEMAR(R[u],r);
+    CXK; mbgxenc(rcrange,rclow,rcilow, &mbg0c[       cxk], mbguc[           cxk], mbgbc[cxk], RCPRM0K,RCPRM1K,op, k); K[u] = PREDEMAK(K[u],k);//K[u] = EMAF(K[u], k>31?31:k, 2); // 
+    CXR; mbgxenc(rcrange,rclow,rcilow, &mbg0r[ku<<11|cxr], mbgur[(ku>0)<<11|cxr], mbgbr[u  ], RCPRM0R,RCPRM1R,op, r); R[u] = PREDEMAR(R[u],r);//R[u] = EMAF(R[u], r>31?31:r, 3); //
                                                                                 OVERFLOW(in,inlen, out, op, goto e);
   }
   rceflush(rcrange,rclow,rcilow, op);                                                   OVERFLOW(in,inlen, out,op,;);
@@ -81,7 +94,7 @@ size_t T3(rcqlfc,RC_PRD,enc)(uint8_t *in, size_t inlen, unsigned char *out RCPRM
 
   #ifndef NDECOMP
 size_t T3(rcqlfc,RC_PRD,dec)(uint8_t *in, size_t outlen, uint8_t *out RCPRM) {
-  uint8_t r2c[257+O], *op, *ip = in, *p, K[256], R[256] = {1};;
+  uint8_t r2c[257+O], *op, *ip = in, *p; uint8_t K[256], R[256];   for(int i = 0; i < 256; i++) R[i]=1;
   unsigned i;
   MBG_DEC( mbg0a,         mbgua,        mbgba,        33, 33);
   MBG_DEC2(mbg0c, 1<<KU0, mbguc, 1<<KU, mbgbc, 1<<KB, 33, 33);
@@ -92,8 +105,8 @@ size_t T3(rcqlfc,RC_PRD,dec)(uint8_t *in, size_t outlen, uint8_t *out RCPRM) {
   for(op = out; op < out+outlen;) {
     uint8_t  u = r2c[O+0];
     unsigned k,r;
-    CXK; _mbgxdec(rcrange,rccode, &mbg0c[       cxk], mbguc[           cxk], mbgbc[cxk], RCPRM0K,RCPRM1K,ip, k, MTFD1(r2c,u), MTFD(r2c,k+1,u)); K[u] = PREDEMAK(K[u],k);
-    CXR;  mbgxdec(rcrange,rccode, &mbg0r[ku<<11|cxr], mbgur[(ku>0)<<11|cxr], mbgbr[u  ], RCPRM0R,RCPRM1R,ip, r);                                R[u] = PREDEMAR(R[u],r);
+    CXK; _mbgxdec(rcrange,rccode, &mbg0c[       cxk], mbguc[           cxk], mbgbc[cxk], RCPRM0K,RCPRM1K,ip, k, MTFD1(r2c,u), MTFD(r2c,k+1,u)); K[u] = PREDEMAK(K[u],k);//K[u] = EMAF(K[u], k>31?31:k, 2); //
+    CXR;  mbgxdec(rcrange,rccode, &mbg0r[ku<<11|cxr], mbgur[(ku>0)<<11|cxr], mbgbr[u  ], RCPRM0R,RCPRM1R,ip, r);                                R[u] = PREDEMAR(R[u],r);//R[u] = EMAF(R[u], r>31?31:r, 3); //
     r++; memset_(op, u, r);
   }
   return outlen;
