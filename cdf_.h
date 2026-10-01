@@ -85,7 +85,7 @@ static ALIGNED(const int16_t, _cdf16_tgt[16][16], 64) = {
   _mm256_storeu_si256((__m256i *)(_mb_), _mv);\
 }
 #endif
-#if 1
+#if 0 //ERROR
 #define cdf16ansdec(_mb_, _st_, _x_) do { \
   __m256i   _mv = _mm256_loadu_si256((const __m256i *)(_mb_)); \
   uint32_t _val = _BZHI32(_st_, ANS_BITS); \
