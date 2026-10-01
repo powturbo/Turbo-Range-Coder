@@ -81,7 +81,7 @@ size_t rcbwtenc(unsigned char *in, size_t inlen, unsigned char *out, unsigned le
       default : if(!nutf8) { iplen = utf8enc(in, inlen, ip, _lenmin);           if(verbose) { if(iplen == inlen) printf("NoUTF8 "); else printf("UTF8:%zu->%zu ", inlen, iplen); fflush(stdout); }} break;                  // try utf8 preprocessing
     }
     if(lenmin < LZPLENMIN || iplen != inlen && iplen != -1)
-      lenmin = lenmin<LZPLENMIN?128-lenmin:127;                                // lenmin = 127-LM for other preprocessing ids
+      lenmin = lenmin<LZPLENMIN?128-lenmin:127;                                 if(verbose) printf("No Lzp run"); // lenmin = 127-LM for other preprocessing ids
     else {
       lenmin = ((lenmin>384?384:lenmin)+3)/4;
       ip     = bwt;                                                             LZPREV(if(lev==9) { memcpy(out, in, inlen); memrev(out, inlen); } );
