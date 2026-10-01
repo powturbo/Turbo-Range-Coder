@@ -67,6 +67,80 @@ static inline unsigned qlog(unsigned s){        // s has F frac bits
 #define CXR                 unsigned cxr = RICEK(R[u])            << 8 | u, ku = RICEK(K[u]>14?14:K[u]) // cxr: 3+8 = 11, ku:2bits
 enum { KU0=11, KU=11, KB=11,
        RU0=13, RU=12, RB= 8 };
+#if 1
+enum { EMAQ = 8, EMAQ_ONE = 1u << EMAQ };
+
+static inline uint16_t
+qlfc_ema_kq(uint16_t oldq, uint8_t k) {  /* round((5*old + 3*k)/8), with old and result in Q8 */
+  return (uint16_t)( (5u * (uint32_t)oldq + 3u * ((uint32_t)k << EMAQ) + 4u) >> 3 );
+}
+
+static inline uint16_t qlfc_ema_rq(uint16_t oldq, unsigned r) { unsigned x = r > 31 ? 31 : r;
+  /* round((23*old + 9*x)/32), with old and result in Q8 */
+  return (uint16_t)( (23u * (uint32_t)oldq + 9u * ((uint32_t)x << EMAQ) + 16u) >> 5 );
+}
+
+/* Convert Q8 EMA state to the integer used by RICEK. */
+static inline unsigned qlfc_riceq(uint16_t q, unsigned cap) {  unsigned x = ((uint32_t)q + (EMAQ_ONE >> 1)) >> EMAQ;
+  if(x > cap) x = cap; return __bsr32(x + 1);
+}
+
+  #ifndef NCOMP
+size_t T3(rcqlfc,RC_PRD,enc)(uint8_t *in, size_t inlen, unsigned char *out RCPRM) {
+  uint8_t _r2cr[(1<<8)+32], *r2cr = &_r2cr[32], *ip = in, *in_,*op = out, *_rk = vmalloc((inlen+1)*sizeof(in[0])), *rk; if(!_rk) die("malloc failed. size=%zu\n", inlen);
+  MBG_DEC( mbg0a,         mbgua,        mbgba,        33, 33);                  //initial mtf r2c
+  MBG_DEC2(mbg0c, 1<<KU0, mbguc, 1<<KU, mbgbc, 1<<KB, 33, 33);                  //rank
+  MBG_DEC2(mbg0r, 1<<RU0, mbgur, 1<<RU, mbgbr, 1<<RB, 33, 33);                  //run length
+  rcencdec(rcrange,rclow,rcilow);                                                   //range coder
+
+  //uint8_t   K[1<<8], R[1<<8];  for(int i = 0; i < 256; i++) R[i]=1;
+  uint16_t Kq[1<<8], Rq[1<<8]; for(unsigned i = 0; i < 256; i++) Rq[i] = EMAQ_ONE;                 /* 1.0 in Q8 */
+
+  unsigned cx;
+  rk = rcqlfc(in, inlen, _rk, r2cr);
+  for(cx = 0; cx < (1<<8); cx++) { mbgenc(rcrange,rclow,rcilow, &mbg0a, mbgua, mbgba, RCPRM0,RCPRM1,op, r2cr[cx]); 
+    //K[cx] = r2cr[cx]; 
+    Kq[cx] = (uint16_t)((uint32_t)r2cr[cx] << EMAQ);
+   }
+
+  for(ip = in, in_ = in+inlen; ip < in_;) {
+    unsigned k = *--rk,r;
+    uint8_t  u = *ip++, *p = ip; while(ip < in_ && *ip == u) ip++; r = ip - p;  // run length encoding  //uint8_t  u = *ip; r = memrun8(ip, in_); ip += r--;
+    //CXK; mbgxenc(rcrange,rclow,rcilow, &mbg0c[       cxk], mbguc[           cxk], mbgbc[cxk], RCPRM0K,RCPRM1K,op, k); K[u] = PREDEMAK(K[u],k);//K[u] = EMAF(K[u], k>31?31:k, 2); // 
+    //CXR; mbgxenc(rcrange,rclow,rcilow, &mbg0r[ku<<11|cxr], mbgur[(ku>0)<<11|cxr], mbgbr[u  ], RCPRM0R,RCPRM1R,op, r); R[u] = PREDEMAR(R[u],r);//R[u] = EMAF(R[u], r>31?31:r, 3); //
+    /* Rank k: context from prior K EMA. */
+    unsigned cxk = qlfc_riceq(Kq[u], 31) << 8 | u;                               mbgxenc(rcrange,rclow,rcilow, &mbg0c[cxk],          mbguc[cxk],              mbgbc[cxk], RCPRM0K,RCPRM1K,op, k); Kq[u] = qlfc_ema_kq(Kq[u], (uint8_t)k); /* Run r: preserve the current ordering: use updated K EMA. */ 
+    unsigned ku  = qlfc_riceq(Kq[u], 14), cxr = qlfc_riceq(Rq[u], 31) << 8 | u;  mbgxenc(rcrange,rclow,rcilow, &mbg0r[ku<<11 | cxr], mbgur[(ku>0)<<11 | cxr], mbgbr[u],   RCPRM0R,RCPRM1R,op, r); Rq[u] = qlfc_ema_rq(Rq[u], r);  
+    OVERFLOW(in,inlen, out,op,;);
+  }
+  rceflush(rcrange,rclow,rcilow, op);                                                  
+
+  e:vfree(_rk);
+  return op - out;
+}
+  #endif
+
+  #ifndef NDECOMP
+size_t T3(rcqlfc,RC_PRD,dec)(uint8_t *in, size_t outlen, uint8_t *out RCPRM) {
+  uint8_t r2c[257+O], *op, *ip = in, *p; uint8_t K[256], R[256];   for(int i = 0; i < 256; i++) R[i]=1;
+  unsigned i;
+  MBG_DEC( mbg0a,         mbgua,        mbgba,        33, 33);
+  MBG_DEC2(mbg0c, 1<<KU0, mbguc, 1<<KU, mbgbc, 1<<KB, 33, 33);
+  MBG_DEC2(mbg0r, 1<<RU0, mbgur, 1<<RU, mbgbr, 1<<RB, 33, 33);
+  rcdecdec(rcrange,rccode, ip);
+
+  for(i = 0; i < (1<<8); i++) { unsigned x; mbgdec(rcrange,rccode, &mbg0a, mbgua, mbgba, RCPRM0,RCPRM1,ip, x); r2c[O+i] = x; K[i] = x; }
+  for(op = out; op < out+outlen;) {
+    uint8_t  u = r2c[O+0];
+    unsigned k,r;
+    CXK; _mbgxdec(rcrange,rccode, &mbg0c[       cxk], mbguc[           cxk], mbgbc[cxk], RCPRM0K,RCPRM1K,ip, k, MTFD1(r2c,u), MTFD(r2c,k+1,u)); K[u] = PREDEMAK(K[u],k);//K[u] = EMAF(K[u], k>31?31:k, 2); //
+    CXR;  mbgxdec(rcrange,rccode, &mbg0r[ku<<11|cxr], mbgur[(ku>0)<<11|cxr], mbgbr[u  ], RCPRM0R,RCPRM1R,ip, r);                                R[u] = PREDEMAR(R[u],r);//R[u] = EMAF(R[u], r>31?31:r, 3); //
+    r++; memset_(op, u, r);
+  }
+  return outlen;
+}
+  #endif
+#else
   #ifndef NCOMP
 size_t T3(rcqlfc,RC_PRD,enc)(uint8_t *in, size_t inlen, unsigned char *out RCPRM) {
   uint8_t _r2cr[(1<<8)+32], *r2cr = &_r2cr[32], *ip = in, *in_,*op = out, *_rk = vmalloc((inlen+1)*sizeof(in[0])), *rk; if(!_rk) die("malloc failed. size=%zu\n", inlen);
@@ -112,3 +186,5 @@ size_t T3(rcqlfc,RC_PRD,dec)(uint8_t *in, size_t outlen, uint8_t *out RCPRM) {
   return outlen;
 }
   #endif
+  #endif
+
