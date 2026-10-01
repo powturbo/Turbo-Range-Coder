@@ -95,13 +95,13 @@
 | 23521656| 23.52%|   50.43|   82.32|66:ansb    |  bitwise ans                |
 |100000012|100.00%|16495.29|16050.82|79:memcpy  |                             |
 
-## BWT Benchmark: TurboRC vs the best BWT compressors (2026-09)
+## BWT Benchmark: TurboRC/BwstSatan vs the best BWT compressors (2026-10)
 - [bsc](https://github.com/IlyaGrebnov/libbsc)
 - [bzip3](https://github.com/kspalaiologos/bzip3)
 - [bzip2](https://github.com/asimonov-im/bzip2)
 
 #### - [Enceladus_Cassini_mosaic_global_100m_schenk2024.tif](https://astrogeology.usgs.gov/search/map/enceladus-cassini-global-mosaic-100m-schenk) - 518.340.175 bytes
-|C Size|ratio%|C MB/s|D MB/s|Rank|Name 2026-10|
+|C Size|ratio%|C MB/s|D MB/s|Rank|2026-10|
 |--------:|----:|---------:|---------:|-------|------------------|
 |320482718|61.83|$\color{green}{\textbf{8.35}}$|$\color{green}{\textbf{11.50}}$|5🥉|$\color{green}{\textbf{TurboRC -20e9}}$|
 |321845846|62.09|7.75|8.03|8 |bsc 0e2|Enceladus_Cassini_mosaic_global_100m_schenk2024.tif|
@@ -114,7 +114,7 @@
 
 #### - [enwik8](http://mattmahoney.net/dc/text.html) - 100.000.000 bytes EN Wikipedia
  (bold = pareto)  MB=1.000.000
-|C Size|ratio%|C MB/s|D MB/s|Name 2026/10|
+|C Size|ratio%|C MB/s|D MB/s|2026-10|
 |--------:|-----:|--------:|--------:|----------------|
 |20684938| 20.68|**9.02**|**16.04**|**TurboRC 20e9**|
 |20749619| 20.7|**10.70**|9.19|**bzip3**|
@@ -127,7 +127,7 @@
 |29008758| 29.0|**20.72**|**43.39**|**bzip2**|
 
 #### - [Silesia - Compression Corpus](https://sun.aei.polsl.pl//~sdeor/index.php?page=silesia) (211 MB mixed binary + text)
-|C Size|ratio%|C MB/s|D MB/s|Name|
+|C Size|ratio%|C MB/s|D MB/s|2026-10|
 |--------:|-----:|--------:|--------:|----------------|
 |48391030| 22.83|**9.63**|**16.08**|**TurboRC 20e9**|
 |48621296| 22.9|**14.51**|**18.05**|**bsc 0e2**|
@@ -138,7 +138,7 @@
 |54592210| 25.8|18.22|**52.14**|**bzip2**|
 
 #### - [English.100mb text files from Gutenberg Project](http://pizzachili.dcc.uchile.cl/texts.html)
-|C Size|ratio%|C MB/s|D MB/s|Name 2026/10|
+|C Size|ratio%|C MB/s|D MB/s|2026-10|
 |--------:|-----:|--------:|--------:|----------------|
 |18703190| 17.84|**10.89**|**19.07**|**TurboRC 20e9**|
 |18739661| 17.9|**12.69**|11.12|**bzip3**|
@@ -151,7 +151,7 @@
 |29433182| 28.1|19.65|41.49|bzip2|
 
 #### - html8 : 100MB random html pages from Alexa 1m Top sites
-|C Size|ratio%|C MB/s|D MB/s|Name 2026/10|
+|C Size|ratio%|C MB/s|D MB/s|2026-10|
 |--------:|-----:|--------:|--------:|----------------|
 |13118618| 13.12|**15.85**|**26.16**|**TurboRC 20e9**|
 |13301850| 13.3|**17.61**|16.32|**bzip3**|
@@ -162,7 +162,7 @@
 |18162609| 18.2|21.16|**67.90**|**bzip2**|
 
 #### - [enwik9](http://mattmahoney.net/dc/text.html) - 1GB EN Wikipedia
-|C Size|ratio%|C MB/s|D MB/s|Name 2026/10|
+|C Size|ratio%|C MB/s|D MB/s|2026-10|
 |--------:|-----:|--------:|--------:|----------------|
 |163621162| 16.36|**8.03**|**15.75**|**TurboRC 20e9**|
 |163883906| 16.4|**12.92**|**22.30**|**bsc 0e2**|
@@ -173,7 +173,7 @@
 |253977891| 25.4|**19.90**|**46.46**|**bzip2**|
 
 #### - test1.txt - 1GB ZH (chineese) Wikipedia from [GDCC2021](https://www.facebook.com/gdccompetition) 
-|C Size|ratio%|C MB/s|D MB/s|Name 2026/10|
+|C Size|ratio%|C MB/s|D MB/s|2026-10|
 |--------:|-----:|--------:|--------:|----------------|
 |234873322| 23.5|**11.82**|**18.08**|**bsc 0e2**|
 |235788386| 23.58|**14.88**|**35.27**|**TurboRC 20e8**|
@@ -186,7 +186,7 @@
 |359610522| 36.0|**21.51**|**42.38**|**bzip2**|
 
 #### - Text log file:[NASA access log](https://ita.ee.lbl.gov/html/contrib/NASA-HTTP.html) 200MB  
-|C Size|ratio%|C MB/s|D MB/s|Name 2026/10|
+|C Size|ratio%|C MB/s|D MB/s|2026-10|
 |--------:|-----:|--------:|--------:|----------------|
 |8243722|  4.0|**8.73**|**18.14**|**TurboRC 20e9**|
 |9035598|  4.4|**38.69**|**106.37**|**TurboRC 20e8**|
