@@ -30,7 +30,6 @@
 
 #include "rcutil_.h"
 #include "mb_vint.h" 
-#include "worddict.h" 
 
 //------------------------------------------- bwt : with libdivsort or libsais ----------------------------------------------------------
   #ifdef _BWTDIV                                // use libdivsort library
@@ -183,13 +182,6 @@ size_t rcbwtdec(unsigned char *in, size_t outlen, unsigned char *out, unsigned l
   if(lenmin) {
     switch(lenmin) {
       case 127: utf8dec(op, outlen, out);  break;
-      case 126: { wd_dict_t dict; size_t pos = 0; bool ok;
-        ok = wd_deserialize(op, outlen, &pos, &dict); //    assert(ok && "wd_deserialize failed");    assert(dict2.num_words == dict.num_words);    assert(pos == hdr.size);
-        wd_buf_t d; d.data = out; d.size = oplen; d.capacity = outlen; 
-        ok = wd_decode(op+pos, outlen-pos, &dict, &d);    //assert(ok && "wd_decode failed");
-       printf("$%zu,%zu, %zu ", d.size, d.capacity, pos ); fflush(stdout);
-        wd_dict_free(&dict); 
-      } break;
       //case 126: fastadec(op, outlen, out); break;
       default:                                                                  LZPREV(if(lev==9) memrev(op, oplen));
 //        lzpdec(op, outlen, out, lenmin*4, lev > 8?1:0);                       LZPREV(if(lev==9) memrev(out, outlen));
