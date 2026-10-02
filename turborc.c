@@ -1108,6 +1108,10 @@ int main(int argc, char* argv[]) {
           ctof64(out+inlen) = fmin; ctof64(out+inlen+8) = fmax; ctou8(out+inlen+16) = quantb; clen = inlen+16+1;
                                                                                 if(verbose>2) printf("\nlen:%u R:[%g/%g]=%g q=%u ", inlen, (double)fmin, (double)fmax, (double)fmax-(double)fmin, quantb);
         } break;
+            #ifdef _FASTA
+        case 29: clen = fastasenc(in,inlen,out); break;
+        case 30: clen = fastaenc( in,inlen,out); break;
+            #endif
           #endif
         default: ERR(E_CODEC);
       }
@@ -1161,7 +1165,7 @@ int main(int argc, char* argv[]) {
         } break;
             #endif
             #ifdef _TP
-       case 27: { float    fmin=ctof32(in+outlen), fmax = ctof32(in+outlen+4); quantb = ctou8(in+outlen+8);
+        case 27: { float    fmin=ctof32(in+outlen), fmax = ctof32(in+outlen+4); quantb = ctou8(in+outlen+8);
           tpdec(in, outlen, out, 4); memcpy(in, out, outlen); fpquant32d32((uint32_t *)in, outlen, (float *)out, BZMASK32(quantb), fmin, fmax);
         } break;
         case 28: { double   fmin=ctof32(in+outlen), fmax = ctof32(in+outlen+8); quantb = ctou8(in+outlen+16);
@@ -1169,6 +1173,11 @@ int main(int argc, char* argv[]) {
         } break;
             #endif
           #endif
+            #ifdef _FASTA
+        case 29: fastasdec(in,outlen,out); break;
+        case 30: fastadec( in,outlen,out); break;
+            #endif
+
         default: ERR(E_CODEC);
       }
       if(fwrite(out, 1, outlen, fo) != outlen) ERR(E_FWR); folen += outlen;
