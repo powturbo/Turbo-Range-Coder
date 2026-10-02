@@ -568,6 +568,11 @@ unsigned bench(unsigned char *in, unsigned n, unsigned char *out, unsigned char 
     case 87: if(zerrlim>DBL_EPSILON) { l=n; TM0("", fprazor16((_Float16 *)in, n/2, (_Float16 *)out,zerrlim), n, l);                                          memcpy(cpy,in,n); if(verbose>1) fpstat(in, n/2, out, -2, NULL); } break;
         #endif
       #endif
+      #ifdef _FASTA
+    case 88:         TM("84 fasta simple                         ",l=fastasenc(in,n,out),                       n,l,CCPY:fastasdec(out,l,cpy)); break;
+    case 89:         TM("85 fasta                                ",l=fastaenc( in,n,out),                       n,l,CCPY:fastadec( out,l,cpy)); break;
+//    case 86:         TM("86 fasta0                               ",l=fastaenc0(in,n,out),                       n,l,CCPY:fastadec0(out,l,cpy)); break;
+      #endif
 
       #ifdef _EXT
     #include "xturborc.c"
