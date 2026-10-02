@@ -77,7 +77,9 @@ size_t rcbwtenc(unsigned char *in, size_t inlen, unsigned char *out, unsigned le
   if(lenmin) {                                                                  if(verbose) { printf("lenmin=%u ", lenmin);fflush(stdout); }
     ip = bwt;
     switch(lenmin) {
-      //case 2  : iplen = fastaenc(in, inlen, ip);                                if(verbose) { printf("GenTR %u->%u ", inlen, iplen); fflush(stdout); } break;
+        #ifdef _FASTA
+      case 2  : iplen = fastaenc(in, inlen, ip);                                if(verbose) { printf("GenTR %u->%u ", inlen, iplen); fflush(stdout); } break;
+        #endif
       default : if(!nutf8) { iplen = utf8enc(in, inlen, ip, _lenmin);           if(verbose) { if(iplen == inlen) printf("NoUTF8 "); else printf("UTF8:%zu->%zu ", inlen, iplen); fflush(stdout); }} break;                  // try utf8 preprocessing
     }
     if(lenmin < LZPLENMIN || iplen != inlen && iplen != -1) {
@@ -180,7 +182,9 @@ size_t rcbwtdec(unsigned char *in, size_t outlen, unsigned char *out, unsigned l
   if(lenmin) {
     switch(lenmin) {
       case 127: utf8dec(op, outlen, out);  break;
-      //case 126: fastadec(op, outlen, out); break;
+        #ifdef _FASTA
+      case 126: fastadec(op, outlen, out); break;
+        #endif
       default:                                                                  LZPREV(if(lev==9) memrev(op, oplen));
 //        lzpdec(op, outlen, out, lenmin*4, lev > 8?1:0);                       LZPREV(if(lev==9) memrev(out, outlen));
         lzpdec(op, oplen, out, outlen, lenmin*4, lev > 8?0:LZPHBITS);             LZPREV(if(lev==9) memrev(out, outlen));
