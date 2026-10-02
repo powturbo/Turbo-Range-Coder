@@ -62,6 +62,12 @@ size_t utf8enc(unsigned char *__restrict in, size_t inlen,  unsigned char *__res
 size_t utf8dec(unsigned char *__restrict in, size_t outlen, unsigned char *__restrict out);
 void memrev(unsigned char a[], unsigned n);
 
+size_t fastasenc(unsigned char *__restrict in, size_t inlen,  unsigned char *__restrict out);
+size_t fastasdec(unsigned char *__restrict in, size_t outlen, unsigned char *__restrict out);
+
+size_t fastaenc(unsigned char *__restrict in, size_t inlen,  unsigned char *__restrict out);
+size_t fastadec(unsigned char *__restrict in, size_t outlen, unsigned char *__restrict out);
+
 //----------- 16 = 2x8,1x16 ----------------
 unsigned  delta8l16(uint8_t *in, size_t n);
 void      delta8e16(uint8_t *in, size_t n, uint8_t *out);
