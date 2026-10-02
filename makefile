@@ -214,6 +214,11 @@ CFLAGS+=-D_NAVX2
 endif
 endif
 
+ifneq ($(wildcard fasta.c),)
+CFLAGS+=-D_FASTA
+LIB+=$(BUILD)/fasta.o 
+endif
+
 ifeq ($(TURBORLE), 1)
 CFLAGS+=-D_TURBORLE
 LIB+=$(addprefix $(BUILD)/,trlec.o trled.o)
