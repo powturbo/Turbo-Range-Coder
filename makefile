@@ -290,8 +290,8 @@ $(BUILD)/librc.so: $(LIB) | $(BUILD)
 $(BUILD)/turborc.o: turborc.c | $(BUILD)
 	$(CC) -O3 $(CFLAGS) $(MARCH) -c turborc.c -o $(BUILD)/turborc.o
 
-turborc: $(LIB) $(LIBBWT) $(BUILD)/librc.a $(BUILD)/turborc.o
-	$(CC) $^ $(LDFLAGS) -o turborc
+$(BUILD)/turborc: $(LIB) $(LIBBWT) $(BUILD)/librc.a $(BUILD)/turborc.o
+	$(CC) $^ $(LDFLAGS) -o $(BUILD)/turborc
 
 reorder: $(LIBDIV) $(BUILD)/reorder.o
 	$(CC) $^ $(LDFLAGS) -o $(BUILD)/reorder
