@@ -148,7 +148,7 @@ LDFLAGS+=-lm
 #-Wl,--stack_size -Wl,20971520
 endif
 
-all: $(BUILD)/librc.a turborc
+all: $(BUILD)/librc.a $(BUILD)/turborc
 
 ifeq ($(EXTRC), 1)
 CFLAGS+=-DEXTRC
