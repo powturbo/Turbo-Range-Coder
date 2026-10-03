@@ -121,7 +121,8 @@
 #define _mbgxdec(_rcrange_,_rccode_, _mg0_,_mgu_,_mgb_,_prm0_,_prm1_,_ip_, _x_, _act0_, _act1_) {\
   unsigned _x = 1, _ub;\
   mbu *_mg0 = _mg0_;\
-  if_rc0(_rcrange_,_rccode_, mbu_p(_mg0,_prm0_),_ip_) { rcupdate0(_rcrange_,_rccode_, mbu_update0,_mg0,_prm0_,_prm1_);\
+  if_rc1(_rcrange_,_rccode_, mbu_p(_mg0,_prm0_),_ip_) { rcupdate1(_rcrange_,_rccode_, mbu_update1, _mg0,_prm0_,_prm1_); _x_ = _x-1; _act0_; } \
+  else { rcupdate0(_rcrange_,_rccode_, mbu_update0,_mg0,_prm0_,_prm1_);\
     _mbgud(_rcrange_,_rccode_, _mgu_, _prm0_,_prm1_, _ip_, _ub);\
     mbu *_mbg = (_mgb_)[_ub]; _ub++; \
     if(_ub < 6) {                                                                       /*read the value in binary */\
@@ -129,7 +130,6 @@
     } else _mbgbd(_rcrange_,_rccode_, _mbg, _prm0_,_prm1_,_ip_, _x,_ub);\
     _x_ = _x-1; _act1_;\
   }\
-  else {                                                rcupdate1(_rcrange_,_rccode_, mbu_update1, _mg0,_prm0_,_prm1_); _x_ = _x-1; _act0_; } \
 }
 
 #define mbgxdec(_rcrange_,_rccode_, _mg0_,_mgu_,_mgb_,_prm0_,_prm1_,_ip_, _x_) _mbgxdec(_rcrange_,_rccode_, _mg0_,_mgu_,_mgb_,_prm0_,_prm1_,_ip_, _x_, ;, ;)
