@@ -342,7 +342,7 @@ uint8_t *rcqlfc(uint8_t *__restrict in, size_t n, uint8_t *__restrict out, uint8
   for(m = 0; m < (1<<8); m++) r2c[m] = m;
 
     #ifdef __AVX2__
-  __m256i r0 = _mm256_loadu_si256((const __m256i*)r2c);               // r2c[0..31] lives in a register
+  __m256i r0 = _mm256_loadu_si256((const __m256i*)r2c);              
     #elif defined(__SSE2__) || defined(__ARM_NEON) || defined(__riscv_vector) || defined(__powerpc64__) || defined(__loongarch_sx)
   __m128i r0 = _mm_loadu_si128((const __m128i*)r2c),                  // r2c[0..15]
           r1 = _mm_loadu_si128((const __m128i*)(r2c+16));             // r2c[16..31]
