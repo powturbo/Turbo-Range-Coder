@@ -103,18 +103,18 @@
 #### - [Enceladus_Cassini_mosaic_global_100m_schenk2024.tif](https://astrogeology.usgs.gov/search/map/enceladus-cassini-global-mosaic-100m-schenk) - 518.340.175 bytes
 |C Size|ratio%|C MB/s|D MB/s|Rank|Name|File|
 |--------:|-----:|--------:|--------:|----------------|----------------|------------------------------|
-|320482718| 61.83%   |$\color{green}{\textbf{8.14}}$|$\color{green}{\textbf{11.41}}$|5🥉|$\color{green}{\textbf{bwtsatan 9}}$|Enceladus_Cassini_mosaic_global_100m_schenk2024.tif|
-|320722119| 61.87%   |8.02|6.57|7 |bzip3 512|Enceladus_Cassini_mosaic_global_100m_schenk2024.tif|
-|321845846| 62.09%   |7.82|8.06|9 |bsc 0e2|Enceladus_Cassini_mosaic_global_100m_schenk2024.tif|
-|324465458| 62.60%   |$\color{green}{\textbf{10.90}}$|$\color{green}{\textbf{17.30}}$|2🏆|$\color{green}{\textbf{bwtsatan 8}}$|Enceladus_Cassini_mosaic_global_100m_schenk2024.tif|
-|324569678| 62.62%   |10.53|15.32|6 |bsc 0|Enceladus_Cassini_mosaic_global_100m_schenk2024.tif|
-|329404800| 63.55%   |$\color{green}{\textbf{12.69}}$|$\color{green}{\textbf{18.42}}$|1👑|$\color{green}{\textbf{bsc 0e0}}$|Enceladus_Cassini_mosaic_global_100m_schenk2024.tif|
-|330833640| 63.83%   |8.36|9.70|8 |kanzi 7|Enceladus_Cassini_mosaic_global_100m_schenk2024.tif|
-|356284409| 68.74%   |6.85|16.78|10 |kanzi 6|Enceladus_Cassini_mosaic_global_100m_schenk2024.tif|
-|377603323| 72.85%   |11.16|$\color{green}{\textbf{21.37}}$|4🥈|$\color{green}{\textbf{kanzi 5}}$|Enceladus_Cassini_mosaic_global_100m_schenk2024.tif|
-|385167317| 74.31%   |$\color{green}{\textbf{12.97}}$|$\color{green}{\textbf{30.39}}$|3🥇|$\color{green}{\textbf{bzip2}}$|Enceladus_Cassini_mosaic_global_100m_schenk2024.tif|
-|395061965| 76.22%   |2.01|8.73|11 |pulsar|Enceladus_Cassini_mosaic_global_100m_schenk2024.tif|
-|518340175|100.00%   |$\color{green}{\textbf{17926.96}}$|$\color{green}{\textbf{18431.84}}$|12 |$\color{green}{\textbf{memcpy}}$|Enceladus_Cassini_mosaic_global_100m_schenk2024.tif|
+|320482718| 61.83%   |$\color{green}{\textbf{8.14}}$|$\color{green}{\textbf{11.41}}$|5🥉|$\color{green}{\textbf{bwtsatan 9}}$|
+|320722119| 61.87%   |8.02|6.57|7 |bzip3 512|
+|321845846| 62.09%   |7.82|8.06|9 |bsc 0e2|
+|324465458| 62.60%   |$\color{green}{\textbf{10.90}}$|$\color{green}{\textbf{17.30}}$|2🏆|$\color{green}{\textbf{bwtsatan 8}}$|
+|324569678| 62.62%   |10.53|15.32|6 |bsc 0|
+|329404800| 63.55%   |$\color{green}{\textbf{12.69}}$|$\color{green}{\textbf{18.42}}$|1👑|$\color{green}{\textbf{bsc 0e0}}$|
+|330833640| 63.83%   |8.36|9.70|8 |kanzi 7|
+|356284409| 68.74%   |6.85|16.78|10 |kanzi 6|
+|377603323| 72.85%   |11.16|$\color{green}{\textbf{21.37}}$|4🥈|$\color{green}{\textbf{kanzi 5}}$|
+|385167317| 74.31%   |$\color{green}{\textbf{12.97}}$|$\color{green}{\textbf{30.39}}$|3🥇|$\color{green}{\textbf{bzip2}}$|
+|395061965| 76.22%   |2.01|8.73|11 |pulsar|
+|518340175|100.00%   |$\color{green}{\textbf{17926.96}}$|$\color{green}{\textbf{18431.84}}$|12 |$\color{green}{\textbf{memcpy}}$|
 
 
 #### - [enwik8](http://mattmahoney.net/dc/text.html) - 100.000.000 bytes EN Wikipedia
