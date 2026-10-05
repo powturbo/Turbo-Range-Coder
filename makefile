@@ -124,8 +124,10 @@ ifeq ($(OS),Windows)
 endif
 
 ifeq ($(OS),Darwin)
-export CFLAGS="-Xpreprocessor -fopenmp -I$(brew --prefix libomp)/include"
-export LDFLAGS="-L$(brew --prefix libomp)/lib -lomp"
+#export CFLAGS="-Xpreprocessor -fopenmp -I$(brew --prefix libomp)/include"
+#export LDFLAGS="-L$(brew --prefix libomp)/lib -lomp"
+export LDFLAGS="-L/opt/homebrew/opt/libomp/lib"
+export CPPFLAGS="-I/opt/homebrew/opt/libomp/include"
 endif
 
 HAVE_OPENMP := $(shell echo 'int main(){return 0;}' | $(CC) -fopenmp -x c - -o /dev/null 2>/dev/null && echo yes || echo no)
