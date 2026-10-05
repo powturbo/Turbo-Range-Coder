@@ -123,7 +123,7 @@ ifeq ($(OS),Windows)
   LDFLAGS=-Wl,--stack,33554432 -lpowrprof
 endif
 
-ifeq ($(CC),clang)
+ifneq ($(CC),clang)
 ifeq ($(OS),Darwin)
 export LDFLAGS="-L/opt/homebrew/opt/libomp/lib"
 export CPPFLAGS="-I/opt/homebrew/opt/libomp/include"
