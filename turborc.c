@@ -74,7 +74,7 @@
 
 unsigned bwtx, forcelzp, xprep8, xsort, nutf8;
 int BGFREQMIN = 50, BGMAX = 250, itmax;
-#define bwtflag(z) (z==2?BWT_BWT16:0) | (xprep8?BWT_PREP8:0) | forcelzp | (nutf8?BWT_NUTF8:0) | (verbose?BWT_VERBOSE:0) | xsort <<14 | itmax <<10 | lenmin
+#define bwtflag(z) (z==2?BWT_BWT16:0) | (xprep8?BWT_PREP8:0) | (forcelzp?BWT_LZP:0) | (nutf8?BWT_NUTF8:0) | (verbose?BWT_VERBOSE:0) | xsort <<14 | itmax <<10 | lenmin
 
 #define MAGIC     0x154 // 12 bits
 #define BLKMAX    3584
@@ -87,7 +87,7 @@ enum { E_FOP=1, E_FCR, E_FRD, E_FWR, E_MEM, E_CORR, E_MAG, E_CODEC, E_FSAME };
 static char *errs[] = {"", "open error", "create error", "read error", "write error", "malloc failed", "file corrupted", "no TurboRc file", "no codec", "input and output files are same" };
 
 // program parameters
-static unsigned xnibble, lenmin = 1, lev=9, thnum=0, xtpbyte=-1;
+static unsigned xnibble, lenmin = 1, lev=9, threads=1, xtpbyte=-1;
 unsigned prm1=5, prm2=6;
 
 //       0       1        2         3         4         5         6         7,       8        9        10      11      12      13      14       15
@@ -460,7 +460,7 @@ unsigned bench(unsigned char *in, unsigned n, unsigned char *out, unsigned char 
             else    {TM("19:bec       Bit EC                     ",l=becenc8(    in,n,out),   n,l, CCPY:becdec8(    out,n,cpy  )); } break;
           #ifdef _BWT
     case 20:if(n > BLKBWTMAX*MB) printf("blocksize too big for bwt.max=%d\n", BLKBWTMAX);
-            else {   TM("20:bwt                                  ",l=rcbwtenc(in,n,out,lev,thnum,flag), n,l, CCPY:rcbwtdec(  out,n,cpy,lev, thnum));} break;
+            else {   TM("20:bwt                                  ",l=rcbwtenc(in,n,out,lev,threads,flag), n,l, CCPY:rcbwtdec(  out,n,cpy,lev, threads));} break;
       #endif
     case 26:if(z==1){TM("26:rcg-8     gamma                      ",l=rcgenc8(    in,n,out,r), n,l, CCPY:rcgdec8(    out,n,cpy,r));   break;}
             if(z==2){TM("26:rcg-16    gamma                      ",l=rcgenc16(   in,n,out,r), n,l, CCPY:rcgdec16(   out,n,cpy,r));   break;}
@@ -617,6 +617,7 @@ static void usage(char *pgm) {
   fprintf(stderr, " -d      decompress\n");
   fprintf(stderr, " -v      verbose\n");
   fprintf(stderr, " -o      write on standard output\n");
+  fprintf(stderr, " -t#     # = threads 1..64 {1}\n");
   fprintf(stderr, "\n");
   fprintf(stderr, "Ex.: turborc -1 -f file.jpg file.jpg.rc\n");
   fprintf(stderr, "     turborc -d file.jpg.rc file1.jpg\n");
@@ -775,7 +776,7 @@ int main(int argc, char* argv[]) {
       { "help",     0, 0, 'h'},
       { 0,          0, 0, 0}
     };
-    if((c = getopt_long(argc, argv, "0:1:2:3:4:5:6:7:8:9:b:B:cde:fF:g:G:hH:I:J:k:K:l:m:noO:p:P:q:Q:r:S:t:T:UV:v:x:XY:zZ:", long_options, &optind)) == -1) break;
+    if((c = getopt_long(argc, argv, "0:1:2:3:4:5:6:7:8:9:a:b:B:cde:fF:g:G:hH:I:J:k:K:l:m:noO:p:P:q:Q:r:S:t:T:UV:v:x:XY:zZ:", long_options, &optind)) == -1) break;
     switch(c) {
       case 0:
         printf("Option %s", long_options[optind].name);
@@ -783,7 +784,8 @@ int main(int argc, char* argv[]) {
         break;
       case 'b': bsize = argtol(optarg, MB); if(bsize < 16) bsize = 16;/*else if(bsize > BLKMAX*Mb) bsize = BLKMAX*Mb;*/ break;
       case 'e': scmd = optarg; dobench++; break;
-      case 'f': xprep8=1; break;
+      case 't': threads = atoi(optarg); threads = CLAMP(threads, 1, 64); break;
+      case 'f': xprep8++; break;
       case 'F': { char *s = optarg;    // Input format
         switch(*s) {
           case 'c': dfmt = T_CHAR; s++; break;
@@ -841,9 +843,9 @@ int main(int argc, char* argv[]) {
       case 'U': nutf8++;    break;
       case 'X': bwtx++;    break;
       case 'S': xsort = atoi(optarg); break;
-      case 'z': forcelzp = BWT_LZP; break;
+      case 'z': forcelzp++; break;
       case 'r': { char *p = optarg; if(*p >= '0' && *p <= '9') { prm1 = p[0]-'0'; prm2 = p[1]-'0'; } if(prm1>9) prm1=9; if(prm2>9) prm2=9; } break;
-      case 't': xtpbyte = atoi(optarg); if(xtpbyte) { if(xtpbyte < 1) xtpbyte = 1;else if(xtpbyte > 30) xtpbyte = 30; } break;
+      case 'a': xtpbyte = atoi(optarg); if(xtpbyte) { if(xtpbyte < 1) xtpbyte = 1;else if(xtpbyte > 30) xtpbyte = 30; } break;
         #ifndef NO_BENCH
       case 'I': if((tm_Rep  = atoi(optarg))<=0) tm_rep = tm_Rep =1; break;
       case 'J': tm_Rep2 = atoi(optarg); if(tm_Rep2<0) xcheck++,tm_Rep2=-tm_Rep2; if(!tm_Rep2) tm_rep= tm_Rep2=1;  break;
@@ -1076,7 +1078,7 @@ int main(int argc, char* argv[]) {
         case 19: clen = becenc16((uint16_t *)in, inlen, out);        break;
                   #endif
           #ifdef _BWT
-        case 20: clen = rcbwtenc( in, inlen, out, lev, thnum, bwtflag(osize)); break;
+        case 20: clen = rcbwtenc( in, inlen, out, lev, threads, bwtflag(osize)); break;
           #endif
         case 21: clen = utf8enc( in, inlen, out, bwtflag(osize)); break;
           #ifndef _NDELTA
@@ -1153,7 +1155,7 @@ int main(int argc, char* argv[]) {
         case 19: becdec16(in, outlen, (uint16_t *)out);        break;
                   #endif
               #ifdef _BWT
-        case 20: rcbwtdec(  in, outlen, out, lev, thnum); break;
+        case 20: rcbwtdec(  in, outlen, out, lev, threads); break;
           #endif
         case 21: utf8dec(   in, outlen, out);        break;
         case 22: delta8d24(in,outlen,out); break;
