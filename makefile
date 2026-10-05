@@ -135,6 +135,7 @@ FOPENMP:=
 ifeq ($(HAVE_OPENMP),no)
   $(warning OpenMP not available)
 else
+  $(info OpenMP enabled)
 FOPENMP = -fopenmp
 CFLAGS += -DLIBSAIS_OPENMP
 endif
