@@ -302,7 +302,7 @@ static inline __m128i mm_rev_si128(__m128i v) { uint8_t idx[16] = {15,14,13,12,1
 #define _mm_extract_epi64(_v_,       _id_)      __riscv_vmv_x_s_i64m1_i64(__riscv_vslidedown_vx_i64m1(vi64(_v_), _id_, 2))  
 #define _mm_cvtsi128_si32(_v_)                  __riscv_vmv_x_s_u32m1_u32(vu32(_v_))
 #define _mm_cvtsi128_si64(_v_)                  __riscv_vmv_x_s_u64m1_u64(vu64(_v_))
-#define _mm_cvtsi32_si128(_x_)                  u8v(__riscv_vmv_s_x_u32m1_tu(__riscv_vmv_v_x_u32m1(0, 4), (_x_), 4))
+#define _mm_cvtsi32_si128(_x_)                  u32v(__riscv_vmv_s_x_u32m1_tu(__riscv_vmv_v_x_u32m1(0, 4), (_x_), 4))
 
 static inline __m128i _mm_insert_epi16(__m128i v, int i, const int imm8) {  return i16v(__riscv_vslideup_vx_i16m1_tu(vi16(v), __riscv_vmv_s_x_i16m1(i, 8), imm8, 8)); }
 static inline __m128i _mm_insert_epi32(__m128i v, int i, const int imm8) {  return i32v(__riscv_vslideup_vx_i32m1_tu(vi32(v), __riscv_vmv_s_x_i32m1(i, 4), imm8, 4)); }
