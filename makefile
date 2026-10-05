@@ -123,6 +123,9 @@ ifeq ($(OS),Windows)
   LDFLAGS=-Wl,--stack,33554432 -lpowrprof
 endif
 
+export CFLAGS="-Xpreprocessor -fopenmp -I$(brew --prefix libomp)/include"
+export LDFLAGS="-L$(brew --prefix libomp)/lib -lomp"
+
 HAVE_OPENMP := $(shell echo 'int main(){return 0;}' | $(CC) -fopenmp -x c - -o /dev/null 2>/dev/null && echo yes || echo no)
 FOPENMP:=
 ifeq ($(HAVE_OPENMP),no)
