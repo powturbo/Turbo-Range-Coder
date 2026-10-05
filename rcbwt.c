@@ -120,15 +120,14 @@ size_t rcbwtenc(unsigned char *in, size_t inlen, unsigned char *out, unsigned le
   vfree(sa);
   switch(lev) {
     case  0: memcpy(op, bwt, iplen); op += iplen; if(op-out == inlen) *op++ = 0; if(bwt) vfree(bwt); return op-out; break; // op > out_
-    case  2: op += xbwt16?becenc16((uint16_t *)bwt, iplen, op):becenc8(bwt, iplen, op); break;
-    case  3: op += xbwt16?rcrlesenc16(  bwt, iplen, op):     rcrlesenc(bwt, iplen, op);        break;
-    case  4: op += xbwt16?rcrlessenc16( bwt, iplen, op, 4,7):rcrlessenc( bwt, iplen, op, 4,7); break;
-    case  5: op += xbwt16?rcrle1senc16( bwt, iplen, op):     rcrle1senc( bwt, iplen, op);      break;
-    case  6: op += xbwt16?rcrle1ssenc16(bwt, iplen, op, 3,7):rcrle1ssenc(bwt, iplen, op, 3,7); break;
-    case  7: op +=        rcqlfcsenc(   bwt, iplen, op);        break;
-    case  9: op +=        rcmrrssenc(   bwt, iplen, op, 0, 0);  break; // prm1,prm2 in mbc.h fixed
-    case  8:
-    default: op +=        rcqlfcssenc(  bwt, iplen, op, 4, 7);
+    case  3: op += xbwt16?becenc16((uint16_t *)bwt, iplen, op):becenc8(bwt, iplen, op); break;
+    case  4: op += xbwt16?rcrlesenc16(  bwt, iplen, op):     rcrlesenc(bwt, iplen, op);        break; // case  4: op += xbwt16?rcrlessenc16( bwt, iplen, op, 4,7):rcrlessenc( bwt, iplen, op, 4,7); break;
+    case  5: op += xbwt16?rcrle1senc16( bwt, iplen, op):     rcrle1senc( bwt, iplen, op);      break; // case  6: op += xbwt16?rcrle1ssenc16(bwt, iplen, op, 3,7):rcrle1ssenc(bwt, iplen, op, 3,7); break;
+    case  6: op +=        rcqlfcsenc(   bwt, iplen, op);       break;
+    case  7: op +=        rcqlfcssenc(  bwt, iplen, op, 4, 7); break;
+    case  8: op +=        rcmrrsenc(    bwt, iplen, op);       break;
+    case  9: op +=        rcmrrssenc(   bwt, iplen, op, 0, 0); break; // prm1,prm2 in mbc.h fixed
+     default: 
   }                                                                         
   e:if(bwt) vfree(bwt);                                                     if(verbose) { printf("clen=%lld ", (int64_t)(op-out)); fflush(stdout); }
   if(op >= out_) { memcpy(out, in, inlen); op = out_; }
@@ -157,15 +156,14 @@ size_t rcbwtdec(unsigned char *in, size_t outlen, unsigned char *out, unsigned l
     {      if(lenmin) { bwt = out; op = _bwt; } }
   switch(lev) {
     case  0: memcpy(bwt,    ip, oplen+bwtx);      break;
-    case  2: xbwt16?becdec16(ip, oplen+bwtx, (uint16_t *)bwt):becdec8(ip, oplen+bwtx, bwt); break;
-    case  3: xbwt16?rcrlesdec16(  ip, oplen+bwtx, bwt):      rcrlesdec(  ip, oplen+bwtx, bwt); break;
-    case  4: xbwt16?rcrlessdec16( ip, oplen+bwtx, bwt, 4, 7):rcrlessdec( ip, oplen+bwtx, bwt, 4, 7); break;
-    case  5: xbwt16?rcrle1sdec16( ip, oplen+bwtx, bwt):      rcrle1sdec( ip, oplen+bwtx, bwt); break;
-    case  6: xbwt16?rcrle1ssdec16(ip, oplen+bwtx, bwt, 3, 7):rcrle1ssdec(ip, oplen+bwtx, bwt, 3, 7); break;
-    case  7:        rcqlfcsdec(   ip, oplen+bwtx, bwt); break;
+    case  3: xbwt16?becdec16(ip, oplen+bwtx, (uint16_t *)bwt):becdec8(ip, oplen+bwtx, bwt); break;
+    case  4: xbwt16?rcrlesdec16(  ip, oplen+bwtx, bwt):      rcrlesdec(  ip, oplen+bwtx, bwt); break;//    case  4: xbwt16?rcrlessdec16( ip, oplen+bwtx, bwt, 4, 7):rcrlessdec( ip, oplen+bwtx, bwt, 4, 7); break;
+    case  5: xbwt16?rcrle1sdec16( ip, oplen+bwtx, bwt):      rcrle1sdec( ip, oplen+bwtx, bwt); break;//    case  6: xbwt16?rcrle1ssdec16(ip, oplen+bwtx, bwt, 3, 7):rcrle1ssdec(ip, oplen+bwtx, bwt, 3, 7); break;
+    case  6:        rcqlfcsdec(   ip, oplen+bwtx, bwt);       break;
+    case  7:        rcqlfcssdec(  ip, oplen+bwtx, bwt, 4, 7); break;
+    case  8:        rcmrrsdec(    ip, oplen+bwtx, bwt);       break;
     case  9:        rcmrrssdec(   ip, oplen+bwtx, bwt, 0, 0); break;
-    case  8:
-    default:        rcqlfcssdec(  ip, oplen+bwtx, bwt, 4, 7);
+    default:        
   }
   saidx_t *sa = (saidx_t *)vmalloc((oplen+2+128)*sizeof(sa[0])); if(!sa) { vfree(bwt); die("malloc failed\n"); }
     #ifdef _BWTDIV
