@@ -129,21 +129,24 @@ ifeq ($(findstring clang,$(CC)),clang)
 else
   FOPENMP := -fopenmp
 endif
-HAVE_OPENMP := $(shell echo 'int main(){return 0;}' | $(CC) $(FOPENMP) -x c - -o /dev/null 2>/dev/null && echo yes || echo no)
+
+ifneq (,$(filter MINGW% MSYS% UCRT% CLANG%,$(MSYSTEM)))
+  HAVE_OPENMP := yes
+else
+  HAVE_OPENMP := $(shell echo 'int main(){return 0;}' | $(CC) $(FOPENMP) -x c - -o /dev/null 2>/dev/null && echo yes || echo no)
+endif
+
 ifeq ($(HAVE_OPENMP),no)
   $(warning OpenMP not available)
   FOPENMP :=
 else
   $(info OpenMP enabled with $(FOPENMP))
   CFLAGS += -DLIBSAIS_OPENMP
-
 ifeq ($(OS),Darwin)
 export LDFLAGS="-L/opt/homebrew/opt/libomp/lib"
 export CPPFLAGS="-I/opt/homebrew/opt/libomp/include"
 endif
-
 endif
-
 #---------------------------------------------------------------
 CFLAGS+=$(_SSE) -w -Wall $(DDEBUG) -DBUILD_VERSION="\"v$(BUILD_DATE)\"" $(DEFS)
 CXXFLAGS+=$(DDEBUG) -w -Wall -fpermissive  -fno-rtti
