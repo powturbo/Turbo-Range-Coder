@@ -21,6 +21,7 @@ jobs:
         with:
           submodules: 'true'     
       - run: git submodule update --init --recursive
+      - run: brew install libomp
       - run: make STATIC=1
       - run: lscpu
       - run: build/turborc -e0 build/turborc -V1
