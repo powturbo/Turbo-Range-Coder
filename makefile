@@ -147,7 +147,8 @@ FOPENMP :=
 
 ifneq ($(shell echo 'int main(){return 0;}' | $(CC) -fopenmp -x c - -o /dev/null 2>/dev/null && echo ok),)
   HAVE_OPENMP := yes
-  FOPENMP := -fopenmp
+# FOPENMP := -fopenmp
+  FOPENMP="-fopenmp=libgomp"
 endif
 
 ifeq ($(HAVE_OPENMP),no)
