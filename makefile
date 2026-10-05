@@ -123,9 +123,8 @@ ifeq ($(OS),Windows)
   LDFLAGS=-Wl,--stack,33554432 -lpowrprof
 endif
 
+ifeq ($(CC),clang)
 ifeq ($(OS),Darwin)
-#export CFLAGS="-Xpreprocessor -fopenmp -I$(brew --prefix libomp)/include"
-#export LDFLAGS="-L$(brew --prefix libomp)/lib -lomp"
 export LDFLAGS="-L/opt/homebrew/opt/libomp/lib"
 export CPPFLAGS="-I/opt/homebrew/opt/libomp/include"
 endif
@@ -139,7 +138,7 @@ else
 FOPENMP = -fopenmp
 CFLAGS += -DLIBSAIS_OPENMP
 endif
-
+endif
 
 CFLAGS+=$(_SSE) -w -Wall $(DDEBUG) -DBUILD_VERSION="\"v$(BUILD_DATE)\"" $(DEFS)
 CXXFLAGS+=$(DDEBUG) -w -Wall -fpermissive  -fno-rtti
