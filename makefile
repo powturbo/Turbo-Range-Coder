@@ -140,6 +140,30 @@ CFLAGS += -DLIBSAIS_OPENMP
 endif
 #endif
 
+
+#----------------- OPENMP ---------------------------------------
+HAVE_OPENMP := no
+FOPENMP :=
+
+ifneq ($(shell echo 'int main(){return 0;}' | $(CC) -fopenmp -x c - -o /dev/null 2>/dev/null && echo ok),)
+  HAVE_OPENMP := yes
+  FOPENMP := -fopenmp
+endif
+
+ifeq ($(HAVE_OPENMP),no)
+  ifneq ($(shell echo 'int main(){return 0;}' | $(CC) -fopenmp=libgomp -x c - -o /dev/null 2>/dev/null && echo ok),)
+    HAVE_OPENMP := yes
+    FOPENMP := -fopenmp=libgomp
+  endif
+endif
+
+ifeq ($(HAVE_OPENMP),no)
+  $(warning OpenMP not available)
+else
+  $(info OpenMP enabled with $(FOPENMP))
+  CFLAGS += -DLIBSAIS_OPENMP
+endif
+#---------------------------------------------------------------
 CFLAGS+=$(_SSE) -w -Wall $(DDEBUG) -DBUILD_VERSION="\"v$(BUILD_DATE)\"" $(DEFS)
 CXXFLAGS+=$(DDEBUG) -w -Wall -fpermissive  -fno-rtti
 
