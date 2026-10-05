@@ -68,14 +68,14 @@ static int sample(char *in, size_t n, int i, int j, char *out) {
   return n;
 }
 
-size_t rcbwtenc(unsigned char *in, size_t inlen, unsigned char *out, unsigned lev, unsigned thnum, unsigned _lenmin) {
+size_t rcbwtenc(unsigned char *in, size_t inlen, unsigned char *out, unsigned lev, unsigned threads, unsigned _lenmin) {
   size_t        iplen  = inlen;
-  unsigned      lenmin = _lenmin & 0x3ff, xbwt16 = (_lenmin & BWT_BWT16)?0x80:0, verbose = _lenmin & BWT_VERBOSE, nutf8 = _lenmin & BWT_NUTF8;
+  unsigned      lenmin = _lenmin & 0x3ff, xbwt16 = (_lenmin & BWT_BWT16)?0x80:0, verbose = _lenmin & BWT_VERBOSE, nutf8 = _lenmin & BWT_NUTF8; if(!lev) lenmin = 0;
   unsigned char *op    = out, *out_ = out+inlen, *bwt   = vmalloc(inlen+1024), *ip = in;  if(!bwt) { op = out_; goto e; } // inlen + space for bwt indexes idxns  
   if(lenmin == 1) { 
     lenmin = sample(in, inlen, 16, 16*1024, out); 
     lenmin = histopt(out, lenmin, lev>=LZPLEV); 
-  }                                                                             if(verbose) { printf("\nlev=%u MB=%zu nutf8=%d ", lev, inlen/(1<<20), nutf8?1:0); fflush(stdout); }
+  }                                                                             if(verbose) { printf("\nlev=%u MB=%zu nutf8=%d threads=%d ", lev, inlen/(1<<20), nutf8?1:0, threads); fflush(stdout); }
   if(lenmin) {                                                                  if(verbose) { printf("lenmin=%u ", lenmin);fflush(stdout); }
     ip = bwt;
     switch(lenmin) {
@@ -109,36 +109,49 @@ size_t rcbwtenc(unsigned char *in, size_t inlen, unsigned char *out, unsigned le
   saidx_t *sa = (saidx_t *)vmalloc((iplen_+2+128)*sizeof(sa[0]));               if(!sa) { op = out_; goto e; } if(verbose) { printf("bwt16=%u ", xbwt16>0);fflush(stdout); }
       #ifdef _LIBSAIS16
   if(xbwt16) {                                                                  if(verbose) { printf("-"); fflush(stdout); }
-    unsigned rc = libsais16_bwt_aux((const uint16_t *)ip, (uint16_t *)bwt, sa, iplen_, 0, 0, mod, idxs);      if(verbose) { printf("+"); fflush(stdout); }
+      #ifdef LIBSAIS_OPENMP
+                                                                                if(verbose) { printf("omp=%d ", threads); fflush(stdout); }
+    unsigned rc = threads<=1?libsais16_bwt_aux(    (const uint16_t *)ip, (uint16_t *)bwt, sa, iplen_, 0, 0, mod, idxs): 
+                             libsais16_bwt_aux_omp((const uint16_t *)ip, (uint16_t *)bwt, sa, iplen_, 0, 0, mod, idxs, threads);
+      #else
+    unsigned rc = libsais16_bwt_aux(  (const uint16_t *)ip, (uint16_t *)bwt, sa, iplen_, 0, 0, mod, idxs); 
+      #endif     
+                                                                                if(verbose) { printf("+"); fflush(stdout); }
     if(iplen & 1) bwt[iplen-1] = ip[iplen-1];
   }  else
       #endif
   {
+      #ifdef LIBSAIS_OPENMP
+                                                                                if(verbose) { printf("omp=%d ", threads); fflush(stdout); }
+    threads<=1?libsais_bwt_aux(    ip, bwt, sa, iplen,  0, 0, mod, idxs):
+               libsais_bwt_aux_omp(ip, bwt, sa, iplen,  0, 0, mod, idxs, threads);                     
+      #else
     libsais_bwt_aux(ip, bwt, sa, iplen,  0, 0, mod, idxs);                      //libsais_bwt(ip, bwt, sa, iplen, fs);//if(ip == in) { memcpy(bwt, ip, iplen); ip = bwt; } memrev(ip, iplen); ip[iplen] = 0;
+      #endif
   }
   memcpy(op, idxs, idxsn*sizeof(idxs[0]));
   op   +=          idxsn*sizeof(idxs[0]);
     #endif
   vfree(sa);
   switch(lev) {
-    case  0: memcpy(op, bwt, iplen); op += iplen; if(op-out == inlen) *op++ = 0; if(bwt) vfree(bwt); return op-out; break; // op > out_
-    case  3: op += xbwt16?becenc16((uint16_t *)bwt, iplen, op):becenc8(bwt, iplen, op); break;
-    case  4: op += xbwt16?rcrlesenc16(  bwt, iplen, op):     rcrlesenc(bwt, iplen, op);        break; // case  4: op += xbwt16?rcrlessenc16( bwt, iplen, op, 4,7):rcrlessenc( bwt, iplen, op, 4,7); break;
-    case  5: op += xbwt16?rcrle1senc16( bwt, iplen, op):     rcrle1senc( bwt, iplen, op);      break; // case  6: op += xbwt16?rcrle1ssenc16(bwt, iplen, op, 3,7):rcrle1ssenc(bwt, iplen, op, 3,7); break;
-    case  6: op +=        rcqlfcsenc(   bwt, iplen, op);       break;
-    case  7: op +=        rcqlfcssenc(  bwt, iplen, op, 4, 7); break;
-    case  8: op +=        rcmrrsenc(    bwt, iplen, op);       break;
-    case  9: op +=        rcmrrssenc(   bwt, iplen, op, 0, 0); break; // prm1,prm2 in mbc.h fixed
+    case  0: memcpy(op, bwt, iplen); op += iplen; if(op-out == inlen) *op++ = 0; if(bwt) vfree(bwt); return op - out; break; // op > out_
+    case  3: op += xbwt16?becenc16((uint16_t *)bwt, iplen, op):becenc8( bwt, iplen, op); break;
+    case  4: op += xbwt16?rcrlesenc16( bwt, iplen, op):      rcrlesenc( bwt, iplen, op); break;
+    case  5: op += xbwt16?rcrle1senc16(bwt, iplen, op):      rcrle1senc(bwt, iplen, op); break;
+    case  6: op +=        rcqlfcsenc(  bwt, iplen, op);       break;
+    case  7: op +=        rcqlfcssenc( bwt, iplen, op, 4, 7); break;
+    case  8: op +=        rcmrrsenc(   bwt, iplen, op);       break;
+    case  9: op +=        rcmrrssenc(  bwt, iplen, op, 0, 0); break; // prm1,prm2 in mbc.h fixed
      default: 
   }                                                                         
-  e:if(bwt) vfree(bwt);                                                     if(verbose) { printf("clen=%lld ", (int64_t)(op-out)); fflush(stdout); }
+  e:if(bwt) vfree(bwt);                                                         if(verbose) { printf("clen=%lld ", (int64_t)(op-out)); fflush(stdout); }
   if(op >= out_) { memcpy(out, in, inlen); op = out_; }
   return op - out;
 }
   #endif
 
   #ifndef NDECOMP
-size_t rcbwtdec(unsigned char *in, size_t outlen, unsigned char *out, unsigned lev, unsigned thnum) {
+size_t rcbwtdec(unsigned char *in, size_t outlen, unsigned char *out, unsigned lev, unsigned threads) {
   unsigned char *ip    = in;
   unsigned      lenmin = *ip++, xbwt16 = lenmin&0x80; lenmin &=0x7f;
   size_t        oplen  = outlen, rc;
@@ -154,17 +167,17 @@ size_t rcbwtdec(unsigned char *in, size_t outlen, unsigned char *out, unsigned l
   ip++; // idxsn
   memcpy(idxs, ip, idxsn*sizeof(idxs[0])); ip += idxsn*sizeof(idxs[0]);
     #endif
-  unsigned char *_bwt = vmalloc(oplen+128), *op = out, *bwt = _bwt;  if(!_bwt) die("malloc failed\n");
-    {      if(lenmin) { bwt = out; op = _bwt; } }
+  unsigned char *_bwt = vmalloc(oplen+128), *op = out, *bwt = _bwt; if(!_bwt) die("malloc failed\n");
+              { if(lenmin) { bwt = out; op = _bwt; } }
   switch(lev) {
-    case  0: memcpy(bwt,    ip, oplen+bwtx);      break;
-    case  3: xbwt16?becdec16(ip, oplen+bwtx, (uint16_t *)bwt):becdec8(ip, oplen+bwtx, bwt); break;
-    case  4: xbwt16?rcrlesdec16(  ip, oplen+bwtx, bwt):      rcrlesdec(  ip, oplen+bwtx, bwt); break;//    case  4: xbwt16?rcrlessdec16( ip, oplen+bwtx, bwt, 4, 7):rcrlessdec( ip, oplen+bwtx, bwt, 4, 7); break;
-    case  5: xbwt16?rcrle1sdec16( ip, oplen+bwtx, bwt):      rcrle1sdec( ip, oplen+bwtx, bwt); break;//    case  6: xbwt16?rcrle1ssdec16(ip, oplen+bwtx, bwt, 3, 7):rcrle1ssdec(ip, oplen+bwtx, bwt, 3, 7); break;
-    case  6:        rcqlfcsdec(   ip, oplen+bwtx, bwt);       break;
-    case  7:        rcqlfcssdec(  ip, oplen+bwtx, bwt, 4, 7); break; 
-    case  8:        rcmrrsdec(    ip, oplen+bwtx, bwt);       break;
-    case  9:        rcmrrssdec(   ip, oplen+bwtx, bwt, 0, 0); break;
+    case  0: memcpy(bwt,         ip, oplen+bwtx); break;
+    case  3: xbwt16?becdec16(    ip, oplen+bwtx, (uint16_t *)bwt):becdec8(ip, oplen+bwtx, bwt); break;
+    case  4: xbwt16?rcrlesdec16( ip, oplen+bwtx, bwt):      rcrlesdec(    ip, oplen+bwtx, bwt); break;
+    case  5: xbwt16?rcrle1sdec16(ip, oplen+bwtx, bwt):      rcrle1sdec(   ip, oplen+bwtx, bwt); break;
+    case  6:        rcqlfcsdec(  ip, oplen+bwtx, bwt);       break;
+    case  7:        rcqlfcssdec( ip, oplen+bwtx, bwt, 4, 7); break; 
+    case  8:        rcmrrsdec(   ip, oplen+bwtx, bwt);       break;
+    case  9:        rcmrrssdec(  ip, oplen+bwtx, bwt, 0, 0); break;
     default:        
   }
   saidx_t *sa = (saidx_t *)vmalloc((oplen+2+128)*sizeof(sa[0])); if(!sa) { vfree(bwt); die("malloc failed\n"); }
@@ -172,10 +185,23 @@ size_t rcbwtdec(unsigned char *in, size_t outlen, unsigned char *out, unsigned l
   rc = obwt_unbwt_biPSIv2(bwt, op, sa, oplen, bwtidx);
     #else
       #ifdef _LIBSAIS16
-  if(xbwt16) { rc = libsais16_unbwt_aux((uint16_t *)bwt, (uint16_t *)op, sa, oplen_, 0, mod, idxs); if(oplen & 1) op[oplen-1] = bwt[oplen-1]; }
+  if(xbwt16) { 
+      #ifdef LIBSAIS_OPENMP
+    rc = threads<=1?libsais16_unbwt_aux(    (uint16_t *)bwt, (uint16_t *)op, sa, oplen_, 0, mod, idxs):
+                    libsais16_unbwt_aux_omp((uint16_t *)bwt, (uint16_t *)op, sa, oplen_, 0, mod, idxs, threads);
+      #else
+    rc = libsais16_unbwt_aux((uint16_t *)bwt, (uint16_t *)op, sa, oplen_, 0, mod, idxs);
+      #endif 
+    if(oplen & 1) op[oplen-1] = bwt[oplen-1];
+  }
   else
       #endif
-   rc = libsais_unbwt_aux(bwt, op, sa, oplen, 0, mod, idxs);    //libsais_unbwt(bwt, op, sa, oplen, idxs[0]);  //#bwtinv(bwt, oplen, op, NULL, idxs, idxsn); memrev(op, oplen);  //op[256]=0; printf("%s ", op);
+      #ifdef LIBSAIS_OPENMP
+   rc = threads<=1?libsais_unbwt_aux(    bwt, op, sa, oplen, 0, mod, idxs):
+                   libsais_unbwt_aux_omp(bwt, op, sa, oplen, 0, mod, idxs, threads);  //libsais_unbwt(bwt, op, sa, oplen, idxs[0]);  //#bwtinv(bwt, oplen, op, NULL, idxs, idxsn); memrev(op, oplen);  //op[256]=0; printf("%s ", op);
+      #else
+   rc = libsais_unbwt_aux(bwt, op, sa, oplen, 0, mod, idxs);  
+      #endif
     #endif
   vfree(sa);
 
