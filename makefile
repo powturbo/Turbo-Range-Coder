@@ -123,6 +123,16 @@ ifeq ($(OS),Windows)
   LDFLAGS=-Wl,--stack,33554432 -lpowrprof
 endif
 
+HAVE_OPENMP := $(shell echo 'int main(){return 0;}' | $(CC) -fopenmp -x c - -o /dev/null 2>/dev/null && echo yes || echo no)
+FOPENMP:=
+ifeq ($(HAVE_OPENMP),no)
+  $(warning OpenMP not available)
+else
+FOPENMP = -fopenmp
+CFLAGS += -DLIBSAIS_OPENMP
+endif
+
+
 CFLAGS+=$(_SSE) -w -Wall $(DDEBUG) -DBUILD_VERSION="\"v$(BUILD_DATE)\"" $(DEFS)
 CXXFLAGS+=$(DDEBUG) -w -Wall -fpermissive  -fno-rtti
 
@@ -291,7 +301,7 @@ $(BUILD)/turborc.o: turborc.c | $(BUILD)
 	$(CC) -O3 $(CFLAGS) $(MARCH) -c turborc.c -o $(BUILD)/turborc.o
 
 $(BUILD)/turborc: $(LIB) $(LIBBWT) $(BUILD)/librc.a $(BUILD)/turborc.o
-	$(CC) $^ $(LDFLAGS) -o $(BUILD)/turborc
+	$(CC) $^ $(LDFLAGS) $(FOPENMP) -o $(BUILD)/turborc
 
 reorder: $(LIBDIV) $(BUILD)/reorder.o
 	$(CC) $^ $(LDFLAGS) -o $(BUILD)/reorder
