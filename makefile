@@ -123,24 +123,6 @@ ifeq ($(OS),Windows)
   LDFLAGS=-Wl,--stack,33554432 -lpowrprof
 endif
 
-#ifneq ($(CC),clang)
-ifeq ($(OS),Darwin)
-export LDFLAGS="-L/opt/homebrew/opt/libomp/lib"
-export CPPFLAGS="-I/opt/homebrew/opt/libomp/include"
-endif
-
-HAVE_OPENMP := $(shell echo 'int main(){return 0;}' | $(CC) -fopenmp -x c - -o /dev/null 2>/dev/null && echo yes || echo no)
-FOPENMP:=
-ifeq ($(HAVE_OPENMP),no)
-  $(warning OpenMP not available)
-else
-  $(info OpenMP enabled)
-FOPENMP = -fopenmp
-CFLAGS += -DLIBSAIS_OPENMP
-endif
-#endif
-
-
 #----------------- OPENMP ---------------------------------------
 ifeq ($(findstring clang,$(CC)),clang)
   FOPENMP := -fopenmp=libgomp
@@ -154,6 +136,12 @@ ifeq ($(HAVE_OPENMP),no)
 else
   $(info OpenMP enabled with $(FOPENMP))
   CFLAGS += -DLIBSAIS_OPENMP
+
+ifeq ($(OS),Darwin)
+export LDFLAGS="-L/opt/homebrew/opt/libomp/lib"
+export CPPFLAGS="-I/opt/homebrew/opt/libomp/include"
+endif
+
 endif
 
 #---------------------------------------------------------------
