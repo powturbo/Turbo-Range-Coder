@@ -57,7 +57,7 @@ jobs:
       - uses: msys2/setup-msys2@v2
         with:
           msystem: MINGW64
-          install: git make mingw-w64-x86_64-gcc
+          install: git make mingw-w64-x86_64-gcc mingw-w64-x86_64-libgomp
           update: true
       - run: git submodule update --init --recursive
       - run: make STATIC=1
