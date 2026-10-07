@@ -164,7 +164,8 @@ ifeq ($(HAVE_OPENMP),0)
   FOPENMP :=
 else
   $(info OpenMP enabled with $(FOPENMP))
-  CFLAGS  += -DLIBSAIS_OPENMP $(OMP_CFLAGS)
+  CFLAGS_BWT += -DLIBSAIS_OPENMP $(OMP_CFLAGS)
+  CFLAGS     += -DLIBSAIS_OPENMP
   LDFLAGS += $(OMP_LDFLAGS)
 endif
 
@@ -199,7 +200,7 @@ all: $(BUILD)/librc.a $(BUILD)/turborc
 ifeq ($(EXTRC), 1)
 CFLAGS+=-DEXTRC
 endif
-#-------- bwt --------------------------
+#-------- bwt : turbrc works with libdivsufsort or libsais --------------------------
 ifeq ($(BWTSATAN), 1)
 CFLAGS+=-D_BWTSATAN
 BWT=1
@@ -218,109 +219,125 @@ LIBBWT+=$(BUILD)/divsufsort.o
 endif
 else
 ifeq ($(BWTX), 1)
-LIBBWT =$(BUILD)/sssort.o $(BUILD)/bwtxinv.o $(BUILD)/divsufsort.o $(BUILD)/trsort.o
+LIBBWT = $(BUILD)/sssort.o $(BUILD)/bwtxinv.o $(BUILD)/divsufsort.o $(BUILD)/trsort.o
 CFLAGS+=-D_BWTX
+
 else
-CFLAGS+=-D_LIBSAIS -Ilibsais/include
-LIBBWT+=$(BUILD)/libsais.o
+CFLAGS += -D_LIBSAIS
+CFLAGS_BWT += -Ilibsais/include
+LIBBWT = $(BUILD)/libsais.o
 ifeq ($(LIBSAIS16), 1)
-CFLAGS+=-D_LIBSAIS16
-LIBBWT+=$(BUILD)/libsais16.o
+CFLAGS +=-D_LIBSAIS16
+LIBBWT += $(BUILD)/libsais16.o
 endif
+$(LIBBWT): COMP = $(CC)
+$(LIBBWT): SIMD = $(_SSE)
+$(BUILD)/libsais.o:    libsais/src/libsais.c
+$(BUILD)/libsais16.o:  libsais/src/libsais16.c
+$(LIBBWT): |  $(BUILD)
+	$(COMP) -O3 -falign-loops=32 $(CFLAGS_BWT) $(SIMD) -c $< -o $@
 endif
+
 endif
 endif
 
-ifneq ($(NOCOMP), 1)
-LIB=$(addprefix $(BUILD)/,rc_ss.o rc_s.o rccdf.o rcutil.o bec_b.o rccm_s.o rccm_ss.o rcqlfc_s.o rcqlfc_ss.o rcqlfc_sf.o cpu.o)
 
 
-#ifeq ($(DELTA), 1)
-#CFLAGS+=-D_DELTA
-#LIB+=$(BUILD)/transform.o
-#endif
 
+OBJS_CC_SSE := $(BUILD)/bec_b.o $(BUILD)/cpu.o $(BUILD)/rc_ss.o $(BUILD)/rc_s.o $(BUILD)/rccdf.o $(BUILD)/rccmd_s.o $(BUILD)/rccmd_ss.o $(BUILD)/rcqlfc_s.o $(BUILD)/rcqlfc_ss.o 
+ifeq ($(BWT), 1)
+OBJS_CC_SSE += $(BUILD)/rcbwt.o
+endif
 ifeq ($(ANS), 1)
 CFLAGS+=-D_ANS
-$(BUILD)/anscdf0.o: anscdf.c anscdf_.h | $(BUILD)
-	$(CC) -c -O3 $(CFLAGS) $(_SCALAR) -falign-loops=32 anscdf.c -o $(BUILD)/anscdf0.o  
-
-$(BUILD)/anscdfs.o: anscdf.c anscdf_.h | $(BUILD)
-	$(CC) -c -O3 $(CFLAGS) $(_SSE) -falign-loops=32 anscdf.c -o $(BUILD)/anscdfs.o  
-
-LIB+=$(BUILD)/anscdfs.o 
+OBJS_CX_SSE += $(BUILD)/anscdfs.o
 ifeq ($(ARCH), x86_64)
-$(BUILD)/anscdfx.o: anscdf.c anscdf_.h | $(BUILD)
-	$(CC) -c -O3 $(CFLAGS) -march=haswell -falign-loops=32 anscdf.c -o $(BUILD)/anscdfx.o
+OBJS_CX_AVX2+=$(BUILD)/anscdfx.o
+endif
+endif
+ifeq ($(V8), 1)
+CFLAGS+=-D_V8
+OBJS_CC_SSE += $(BUILD)/v8.o
+endif
+ifeq ($(NZ), 1)
+CFLAGS+=-D_NZ
+OBJS_CC_SSE+=$(BUILD)/rc_nz.o $(BUILD)/rccm_nz.o $(BUILD)/rcqlfc_nz.o
+endif
+ifeq ($(SH), 1)
+CFLAGS+=-D_SH
+OBJS_CC_SSE+=$(BUILD)/rc_sh.o
+endif
+ifeq ($(TURBORLE), 1)
+CFLAGS+=-D_TURBORLE
+OBJS_CC_SSE += $(BUILD)/trlec.o $(BUILD)/trled.o
+endif
+$(OBJS_CC_SSE): COMP = $(CC)
+$(OBJS_CC_SSE): SIMD = $(_SSE)
+$(BUILD)/bec_b.o:      bec_b.c 
+$(BUILD)/cpu.o:        cpu.c
+$(BUILD)/rc_s.o:       rc_s.c
+$(BUILD)/rc_ss.o:      rc_ss.c
+$(BUILD)/rcbwt.o:      rcbwt.c
+$(BUILD)/rccdf.o:      rccdf.c
+$(BUILD)/rccmd_s.o:    rccmd_s.c
+$(BUILD)/rccmd_ss.o:   rccmd_ss.c
+$(BUILD)/rcqlfc_s.o:   rcqlfc_s.c
+$(BUILD)/rcqlfc_ss.o:  rcqlfc_ss.c
+$(BUILD)/rcqlfc_sf.o:  rcqlfc_sf.
+$(BUILD)/tp.o:         tp.c
+$(BUILD)/tp_.o:        tp_.c
+$(BUILD)/trlec.o:      trlec.c
+$(BUILD)/trled.o:      trled.c
 
-LIB+=$(BUILD)/anscdfx.o 
-#$(BUILD)/anscdf0.o
-else
-CFLAGS+=-D_NAVX2
+OBJS_CX_SSE := $(BUILD)/rccmc_s.o $(BUILD)/rccmc_ss.o $(BUILD)/anscdfs.o
+ifeq ($(TP), 1)
+CFLAGS+=-D_TP -D_NCPUISA
+OBJS_CX_SSE += $(BUILD)/tp.o $(BUILD)/tp_.o
+endif
+ifeq ($(SF), 1)
+CFLAGS+=-D_SF
+OBJS_CX_SSE += $(BUILD)/rc_sf.o $(BUILD)/rccm_sf.o $(BUILD)/rcqlfc_sf.o
+ifeq ($(BWT), 1)
+OBJS_CX_SSE += $(BUILD)/xrcbwt_sf.o
 endif
 endif
+$(OBJS_CX_SSE): COMP = $(CX)
+$(OBJS_CX_SSE): SIMD = $(_SSE)
+$(BUILD)/anscdfs.o:    anscdf.c anscdf_.h 
+$(BUILD)/rccmc_s.o:    rccmc_s.c
+$(BUILD)/rccmc_ss.o:   rccmc_ss.c
+
+OBJS_CX_AVX2 := $(BUILD)/rcutil.o
+ifeq ($(ANS), 1)
+ifeq ($(ARCH), x86_64)
+OBJS_CX_AVX2+=$(BUILD)/anscdfx.o
+endif
+endif
+ifeq ($(TP), 1)
+ifeq ($(ARCH),x86_64)
+OBJS_CX_AVX2 += $(BUILD)/tp256.o
+endif
+endif
+$(OBJS_CX_AVX2): COMP = $(CX)
+$(OBJS_CX_AVX2): SIMD = $(_AVX2)
+$(BUILD)/anscdfx.o:    anscdf.c anscdf_.h 
+$(BUILD)/tp256.o:      tp.c
+$(BUILD)/rcutil.o:     rcutil.c
+
+ALL_OBJS := $(OBJS_CC_SSE) $(OBJS_CX_SSE) $(OBJS_CX_AVX2)
+$(ALL_OBJS): |  $(BUILD)
+	$(COMP) -O3 -falign-loops=32 $(CFLAGS) $(SIMD) -c $< -o $@
+
+LIB+=$(ALL_OBJS)
 
 ifneq ($(wildcard fasta.c),)
 CFLAGS+=-D_FASTA
 LIB+=$(BUILD)/fasta.o 
 endif
 
-ifeq ($(TURBORLE), 1)
-CFLAGS+=-D_TURBORLE
-LIB+=$(addprefix $(BUILD)/,trlec.o trled.o)
-endif
-
-ifeq ($(TP), 1)
-ifeq ($(ARCH),x86_64)
-$(BUILD)/tp256.o: tp.c | $(BUILD)
-	$(CC) -O3 $(CFLAGS) $(_AVX2) -c tp.c -o $(BUILD)/tp256.o
-
-$(BUILD)/rcutil.o: rcutil.c | $(BUILD)
-	$(CC) -O3 $(CFLAGS) $(_AVX2) -c rcutil.c -o $(BUILD)/rcutil.o
-
-#tp_.c: tp_.c
-#	$(CC) -O3 $(CFLAGS) $(_SSE) -c tp_.c -o tp_.c
-	
-endif
-CFLAGS+=-D_TP -D_NCPUISA
-LIB+=$(addprefix $(BUILD)/,tp.o tp_.o)
-
-ifeq ($(ARCH), x86_64)
-LIB+=$(BUILD)/tp256.o
-endif
-endif
-
-ifeq ($(V8), 1)
-CFLAGS+=-D_V8
-LIB+=$(BUILD)/v8.o
-endif
-#trlec.o trled.o anscdfx.o anscdfs.o anscdf0.o 
-endif
-ifeq ($(BWT), 1)
-LIB+=$(BUILD)/rcbwt.o
-endif
-
-ifeq ($(SF), 1)
-CFLAGS+=-D_SF
-LIB+=$(addprefix $(BUILD)/,rc_sf.o rccm_sf.o rcqlfc_sf.o)
-endif
-
-ifeq ($(NZ), 1)
-LIB+=$(addprefix $(BUILD)/,rc_nz.o rccm_nz.o rcqlfc_nz.o)
-CFLAGS+=-D_NZ
-endif
-
-ifeq ($(SH), 1)
-LIB+=$(BUILD)/rc_sh.o
-CFLAGS+=-D_SH
-endif
-
 ifeq ($(EXT), 1)
 CFLAGS+=-D_EXT
 #LIB+=$(BUILD)/xrc.o
-ifeq ($(BWT), 1)
-#LIB+=$(BUILD)/xrcbwt_sf.o
-endif
 endif
 
 ifeq ($(NOCOMP), 1)
@@ -362,3 +379,4 @@ clean:
 	@find . -type f -name "*\.o" -delete -or -name "*\~" -delete -or -name "core" -delete -or -name "librc.a" -delete
 	@rm -rf $(BUILD)
 endif
+
