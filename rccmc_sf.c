@@ -35,4 +35,5 @@
 extern fsm_t fsm[];
 
 #include "mbc_sf.h"         // simple predictor
+#define NDECOMP
 #include "rccm_.c"          // template functions
