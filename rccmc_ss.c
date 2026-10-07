@@ -31,4 +31,5 @@
 #include "turborc_.h"
 
 #include "mbc_ss.h"         // simple predictor
+#define NDECOMP
 #include "rccm_.c"          // template functions
