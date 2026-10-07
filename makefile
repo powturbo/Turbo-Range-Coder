@@ -150,7 +150,11 @@ ifneq ($(OPENMP),0)
     $(CC) $(FOPENMP) -x c - -o /dev/null 2>/dev/null && echo 1 || echo 0)
   else
     # Linux
-    FOPENMP := -fopenmp
+    ifeq ($(findstring clang,$(CC)),clang)
+      FOPENMP := -fopenmp=libgomp
+    else
+      FOPENMP := -fopenmp
+    endif
     HAVE_OPENMP := $(shell echo 'int main(){return 0;}' | $(CC) $(FOPENMP) -x c - -o /dev/null 2>/dev/null && echo 1 || echo 0)
   endif
 endif
