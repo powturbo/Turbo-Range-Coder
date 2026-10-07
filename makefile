@@ -140,13 +140,14 @@ ifneq ($(OPENMP),0)
       endif
     endif
   else ifneq (,$(filter MINGW% MSYS% UCRT% CLANG%,$(MSYSTEM)))
-    # Windows / MSYS2 – libgomp must be installed
-    HAVE_OPENMP := 1
+    # Windows / MSYS2 – test whether -fopenmp actually works
     ifeq ($(findstring clang,$(CC)),clang)
       FOPENMP := -fopenmp=libgomp
     else
       FOPENMP := -fopenmp
     endif
+    HAVE_OPENMP := $(shell echo 'int main(){return 0;}' | \
+    $(CC) $(FOPENMP) -x c - -o /dev/null 2>/dev/null && echo 1 || echo 0)
   else
     # Linux
 #    ifeq ($(findstring clang,$(CC)),clang)
