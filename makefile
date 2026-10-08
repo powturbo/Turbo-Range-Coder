@@ -305,7 +305,6 @@ $(OBJS_CX_SSE): SIMD = $(_SSE)
 $(BUILD)/anscdfs.o:    anscdf.c anscdf_.h 
 $(BUILD)/rccmc_s.o:    rccmc_s.c
 $(BUILD)/rccmc_ss.o:   rccmc_ss.c
-$(BUILD)/turborc.o:    turborc.c
 
 OBJS_CX_AVX2 := $(BUILD)/rcutil.o
 ifeq ($(ANS), 1)
@@ -351,7 +350,7 @@ $(BUILD)/librc.so: $(LIB) | $(BUILD)
 	$(CC) -shared $+ -o $@
 
 $(BUILD)/turborc.o: turborc.c | $(BUILD)
-	$(CC) -O3 $(CFLAGS) $(MARCH) -c turborc.c -o $(BUILD)/turborc.o
+	$(CX) -O3 $(CFLAGS) $(MARCH) -c turborc.c -o $(BUILD)/turborc.o
 
 $(BUILD)/turborc: $(LIB) $(LIBBWT) $(BUILD)/librc.a $(BUILD)/turborc.o
 	$(CC) $^ $(LDFLAGS) $(FOPENMP) -o $(BUILD)/turborc
