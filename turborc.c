@@ -37,7 +37,8 @@
   #else
 #include <getopt.h>
   #endif
-
+void bsc_free(void *p) { free(p); }
+void *bsc_malloc(size_t s) { return malloc(s); }
 #include "include/turborc.h"
 #include "include_/rcutil.h"
 #include "include_/conf.h"
