@@ -234,7 +234,7 @@ $(LIBBWT): SIMD = $(_SSE)
 $(BUILD)/libsais.o:    libsais/src/libsais.c
 $(BUILD)/libsais16.o:  libsais/src/libsais16.c
 $(LIBBWT): |  $(BUILD)
-	$(COMP) -O3 -falign-loops=32 $(CFLAGS_BWT) $(SIMD) -c $< -o $@
+	$(COMP) -O3 -falign-loops=32 $(FOPENMP) -Wno-deprecated-openmp $(CFLAGS_BWT) $(SIMD) -c $< -o $@
 endif
 
 endif
