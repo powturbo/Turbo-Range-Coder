@@ -28,6 +28,7 @@
 #include <ctype.h>
 #include <math.h> //isnan
 #include "include_/conf.h"
+#define __STDC_WANT_IEC_60559_TYPES_EXT__
 #include <float.h> //DBL_MAX
 #include "include/turborc.h"
 
