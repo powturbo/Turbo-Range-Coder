@@ -305,6 +305,7 @@ $(OBJS_CX_SSE): SIMD = $(_SSE)
 $(BUILD)/anscdfs.o:    anscdf.c anscdf_.h 
 $(BUILD)/rccmc_s.o:    rccmc_s.c
 $(BUILD)/rccmc_ss.o:   rccmc_ss.c
+$(BUILD)/turborc.o:    turborc.c
 
 OBJS_CX_AVX2 := $(BUILD)/rcutil.o
 ifeq ($(ANS), 1)
