@@ -141,21 +141,21 @@ ifneq ($(OPENMP),0)
   else ifneq (,$(filter MINGW% MSYS% UCRT% CLANG%,$(MSYSTEM)))
     # Windows / MSYS2 – test whether -fopenmp actually works
     ifeq ($(findstring clang,$(CC)),clang)
-      # Prefer LLVM's OpenMP when available, otherwise fall back to libgomp
-      ifneq ($(wildcard $(shell $(CC) -print-file-name=libomp.dll)),)
-        FOPENMP := -fopenmp
-      else
-        FOPENMP := -fopenmp=libgomp
-      endif
+      FOPENMP     := -fopenmp
+      OMP_LDFLAGS := -lomp
     else
-      FOPENMP := -fopenmp
+      FOPENMP     := -fopenmp
+      OMP_LDFLAGS := -lgomp
     endif
 
-    # Use a real temporary file – /dev/null does not work reliably with the MinGW linker
+    # Test compile AND link using temp files (portable across Windows shells)
+    # Use omp_get_max_threads() to verify the library is actually linked
     HAVE_OPENMP := $(shell \
-      TMP=$$(mktemp /tmp/omp_test.XXXXXX.exe 2>/dev/null || echo /tmp/omp_test.exe); \
-      echo 'int main(){return 0;}' | $(CC) $(FOPENMP) -x c - -o $$TMP 2>/dev/null \
-        && { rm -f $$TMP; echo 1; } || { rm -f $$TMP; echo 0; })
+      echo '#include <omp.h>' > _omp_test.c && \
+      echo 'int main(){return omp_get_max_threads();}' >> _omp_test.c && \
+      $(CC) $(FOPENMP) _omp_test.c -o _omp_test $(OMP_LDFLAGS) 2>/dev/null && \
+      echo 1 || echo 0; \
+      rm -f _omp_test.c _omp_test _omp_test.exe)
   else
     # Linux
     ifeq ($(findstring clang,$(CC)),clang)
