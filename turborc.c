@@ -518,7 +518,7 @@ unsigned bench(unsigned char *in, unsigned n, unsigned char *out, unsigned char 
             else    {TM("56:ans auto                             ",l=anscdfenc(   in,n,out), n,l, CCPY:anscdfdec(   out,n,cpy));} break;
     case 57:if(m<16){TM("57:ans sse nibble                       ",l=anscdf4encs( in,n,out), n,l, CCPY:anscdf4decs( out,n,cpy));}
             else    {TM("57:ans sse                              ",l=anscdfencs(  in,n,out), n,l, CCPY:anscdfdecs(  out,n,cpy));} break;
-        #ifndef _NAVX2
+        #ifdef __AVX2__
     case 58:if(cpuisa()>=0x60) {
               if(m<16){TM("58:ans avx2 nibble                      ",l=anscdf4encx( in,n,out), n,l, CCPY:anscdf4decx( out,n,cpy));}
               else    {TM("58:ans avx2                             ",l=anscdfencx(  in,n,out), n,l, CCPY:anscdfdecx(  out,n,cpy));}
