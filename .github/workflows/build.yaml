@@ -44,6 +44,8 @@ jobs:
       - run: make
       - run: sysctl -n machdep.cpu.brand_string
       - run: build/turborc -e0 build/turborc -V1
+      - run: build/turborc -e20 -l0 build/turborc -V1
+      - run: build/turborc -e20 -l0 -t6 build/turborc -V1
 
   windows:
     runs-on: windows-latest
@@ -62,4 +64,6 @@ jobs:
       - run: git submodule update --init --recursive
       - run: make STATIC=1
       - run: build/turborc -e0 build/turborc.exe -V1
+      - run: build/turborc -e20 -l0 build/turborc.exe -V1
+      - run: build/turborc -e20 -l0 -t6 build/turborc.exe -V1
 
