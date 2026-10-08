@@ -141,12 +141,21 @@ ifneq ($(OPENMP),0)
   else ifneq (,$(filter MINGW% MSYS% UCRT% CLANG%,$(MSYSTEM)))
     # Windows / MSYS2 – test whether -fopenmp actually works
     ifeq ($(findstring clang,$(CC)),clang)
-      FOPENMP := -fopenmp=libgomp
+      # Prefer LLVM's OpenMP when available, otherwise fall back to libgomp
+      ifneq ($(wildcard $(shell $(CC) -print-file-name=libomp.dll)),)
+        FOPENMP := -fopenmp
+      else
+        FOPENMP := -fopenmp=libgomp
+      endif
     else
       FOPENMP := -fopenmp
     endif
-    HAVE_OPENMP := $(shell echo 'int main(){return 0;}' | \
-    $(CC) $(FOPENMP) -x c - -o /dev/null 2>/dev/null && echo 1 || echo 0)
+
+    # Use a real temporary file – /dev/null does not work reliably with the MinGW linker
+    HAVE_OPENMP := $(shell \
+      TMP=$$(mktemp /tmp/omp_test.XXXXXX.exe 2>/dev/null || echo /tmp/omp_test.exe); \
+      echo 'int main(){return 0;}' | $(CC) $(FOPENMP) -x c - -o $$TMP 2>/dev/null \
+        && { rm -f $$TMP; echo 1; } || { rm -f $$TMP; echo 0; })
   else
     # Linux
     ifeq ($(findstring clang,$(CC)),clang)
