@@ -110,7 +110,7 @@ size_t rcbwtenc(unsigned char *in, size_t inlen, unsigned char *out, unsigned le
       #ifdef _LIBSAIS16
   if(xbwt16) {                                                                  if(verbose) { printf("-"); fflush(stdout); }
         #ifdef LIBSAIS_OPENMP
-                                                                                if(verbose) { printf("omp=%d ", threads); fflush(stdout); }
+                                                                                if(verbose) { printf("omp16=%d ", threads); fflush(stdout); }
     unsigned rc = threads<=1?libsais16_bwt_aux(    (const uint16_t *)ip, (uint16_t *)bwt, sa, iplen_, 0, 0, mod, idxs): 
                              libsais16_bwt_aux_omp((const uint16_t *)ip, (uint16_t *)bwt, sa, iplen_, 0, 0, mod, idxs, threads);
         #else
