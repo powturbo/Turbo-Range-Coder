@@ -25,8 +25,8 @@ jobs:
       - run: make STATIC=1
       - run: lscpu
       - run: build/turborc -e0 build/turborc -V1
-      - run: build/turborc -e20 -l0 build/turborc -V0
-      - run: build/turborc -e20 -l0 -t6 build/turborc -V0
+      - run: build/turborc -e20 -l0 build/turborc -V1
+      - run: build/turborc -e20 -l0 -t6 build/turborc -V1
 
   macos:
     runs-on: '${{ matrix.os }}'
@@ -46,8 +46,8 @@ jobs:
       - run: make
       - run: sysctl -n machdep.cpu.brand_string
       - run: build/turborc -e0 build/turborc -V1
-      - run: build/turborc -e20 -l0 build/turborc -V0
-      - run: build/turborc -e20 -l0 -t6 build/turborc -V0
+      - run: build/turborc -e20 -l0 build/turborc -V1
+      - run: build/turborc -e20 -l0 -t6 build/turborc -V1
 
   windows:
     runs-on: windows-latest
