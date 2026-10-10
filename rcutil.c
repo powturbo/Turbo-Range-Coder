@@ -115,6 +115,8 @@ void vfree(void *address) {
 
 #define C32                    123456791u
 #define LZPHASH(_x_, _hbits_)  (((_x_) * C32) >> (32-_hbits_))
+#define LZPHASH(_x_, _hbits_)  ((_x_ >> 15 ^ _x_ ^ _x_ >> 3) & ((int32_t)(1 << _hbits_) - 1))
+
 #define LZPINI(_n_) hbits = hbits?hbits:(_n_ >= (1<<24)?21:LZPHBITS);\
   hbits = hbits<12?12:hbits;\
   if(hbits > LZPHBITS && !(htab = calloc(1<<hbits, 4))) { htab = _htab; hbits = LZPHBITS; }
@@ -282,7 +284,7 @@ size_t lzpenc(unsigned char *__restrict in, size_t inlen, unsigned char *__restr
     unsigned       h4 = LZPHASH(cx, hbits);
     unsigned char *cp = in + htab[h4];
     htab[h4] = ip - in;
-    if(ctou64(ip) != ctou64(cp)) {  unsigned c = *ip++; emitch(c, op); cx = cx<<8 | c; continue; }  
+    if(ctou64(ip) != ctou64(cp) || !h4) {  unsigned c = *ip++; emitch(c, op); cx = cx<<8 | c; continue; }  
     int cl = 64/8;
     matchlen(ip, cp, cl);
     if(cl >= lenmin) {
