@@ -140,16 +140,12 @@ ifneq ($(OPENMP),0)
     endif
   else ifneq (,$(filter MINGW% MSYS% UCRT% CLANG%,$(MSYSTEM)))
     # Windows / MSYS2 – test whether -fopenmp actually works
+    FOPENMP     := -fopenmp
     ifeq ($(findstring clang,$(CC)),clang)
-      FOPENMP     := -fopenmp
       OMP_LDFLAGS := -lomp
     else
-      FOPENMP     := -fopenmp
       OMP_LDFLAGS := -lgomp
     endif
-
-    # Test compile AND link using temp files (portable across Windows shells)
-    # Use omp_get_max_threads() to verify the library is actually linked
     HAVE_OPENMP := $(shell \
       echo '#include <omp.h>' > _omp_test.c && \
       echo 'int main(){return omp_get_max_threads();}' >> _omp_test.c && \
