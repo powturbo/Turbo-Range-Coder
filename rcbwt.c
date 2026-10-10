@@ -72,6 +72,7 @@ size_t rcbwtenc(unsigned char *in, size_t inlen, unsigned char *out, unsigned le
   size_t        iplen  = inlen;
   unsigned      lenmin = _lenmin & 0x3ff, xbwt16 = (_lenmin & BWT_BWT16)?0x80:0, verbose = _lenmin & BWT_VERBOSE, nutf8 = _lenmin & BWT_NUTF8; if(!lev) lenmin = 0;
   unsigned char *op    = out, *out_ = out+inlen, *bwt   = vmalloc(inlen+1024), *ip = in;  if(!bwt) { op = out_; goto e; } // inlen + space for bwt indexes idxns  
+  //lenmin = histopt(in, inlen, lev>=LZPLEV); 
   if(lenmin == 1) { 
     lenmin = sample(in, inlen, 16, 16*1024, out); 
     lenmin = histopt(out, lenmin, lev>=LZPLEV); 
