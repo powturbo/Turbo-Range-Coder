@@ -1119,6 +1119,7 @@ int main(int argc, char* argv[]) {
         case 30: clen = fastaenc( in,inlen,out); break;
             #endif
           #endif
+        case 31: clen = lzpenc(in,inlen,out,lenmin, 0); break;
         default: ERR(E_CODEC);
       }
       hdb_t hdb = { 0 }; hdb.inlen = inlen; hdb.bsize = bsize; hdb.clen = clen; if ((rc = hdbwr(&hdb, fo)) < 0) ERR(-rc); folen += rc;
@@ -1183,6 +1184,7 @@ int main(int argc, char* argv[]) {
         case 29: fastasdec(in,outlen,out); break;
         case 30: fastadec( in,outlen,out); break;
             #endif
+        case 31: lzpdec(in,0, out, outlen,lenmin, 0); break;
 
         default: ERR(E_CODEC);
       }
