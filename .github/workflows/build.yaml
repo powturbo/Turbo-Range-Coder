@@ -27,7 +27,6 @@ jobs:
       - run: build/turborc -e0 build/turborc -V1
       - run: build/turborc -e20 -l0 build/turborc -V1
       - run: build/turborc -e20 -l0 -t6 build/turborc -V1
-
   macos:
     runs-on: '${{ matrix.os }}'
     strategy:
@@ -48,7 +47,6 @@ jobs:
       - run: build/turborc -e0 build/turborc -V1
       - run: build/turborc -e20 -l0 build/turborc -V1
       - run: build/turborc -e20 -l0 -t6 build/turborc -V1
-
   windows:
     runs-on: windows-latest
     defaults:
@@ -60,12 +58,16 @@ jobs:
           submodules: 'true'
       - uses: msys2/setup-msys2@v2
         with:
-          msystem: MINGW64
-          install: git zip make cmake rsync mingw-w64-x86_64-gcc mingw-w64-x86_64-clang mingw-w64-x86_64-libgomp mingw-w64-x86_64-llvm-openmp
+          msystem: UCRT64
+          install: >
+            git zip make cmake rsync
+            mingw-w64-ucrt-x86_64-gcc
+            mingw-w64-ucrt-x86_64-clang
+            mingw-w64-ucrt-x86_64-libgomp
+            mingw-w64-ucrt-x86_64-llvm-openmp
           update: true
       - run: git submodule update --init --recursive
       - run: make STATIC=1
       - run: build/turborc -e0 build/turborc.exe -V1
       - run: build/turborc -e20 -l0 build/turborc.exe -V1
       - run: build/turborc -e20 -l0 -t6 build/turborc.exe -V1
-
