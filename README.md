@@ -93,7 +93,7 @@
 | 24848864| 24.85%|  126.57|  175.43|57:ans sse |                             |
 | 23068372| 23.07%|  128.06|   83.57|64:ans auto|  o1                         |
 | 23521656| 23.52%|   50.43|   82.32|66:ansb    |  bitwise ans                |
-|100000012|100.00%|16495.29|16050.82|79:memcpy  |                            |
+|100000012|100.00%|16495.29|16050.82|79:memcpy  |                             |
 
 ## BWT Benchmark: TurboRC/BwtSatan vs the best BWT compressors (2026-10)
 - [bsc](https://github.com/IlyaGrebnov/libbsc)
