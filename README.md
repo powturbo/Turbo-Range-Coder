@@ -21,7 +21,7 @@
     - preprocessing : lzp and utf-8
     - postprocessing: QLFC (Quantized Local Frequency Coding),<br/>
     RLE and Bit entropy coder
-  * BWT :libsais + optimized libdivsufsort + optimized inverse bwt included
+  * BWT :libsais + optimized libdivsufsort + optimized inverse bwt included + Multithreading
   * static + adaptive CDF - cumulative distribution functions
   * stdin/stdout file compressor included
   * TurboRC App for benchmarking all the functions and test allmost all byte, integer, floating point, date and timestamp file types.
