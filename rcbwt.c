@@ -54,9 +54,10 @@ static unsigned calcmod(size_t len) { return 1<<__bsr32(len); }
 #define LZPREV(a) a
 #define OUT       out
 #endif
+#ifndef _WIN32
 #define vmallo(a) malloc(a)
 #define vfree(a)  free(a)
-
+#endif
   #ifndef NCOMP
 int histopt(const char *in, int inlen, int lev, int *lzprev);
 
@@ -109,7 +110,7 @@ size_t rcbwtenc(unsigned char *in, size_t inlen, unsigned char *out, unsigned le
               op += sizeof(sa[0]);
     #else
   unsigned idxs[256], iplen_ = xbwt16?(iplen/2):iplen,
-           mod = calcmod(iplen_/SR), idxsn = (iplen_-1)/mod + 1;                //printf("bwt idxs=%d ", idxsn); //idxsn = (idxsn/SR)*SR;
+           mod = calcmod(iplen_/SR), idxsn = (iplen_-1)/mod + 1;                     //printf("bwt idxs=%d ", idxsn); //idxsn = (idxsn/SR)*SR;
   *op++ = idxsn - 1;
   saidx_t *sa = (saidx_t *)vmalloc((iplen_+2+128)*sizeof(sa[0]));                    if(!sa) { op = out_; goto e; } if(verbose) { printf("bwt16=%u ", xbwt16>0);fflush(stdout); }
       #ifdef _LIBSAIS16
@@ -127,11 +128,11 @@ size_t rcbwtenc(unsigned char *in, size_t inlen, unsigned char *out, unsigned le
       #endif
   {
       #ifdef LIBSAIS_OPENMP
-                                                                                    if(verbose) { printf("omp=%d ", threads); fflush(stdout); }
+                                                                                     if(verbose) { printf("omp=%d ", threads); fflush(stdout); }
     threads<=1?libsais_bwt_aux(    ip, bwt, sa, iplen,  0, 0, mod, idxs):
                libsais_bwt_aux_omp(ip, bwt, sa, iplen,  0, 0, mod, idxs, threads);                     
       #else
-    libsais_bwt_aux(ip, bwt, sa, iplen,  0, 0, mod, idxs);                          //libsais_bwt(ip, bwt, sa, iplen, fs);//if(ip == in) { memcpy(bwt, ip, iplen); ip = bwt; } memrev(ip, iplen); ip[iplen] = 0;
+    libsais_bwt_aux(ip, bwt, sa, iplen,  0, 0, mod, idxs);                          
       #endif
   }
   memcpy(op, idxs, idxsn*sizeof(idxs[0]));
