@@ -460,7 +460,7 @@ unsigned bench(unsigned char *in, unsigned n, unsigned char *out, unsigned char 
     case 19:if(z==2){TM("19:bec-16    Bit EC                     ",l=becenc16(   (uint16_t *)in,n,out),   n,l, CCPY:becdec16(   out,n,(uint16_t *)cpy  )); }
             else    {TM("19:bec       Bit EC                     ",l=becenc8(    in,n,out),   n,l, CCPY:becdec8(    out,n,cpy  )); } break;
           #ifdef _BWT
-    case 20:if(n > BLKBWTMAX*MB) printf("blocksize too big for bwt.max=%d\n", BLKBWTMAX);
+    case 20:if(n > BLKBWTMAX*Mb) printf("blocksize too big for bwt.max=%d\n", BLKBWTMAX);
             else {   TM("20:bwt                                  ",l=rcbwtenc(in,n,out,lev,threads,flag), n,l, CCPY:rcbwtdec(  out,n,cpy,lev, threads));} break;
       #endif
     case 26:if(z==1){TM("26:rcg-8     gamma                      ",l=rcgenc8(    in,n,out,r), n,l, CCPY:rcgdec8(    out,n,cpy,r));   break;}
@@ -749,7 +749,8 @@ static int cmpsna(const void *a, const void *b) { return CMPSA(a, b, len_t, len)
 
 //---------------------------------------------- main : benchmark + file compression ----------------------------------------------
 int main(int argc, char* argv[]) {
-  size_t   bsize = 1792*Mb; unsigned prdid = RC_PRD_S;
+  size_t   bsize = 2047*Mb; //libsais max. //1792*Mb; 
+  unsigned prdid = RC_PRD_S;
   int      xstdout=0, xstdin=0, decomp=0, codec=0, dobench=0, cmp=1, c, digit_optind=0, decs=0, divs=0, skiph=0, isize=4, dfmt=0, mdelta=0, kid=0, osize=1;
   char     *scmd = NULL, prids[8]="s", *keysep = NULL;                                                  //fdbg = fopen("test.dat", "wb"); if(!fdbg) perror("fopen failed");
   #define CODECNUM 256
