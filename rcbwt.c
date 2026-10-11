@@ -54,6 +54,8 @@ static unsigned calcmod(size_t len) { return 1<<__bsr32(len); }
 #define LZPREV(a) a
 #define OUT       out
 #endif
+#define vmallo(a) malloc(a)
+#define vfree(a)  free(a)
 
   #ifndef NCOMP
 int histopt(const char *in, int inlen, int lev, int *lzprev);
