@@ -220,7 +220,7 @@
 |30904714|  0.36%   |46.85|62.38|6 |bzip3 512|elasticsearch.log|
 |31122700|  0.36%   |100.81|236.72|5🥉|bsc 0e2|elasticsearch.log|
 |39703881|  0.46%   |267.47|521.73|4🥈|kanzi 7|elasticsearch.log|
-|49049600|  0.57%   |11.39||CLP 19|elasticsearch.log|
+|49049600|  0.57%   |11.39 |      |   |CLP 19|elasticsearch.log|
 
 
 |C Size|ratio%|C MB/s|D MB/s|Rank|Name|2026/10|
