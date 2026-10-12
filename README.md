@@ -252,19 +252,18 @@
 
 |C Size|ratio%|C MB/s|D MB/s|Rank|Name|2026/10|
 |--------:|-----:|--------:|--------:|----------------|----------------|------------------------------|
-|4549138|  1.10%   |$\color{green}{\textbf{214.25}}$|$\color{green}{\textbf{313.07}}$|2🏆|$\color{green}{\textbf{bwtsatan 8t4}}$|postgresql.tar|
-|4549138|  1.10%   |182.79|274.52|4🥈|bwtsatan 8|postgresql.tar|
-|4552802|  1.11%   |156.41|256.15|5🥉|bwtsatan 9|postgresql.tar|
-|4686622|  1.14%   |$\color{green}{\textbf{233.08}}$|$\color{green}{\textbf{513.55}}$|3🥇|$\color{green}{\textbf{bwtsatan 7}}$|postgresql.tar|
-|4741898|  1.15%   |$\color{green}{\textbf{280.92}}$|$\color{green}{\textbf{657.24}}$|1👑|$\color{green}{\textbf{bwtsatan 7t4}}$|postgresql.tar|
-|4909031|  1.19%   |27.34|30.10|11 |bzip3 512|postgresql.tar|
-|6785858|  1.65%   |33.91|84.32|8 |bsc 0e2|postgresql.tar|
-|6862874|  1.67%   |76.62|148.41|6 |kanzi 7|postgresql.tar|
-|7472304|  1.81%   |11.70|12.47|14 |bcm|postgresql.tar|
-|8082307|  1.96%   |11.17|113.64|13 |bzip2|postgresql.tar|
-|11017480|  2.67%   |0.38|$\color{green}{\textbf{5385.13}}$|10 |$\color{green}{\textbf{zstd 22}}$|postgresql.tar|
-|13137953|  3.19%   |8.86|871.75|12 |lzma 9|postgresql.tar|
-|411924480|100.00%   |$\color{green}{\textbf{19112.16}}$|$\color{green}{\textbf{19610.78}}$|15 |$\color{green}{\textbf{memcpy}}$|postgresql.tar|
+|4549138|  1.10%   |$\color{green}{\textbf{182.79}}$|$\color{green}{\textbf{274.52}}$|2🏆|$\color{green}{\textbf{bwtsatan 8}}$|postgresql.tar|
+|4552798|  1.11%   |153.00|252.35|4🥈|bwtsatan 9|postgresql.tar|
+|4686638|  1.14%   |$\color{green}{\textbf{301.26}}$|$\color{green}{\textbf{679.05}}$|1👑|$\color{green}{\textbf{bwtsatan 7t4}}$|postgresql.tar|
+|4686638|  1.14%   |233.74|503.87|3🥇|bwtsatan 7|postgresql.tar|
+|4909031|  1.19%   |27.34|30.10|7 |bzip3 512|postgresql.tar|
+|6785858|  1.65%   |33.91|84.32|6 |bsc 0e2|postgresql.tar|
+|6862874|  1.67%   |76.62|148.41|5🥉|kanzi 7|postgresql.tar|
+|7472304|  1.81%   |11.70|12.47|11 |bcm|postgresql.tar|
+|8082307|  1.96%   |11.17|113.64|10 |bzip2|postgresql.tar|
+|11017480|  2.67%   |0.38|$\color{green}{\textbf{5385.13}}$|8 |$\color{green}{\textbf{zstd 22}}$|postgresql.tar|
+|13137953|  3.19%   |8.86|871.75|9 |lzma 9|postgresql.tar|
+|411924480|100.00%   |$\color{green}{\textbf{19112.16}}$|$\color{green}{\textbf{19610.78}}$|12 |$\color{green}{\textbf{memcpy}}$|postgresql.tar|
 
 ## File Compression
 
