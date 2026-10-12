@@ -190,17 +190,19 @@
 |359610522| 36.0|**21.51**|**42.38**|**bzip2**|
 
 #### - Text log file:[NASA access log](https://ita.ee.lbl.gov/html/contrib/NASA-HTTP.html) 200MB  
-|C Size|ratio%|C MB/s|D MB/s|2026-10|
-|--------:|-----:|--------:|--------:|----------------|
-|8243722|  4.0|**8.73**|**18.14**|**TurboRC 20e9**|
-|9026862|  4.40|**38.69**|**106.37**|**TurboRC 20e7**|
-|9138588|  4.5|14.52|13.66|bzip3 512|
-|9438810|  4.6|19.41|43.66|bsc 0e2|
-|9503102|  4.6|20.74|53.42|bsc 0|
-|9647322|  4.7|21.45|58.95|bsc 0e0|
-|9812018|  4.8|20.35|66.12|TurboRC 20e6|
-|9817630|  4.8|20.87|68.17|TurboRC 20e5|
-|11960479|  5.8|15.71|83.16|bzip2|
+|C Size|ratio%|C MB/s|D MB/s|Rank|Name|2026/10|
+|--------:|-----:|--------:|--------:|----------------|----------------|------------------------------|
+|8243238|  4.02%   |$\color{green}{\textbf{79.92}}$|$\color{green}{\textbf{108.49}}$|2🏆|$\color{green}{\textbf{TurboRC 20e8}}$|access_log_Jul95|
+|8244226|  4.02%   |68.75|100.40|4🥈|TurboRC 20e9|access_log_Jul95|
+|8425042|  4.10%   |$\color{green}{\textbf{126.27}}$|$\color{green}{\textbf{246.64}}$|1👑|$\color{green}{\textbf{TurboRC 20e7t4}}$|access_log_Jul95|
+|8425042|  4.10%   |97.02|179.81|3🥇|TurboRC 20e7|access_log_Jul95|
+|9138568|  4.45%   |5.26|5.46|8 |bzip3 512|access_log_Jul95|
+|9449012|  4.60%   |20.29|41.56|5🥉|bsc 0e2|access_log_Jul95|
+|9717048|  4.73%   |12.01|7.45|9 |bcm|access_log_Jul95|
+|9930919|  4.84%   |18.91|36.77|6 |kanzi 7|access_log_Jul95|
+|11960479|  5.83%   |14.85|80.88|7 |bzip2|access_log_Jul95|
+|205242368|100.00%   |$\color{green}{\textbf{17405.22}}$|$\color{green}{\textbf{18395.84}}$|10 |$\color{green}{\textbf{memcpy}}$|access_log_Jul95|
+
 
 ## File Compression
 
