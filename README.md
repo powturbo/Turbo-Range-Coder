@@ -203,7 +203,7 @@
 |11960479|  5.83%   |14.85|80.88|7 |bzip2|access_log_Jul95|
 |205242368|100.00%   |$\color{green}{\textbf{17405.22}}$|$\color{green}{\textbf{18395.84}}$|10 |$\color{green}{\textbf{memcpy}}$|access_log_Jul95|
 
-#### - log files: [CLP log/json compression](https://docs.yscope.com/clp/main/user-docs/resources-datasets) using [TurboBench](https://github.com/powturbo/TurboBench)
+#### - [CLP log/json compression](https://docs.yscope.com/clp/main/user-docs/resources-datasets) using [TurboBench](https://github.com/powturbo/TurboBench)
 |C Size|ratio%|C MB/s|D MB/s|Rank|Name|2026/10|
 |--------:|-----:|--------:|--------:|----------------|----------------|------------------------------|
 |211743448|  2.02%   |$\color{green}{\textbf{104.96}}$|$\color{green}{\textbf{166.49}}$|3🥇|$\color{green}{\textbf{bwtsatan 9}}$|cockroach.node1.log|
