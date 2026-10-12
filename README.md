@@ -244,9 +244,9 @@
 
 |C Size|ratio%|C MB/s|D MB/s|Rank|Name|2026/10|
 |--------:|-----:|--------:|--------:|----------------|----------------|------------------------------|
-|656628102|  1.85%   |$\color{green}{\textbf{151.99}}$|$\color{green}{\textbf{222.84}}$|1👑|$\color{green}{\textbf{bwtsatan 8x}}$|openstack-24hr.tar|
-|656669010|  1.85%   |132.35|210.32|3🥇|bwtsatan 9x|openstack-24hr.tar|
-|666507010|  1.88%   |$\color{green}{\textbf{152.21}}$|$\color{green}{\textbf{337.53}}$|2🏆|$\color{green}{\textbf{bwtsatan 7x}}$|openstack-24hr.tar|
+|656628102|  1.85%   |$\color{green}{\textbf{151.99}}$|$\color{green}{\textbf{222.84}}$|1👑|$\color{green}{\textbf{bwtsatan 8x -b2047m}}$|openstack-24hr.tar|
+|656669010|  1.85%   |132.35|210.32|3🥇|bwtsatan 9x -b2047m|openstack-24hr.tar|
+|666507010|  1.88%   |$\color{green}{\textbf{152.21}}$|$\color{green}{\textbf{337.53}}$|2🏆|$\color{green}{\textbf{bwtsatan 7x -b2047m}}$|openstack-24hr.tar|
 |801468704|  2.26%   |42.39|84.54|4🥈|bsc 0e2|openstack-24hr.tar|
 |826207693|  2.33%   |23.13|25.43|5🥉|bzip3 512|openstack-24hr.tar|
 
