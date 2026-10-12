@@ -260,8 +260,6 @@
 |4909031|  1.19%   |27.34|30.10|11 |bzip3 512|postgresql.tar|
 |6785858|  1.65%   |33.91|84.32|8 |bsc 0e2|postgresql.tar|
 |6862874|  1.67%   |76.62|148.41|6 |kanzi 7|postgresql.tar|
-|7064078|  1.71%   |35.88|101.15|9 |bsc 0|postgresql.tar|
-|7305644|  1.77%   |37.11|107.21|7 |bsc 0e0|postgresql.tar|
 |7472304|  1.81%   |11.70|12.47|14 |bcm|postgresql.tar|
 |8082307|  1.96%   |11.17|113.64|13 |bzip2|postgresql.tar|
 |11017480|  2.67%   |0.38|$\color{green}{\textbf{5385.13}}$|10 |$\color{green}{\textbf{zstd 22}}$|postgresql.tar|
