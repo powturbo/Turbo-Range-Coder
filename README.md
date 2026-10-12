@@ -264,7 +264,7 @@
 |8082307|  1.96%   |11.17|113.64|13 |bzip2|postgresql.tar|
 |11017480|  2.67%   |0.38|$\color{green}{\textbf{5385.13}}$|10 |$\color{green}{\textbf{zstd 22}}$|postgresql.tar|
 |13137953|  3.19%   |8.86|871.75|12 |lzma 9|postgresql.tar|
-|411924480|100.00%   |$\color{green}{\textbf{15570.76}}$|$\color{green}{\textbf{17774.52}}$|15 |$\color{green}{\textbf{memcpy}}$|postgresql.tar|
+|411924480|100.00%   |$\color{green}{\textbf{19112.16}}$|$\color{green}{\textbf{19610.78}}$|15 |$\color{green}{\textbf{memcpy}}$|postgresql.tar|
 
 ## File Compression
 
