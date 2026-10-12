@@ -203,6 +203,66 @@
 |11960479|  5.83%   |14.85|80.88|7 |bzip2|access_log_Jul95|
 |205242368|100.00%   |$\color{green}{\textbf{17405.22}}$|$\color{green}{\textbf{18395.84}}$|10 |$\color{green}{\textbf{memcpy}}$|access_log_Jul95|
 
+#### - log files: [CLP log compression](https://docs.yscope.com/clp/main/user-docs/resources-datasets)
+|C Size|ratio%|C MB/s|D MB/s|Rank|Name|2026/10|
+|--------:|-----:|--------:|--------:|----------------|----------------|------------------------------|
+|211743448|  2.02%   |$\color{green}{\textbf{104.96}}$|$\color{green}{\textbf{166.49}}$|3🥇|$\color{green}{\textbf{bwtsatan 9}}$|cockroach.node1.log|
+|211767848|  2.02%   |$\color{green}{\textbf{121.27}}$|$\color{green}{\textbf{177.21}}$|1👑|$\color{green}{\textbf{bwtsatan 8}}$|cockroach.node1.log|
+|214648516|  2.04%   |23.25|25.24|4🥈|bzip3 512|cockroach.node1.log|
+|216660396|  2.06%   |$\color{green}{\textbf{156.26}}$|$\color{green}{\textbf{318.82}}$|2🏆|$\color{green}{\textbf{bwtsatan 7}}$|cockroach.node1.log|
+|267697716|  2.55%   |31.65|67.63|5🥉|bsc 0e2|cockroach.node1.log|
+
+|C Size|ratio%|C MB/s|D MB/s|Rank|Name|2026/10|
+|--------:|-----:|--------:|--------:|----------------|----------------|------------------------------|
+|21712748|  0.25%   |$\color{green}{\textbf{406.85}}$|$\color{green}{\textbf{772.12}}$|1👑|$\color{green}{\textbf{bwtsatan 8}}$|elasticsearch.log|
+|21735160|  0.25%   |358.65|723.76|3🥇|bwtsatan 9|elasticsearch.log|
+|22436580|  0.26%   |$\color{green}{\textbf{532.46}}$|$\color{green}{\textbf{1647.23}}$|2🏆|$\color{green}{\textbf{bwtsatan 7}}$|elasticsearch.log|
+|30904714|  0.36%   |46.85|62.38|6 |bzip3 512|elasticsearch.log|
+|31122700|  0.36%   |100.81|236.72|5🥉|bsc 0e2|elasticsearch.log|
+|39703881|  0.46%   |267.47|521.73|4🥈|kanzi 7|elasticsearch.log|
+
+|C Size|ratio%|C MB/s|D MB/s|Rank|Name|2026/10|
+|--------:|-----:|--------:|--------:|----------------|----------------|------------------------------|
+|30123628|  1.40%   |$\color{green}{\textbf{112.97}}$|$\color{green}{\textbf{200.93}}$|3🥇|$\color{green}{\textbf{bwtsatan 9}}$|hive-24hr.tar|
+|30144608|  1.40%   |$\color{green}{\textbf{141.85}}$|$\color{green}{\textbf{213.82}}$|2🏆|$\color{green}{\textbf{bwtsatan 8}}$|hive-24hr.tar|
+|30857040|  1.43%   |$\color{green}{\textbf{178.61}}$|$\color{green}{\textbf{389.29}}$|1👑|$\color{green}{\textbf{bwtsatan 7}}$|hive-24hr.tar|
+|33146648|  1.54%   |18.41|19.97|8 |bzip3 512|hive-24hr.tar|
+|36435456|  1.69%   |37.34|83.41|7 |bsc 0e2|hive-24hr.tar|
+|36973458|  1.71%   |39.24|94.81|6 |bsc 0|hive-24hr.tar|
+|37759508|  1.75%   |40.82|102.20|5🥉|bsc 0e0|hive-24hr.tar|
+|42084147|  1.95%   |83.48|133.05|4🥈|kanzi 7|hive-24hr.tar|
+
+|C Size|ratio%|C MB/s|D MB/s|Rank|Name|2026/10|
+|--------:|-----:|--------:|--------:|----------------|----------------|------------------------------|
+|274554794|  0.39%   |$\color{green}{\textbf{284.81}}$|$\color{green}{\textbf{542.61}}$|3🥇|$\color{green}{\textbf{bwtsatan 9}}$|mongodb.tar|
+|274610450|  0.39%   |$\color{green}{\textbf{320.66}}$|$\color{green}{\textbf{576.68}}$|1👑|$\color{green}{\textbf{bwtsatan 8}}$|mongodb.tar|
+|275093394|  0.40%   |40.55|46.68|6 |bzip3 512|mongodb.tar|
+|279664350|  0.40%   |$\color{green}{\textbf{412.07}}$|$\color{green}{\textbf{1095.35}}$|2🏆|$\color{green}{\textbf{bwtsatan 7}}$|mongodb.tar|
+|465340600|  0.67%   |74.33|181.88|7 |bsc 0e2|mongodb.tar|
+|485053806|  0.70%   |78.30|215.54|5🥉|bsc 0|mongodb.tar|
+|502791034|  0.72%   |80.40|228.93|4🥈|bsc 0e0|mongodb.tar|
+
+|C Size|ratio%|C MB/s|D MB/s|Rank|Name|2026/10|
+|--------:|-----:|--------:|--------:|----------------|----------------|------------------------------|
+|656628102|  1.85%   |$\color{green}{\textbf{151.99}}$|$\color{green}{\textbf{222.84}}$|1👑|$\color{green}{\textbf{bwtsatan 8x}}$|openstack-24hr.tar|
+|656669010|  1.85%   |132.35|210.32|3🥇|bwtsatan 9x|openstack-24hr.tar|
+|666507010|  1.88%   |$\color{green}{\textbf{152.21}}$|$\color{green}{\textbf{337.53}}$|2🏆|$\color{green}{\textbf{bwtsatan 7x}}$|openstack-24hr.tar|
+|801468704|  2.26%   |42.39|84.54|4🥈|bsc 0e2|openstack-24hr.tar|
+|826207693|  2.33%   |23.13|25.43|5🥉|bzip3 512|openstack-24hr.tar|
+
+|C Size|ratio%|C MB/s|D MB/s|Rank|Name|2026/10|
+|--------:|-----:|--------:|--------:|----------------|----------------|------------------------------|
+|4549138|  1.10%   |$\color{green}{\textbf{214.25}}$|$\color{green}{\textbf{313.07}}$|1👑|$\color{green}{\textbf{bwtsatan 8t4}}$|postgresql.tar|
+|4549138|  1.10%   |182.79|274.52|3🥇|bwtsatan 8|postgresql.tar|
+|4552802|  1.11%   |156.41|256.15|4🥈|bwtsatan 9|postgresql.tar|
+|4686622|  1.14%   |$\color{green}{\textbf{233.08}}$|$\color{green}{\textbf{513.55}}$|2🏆|$\color{green}{\textbf{bwtsatan 7}}$|postgresql.tar|
+|4909031|  1.19%   |27.34|30.10|9 |bzip3 512|postgresql.tar|
+|6785858|  1.65%   |33.91|84.32|7 |bsc 0e2|postgresql.tar|
+|6862874|  1.67%   |76.62|148.41|5🥉|kanzi 7|postgresql.tar|
+|11017480|  2.67%   |0.38|$\color{green}{\textbf{5385.13}}$|10 |$\color{green}{\textbf{zstd 22}}$|postgresql.tar|
+|13137953|  3.19%   |8.86|871.75|11 |lzma 9|postgresql.tar|
+|411924480|100.00%   |$\color{green}{\textbf{15570.76}}$|$\color{green}{\textbf{17774.52}}$|14 |$\color{green}{\textbf{memcpy}}$|postgresql.tar|
+
 
 ## File Compression
 
