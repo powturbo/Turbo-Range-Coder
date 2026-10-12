@@ -228,8 +228,6 @@
 |30857040|  1.43%   |$\color{green}{\textbf{178.61}}$|$\color{green}{\textbf{389.29}}$|1👑|$\color{green}{\textbf{bwtsatan 7}}$|hive-24hr.tar|
 |33146648|  1.54%   |18.41|19.97|8 |bzip3 512|hive-24hr.tar|
 |36435456|  1.69%   |37.34|83.41|7 |bsc 0e2|hive-24hr.tar|
-|36973458|  1.71%   |39.24|94.81|6 |bsc 0|hive-24hr.tar|
-|37759508|  1.75%   |40.82|102.20|5🥉|bsc 0e0|hive-24hr.tar|
 |42084147|  1.95%   |83.48|133.05|4🥈|kanzi 7|hive-24hr.tar|
 
 |C Size|ratio%|C MB/s|D MB/s|Rank|Name|2026/10|
