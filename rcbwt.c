@@ -81,7 +81,7 @@ size_t rcbwtenc(unsigned char *in, size_t inlen, unsigned char *out, unsigned le
     lenmin = sample(in, inlen, 16, 16*1024, out); 
     lenmin = histopt(out, lenmin, lev>=8, &nrev); 
     if(!(opt & BWT_LZPNREV)) lzprev = nrev?0:0x40;
-  }                                                                                  if(verbose) { printf("\nlev=%u MB=%zu nutf8=%d threads=%d ", lev, inlen/(1<<20), nutf8, threads); fflush(stdout); }
+  }                                                                                  if(verbose) { printf("\nlev=%u len(MB)=%zu nutf8=%d rev=%d threads=%d ", lev, inlen/(1<<20), nutf8, lzprev, threads); fflush(stdout); }
   if(lenmin) {                                                                       if(verbose) { printf("lenmin=%u ", lenmin);fflush(stdout); }
     ip = bwt;
     switch(lenmin) {
