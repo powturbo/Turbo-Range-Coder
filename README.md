@@ -220,13 +220,15 @@
 |30904714|  0.36%   |46.85|62.38|6 |bzip3 512|elasticsearch.log|
 |31122700|  0.36%   |100.81|236.72|5🥉|bsc 0e2|elasticsearch.log|
 |39703881|  0.46%   |267.47|521.73|4🥈|kanzi 7|elasticsearch.log|
+|49049600|  0.57%   |11.39||CLP 19|elasticsearch.log|
+
 
 |C Size|ratio%|C MB/s|D MB/s|Rank|Name|2026/10|
 |--------:|-----:|--------:|--------:|----------------|----------------|------------------------------|
 |30123628|  1.40%   |$\color{green}{\textbf{112.97}}$|$\color{green}{\textbf{200.93}}$|3🥇|$\color{green}{\textbf{bwtsatan 9}}$|hive-24hr.tar|
 |30144608|  1.40%   |$\color{green}{\textbf{141.85}}$|$\color{green}{\textbf{213.82}}$|2🏆|$\color{green}{\textbf{bwtsatan 8}}$|hive-24hr.tar|
 |30857040|  1.43%   |$\color{green}{\textbf{178.61}}$|$\color{green}{\textbf{389.29}}$|1👑|$\color{green}{\textbf{bwtsatan 7}}$|hive-24hr.tar|
-|31426560|  1.46%   |     |     |  |CLP level 19|hive-24hr.tar|
+|31426560|  1.46%   |19.78|     |  |CLP level 19|hive-24hr.tar|
 |33146648|  1.54%   |18.41|19.97|8 |bzip3 512|hive-24hr.tar|
 |36435456|  1.69%   |37.34|83.41|7 |bsc 0e2|hive-24hr.tar|
 |42084147|  1.95%   |83.48|133.05|4🥈|kanzi 7|hive-24hr.tar|
@@ -260,7 +262,7 @@
 |6862874|  1.67%   |76.62|148.41|5🥉|kanzi 7|postgresql.tar|
 |7472304|  1.81%   |11.70|12.47|11 |bcm|postgresql.tar|
 |8082307|  1.96%   |11.17|113.64|10 |bzip2|postgresql.tar|
-|8089600|  1.96%   | | | |CLP level 19|postgresql.tar|
+|8089600|  1.96%   |16.24| | |CLP level 19|postgresql.tar|
 |11017480|  2.67%   |0.38|$\color{green}{\textbf{5385.13}}$|8 |$\color{green}{\textbf{zstd 22}}$|postgresql.tar|
 |13137953|  3.19%   |8.86|871.75|9 |lzma 9|postgresql.tar|
 |411924480|100.00%   |$\color{green}{\textbf{19112.16}}$|$\color{green}{\textbf{19610.78}}$|12 |$\color{green}{\textbf{memcpy}}$|postgresql.tar|
