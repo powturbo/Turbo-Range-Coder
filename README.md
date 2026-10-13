@@ -3,7 +3,7 @@
 
 <p align="center">
   <img
-    alt="TurboBench Logo" src="Turbo-Range-Coder.png"
+    alt="Turbo-Range-Coder" src="Turbo-Range-Coder.png"
     width="400px"
   >
 </p>
