@@ -241,7 +241,7 @@
 |279664350|  0.40%   |$\color{green}{\textbf{412.07}}$|$\color{green}{\textbf{1095.35}}$|2🏆|$\color{green}{\textbf{bwtsatan 7}}$|mongodb.tar|
 |465340600|  0.67%   |74.33|181.88|7 |bsc 0e2|mongodb.tar|
 |485053806|  0.70%   |78.30|215.54|5🥉|bsc 0|mongodb.tar|
-|502791034|  0.72%   |80.40|228.93|4🥈|bsc 0e0|mongodb.tar|
+|502791034|  0.72%   |10.50|||CLP level 19|mongodb.tar|
 
 |C Size|ratio%|C MB/s|D MB/s|Rank|Name|2026/10|
 |--------:|-----:|--------:|--------:|----------------|----------------|------------------------------|
@@ -250,6 +250,8 @@
 |666507010|  1.88%   |$\color{green}{\textbf{152.21}}$|$\color{green}{\textbf{337.53}}$|2🏆|$\color{green}{\textbf{bwtsatan 7x -b2047m}}$|openstack-24hr.tar|
 |801468704|  2.26%   |42.39|84.54|4🥈|bsc 0e2|openstack-24hr.tar|
 |826207693|  2.33%   |23.13|25.43|5🥉|bzip3 512|openstack-24hr.tar|
+|843991040|  2.38%   |10|||CLP 19|openstack-24hr.tar|
+|972564480|  2.75    |264| | |CLP 3|openstack-24hr.tar|
 
 |C Size|ratio%|C MB/s|D MB/s|Rank|Name|2026/10|
 |--------:|-----:|--------:|--------:|----------------|----------------|------------------------------|
@@ -262,10 +264,13 @@
 |6862874|  1.67%   |76.62|148.41|5🥉|kanzi 7|postgresql.tar|
 |7472304|  1.81%   |11.70|12.47|11 |bcm|postgresql.tar|
 |8082307|  1.96%   |11.17|113.64|10 |bzip2|postgresql.tar|
-|8089600|  1.96%   |16.24| | |CLP level 19|postgresql.tar|
+|8089600|  1.96%   |16.24| | |CLP 19|postgresql.tar|
 |11017480|  2.67%   |0.38|$\color{green}{\textbf{5385.13}}$|8 |$\color{green}{\textbf{zstd 22}}$|postgresql.tar|
 |13137953|  3.19%   |8.86|871.75|9 |lzma 9|postgresql.tar|
+|13363200|  3.24%   |164|| |CLP 3|postgresql.tar|
 |411924480|100.00%   |$\color{green}{\textbf{19112.16}}$|$\color{green}{\textbf{19610.78}}$|12 |$\color{green}{\textbf{memcpy}}$|postgresql.tar|
+
+13363200
 
 ## File Compression
 
