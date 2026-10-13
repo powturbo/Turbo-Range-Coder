@@ -1,6 +1,13 @@
 ## TurboRC: Turbo Range Coder + rANS Asymmetric Numeral Systems
 [![Build ubuntu](https://github.com/powturbo/Turbo-Range-Coder/actions/workflows/build.yaml/badge.svg)](https://github.com/powturbo/Turbo-Range-Coder/actions/workflows/build.yaml)
 
+<p align="center">
+  <img
+    alt="TurboBench Logo" src="Turbo-Range-Coder.png"
+    width="400px"
+  >
+</p>
+
 ======================================
 * **Fastest (Branchless) Range Coder / Arithmetic Coder**
   * 100% C (C++ headers). 
