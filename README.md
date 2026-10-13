@@ -251,7 +251,7 @@
 |801468704|  2.26%   |42.39|84.54|4🥈|bsc 0e2|openstack-24hr.tar|
 |826207693|  2.33%   |23.13|25.43|5🥉|bzip3 512|openstack-24hr.tar|
 |843991040|  2.38%   |10.00|||CLP 19|openstack-24hr.tar|
-|972564480|  2.75    |264.00| | |CLP 3|openstack-24hr.tar|
+|972564480|  2.75%   |264.00| | |CLP 3|openstack-24hr.tar|
 
 |C Size|ratio%|C MB/s|D MB/s|Rank|Name|2026/10|
 |--------:|-----:|--------:|--------:|----------------|----------------|------------------------------|
@@ -269,8 +269,6 @@
 |13137953|  3.19%   |8.86|871.75|9 |lzma 9|postgresql.tar|
 |13363200|  3.24%   |164.00|| |CLP 3|postgresql.tar|
 |411924480|100.00%   |$\color{green}{\textbf{19112.16}}$|$\color{green}{\textbf{19610.78}}$|12 |$\color{green}{\textbf{memcpy}}$|postgresql.tar|
-
-13363200
 
 ## File Compression
 
