@@ -228,7 +228,7 @@
 |30123628|  1.40%   |$\color{green}{\textbf{112.97}}$|$\color{green}{\textbf{200.93}}$|3🥇|$\color{green}{\textbf{bwtsatan 9}}$|hive-24hr.tar|
 |30144608|  1.40%   |$\color{green}{\textbf{141.85}}$|$\color{green}{\textbf{213.82}}$|2🏆|$\color{green}{\textbf{bwtsatan 8}}$|hive-24hr.tar|
 |30857040|  1.43%   |$\color{green}{\textbf{178.61}}$|$\color{green}{\textbf{389.29}}$|1👑|$\color{green}{\textbf{bwtsatan 7}}$|hive-24hr.tar|
-|31426560|  1.46%   |19.78|     |  |CLP level 19|hive-24hr.tar|
+|31426560|  1.46%   |19.78|     |  |CLP 19|hive-24hr.tar|
 |33146648|  1.54%   |18.41|19.97|8 |bzip3 512|hive-24hr.tar|
 |36435456|  1.69%   |37.34|83.41|7 |bsc 0e2|hive-24hr.tar|
 |42084147|  1.95%   |83.48|133.05|4🥈|kanzi 7|hive-24hr.tar|
@@ -241,7 +241,7 @@
 |279664350|  0.40%   |$\color{green}{\textbf{412.07}}$|$\color{green}{\textbf{1095.35}}$|2🏆|$\color{green}{\textbf{bwtsatan 7}}$|mongodb.tar|
 |465340600|  0.67%   |74.33|181.88|7 |bsc 0e2|mongodb.tar|
 |485053806|  0.70%   |78.30|215.54|5🥉|bsc 0|mongodb.tar|
-|502791034|  0.72%   |10.50|||CLP level 19|mongodb.tar|
+|502791034|  0.72%   |10.50|||CLP 19|mongodb.tar|
 
 |C Size|ratio%|C MB/s|D MB/s|Rank|Name|2026/10|
 |--------:|-----:|--------:|--------:|----------------|----------------|------------------------------|
@@ -250,8 +250,8 @@
 |666507010|  1.88%   |$\color{green}{\textbf{152.21}}$|$\color{green}{\textbf{337.53}}$|2🏆|$\color{green}{\textbf{bwtsatan 7x -b2047m}}$|openstack-24hr.tar|
 |801468704|  2.26%   |42.39|84.54|4🥈|bsc 0e2|openstack-24hr.tar|
 |826207693|  2.33%   |23.13|25.43|5🥉|bzip3 512|openstack-24hr.tar|
-|843991040|  2.38%   |10|||CLP 19|openstack-24hr.tar|
-|972564480|  2.75    |264| | |CLP 3|openstack-24hr.tar|
+|843991040|  2.38%   |10.00|||CLP 19|openstack-24hr.tar|
+|972564480|  2.75    |264.00| | |CLP 3|openstack-24hr.tar|
 
 |C Size|ratio%|C MB/s|D MB/s|Rank|Name|2026/10|
 |--------:|-----:|--------:|--------:|----------------|----------------|------------------------------|
