@@ -267,7 +267,7 @@
 |8089600|  1.96%   |16.24| | |CLP 19|postgresql.tar|
 |11017480|  2.67%   |0.38|$\color{green}{\textbf{5385.13}}$|8 |$\color{green}{\textbf{zstd 22}}$|postgresql.tar|
 |13137953|  3.19%   |8.86|871.75|9 |lzma 9|postgresql.tar|
-|13363200|  3.24%   |164|| |CLP 3|postgresql.tar|
+|13363200|  3.24%   |164.00|| |CLP 3|postgresql.tar|
 |411924480|100.00%   |$\color{green}{\textbf{19112.16}}$|$\color{green}{\textbf{19610.78}}$|12 |$\color{green}{\textbf{memcpy}}$|postgresql.tar|
 
 13363200
