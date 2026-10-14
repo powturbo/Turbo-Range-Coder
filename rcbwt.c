@@ -86,7 +86,7 @@ size_t rcbwtenc(unsigned char *in, size_t inlen, unsigned char *out, unsigned le
     ip = bwt;
     switch(lenmin) {
         #ifdef _FASTA
-      case 2  : iplen = fastaenc(in, inlen, ip);                                     if(verbose) { printf("GenTR %u->%u ", inlen, iplen); fflush(stdout); } break;
+      case 2  : iplen = fastaenc(in, inlen, ip, inlen);                              if(verbose) { printf("GenTR %u->%u ", inlen, iplen); fflush(stdout); } break;
         #endif
       default : if(!nutf8) { iplen = utf8enc(in, inlen, ip, opt);                    if(verbose) { if(iplen == inlen) printf("NoUTF8 "); else printf("UTF8:%zu->%zu ", inlen, iplen); fflush(stdout); }} break;                  // try utf8 preprocessing
     }
@@ -215,7 +215,7 @@ size_t rcbwtdec(unsigned char *in, size_t outlen, unsigned char *out, unsigned l
     switch(lenmin) {
       case 127: utf8dec(op, outlen, out);  break;
         #ifdef _FASTA
-      case 126: fastadec(op, outlen, out); break;
+      case 126: fastadec(op, 0, out, outlen); break;
         #endif
       default:                                                                        if(lzprev) memrev(op, oplen);
         lzpdec(op, oplen, out, outlen, lenmin*4, lev >= LZPLEV?0:LZPHBITS);           if(lzprev) memrev(out, outlen);
