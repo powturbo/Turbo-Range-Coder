@@ -65,8 +65,8 @@ void memrev(unsigned char a[], unsigned n);
 size_t fastasenc(unsigned char *__restrict in, size_t inlen,  unsigned char *__restrict out);
 size_t fastasdec(unsigned char *__restrict in, size_t outlen, unsigned char *__restrict out);
 
-size_t fastaenc(unsigned char *__restrict in, size_t inlen,  unsigned char *__restrict out);
-size_t fastadec(unsigned char *__restrict in, size_t outlen, unsigned char *__restrict out);
+size_t fastaenc(unsigned char *__restrict in, size_t inlen, unsigned char *__restrict out, size_t outsize);
+size_t fastadec(unsigned char *__restrict in, size_t inlen, unsigned char *__restrict out, size_t outlen);
 
 //----------- 16 = 2x8,1x16 ----------------
 unsigned  delta8l16(uint8_t *in, size_t n);
