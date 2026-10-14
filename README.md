@@ -218,7 +218,7 @@
 |214648516|  2.04%   |23.25|25.24|4🥈|bzip3 512|cockroach.node1.log|
 |216660396|  2.06%   |$\color{green}{\textbf{156.26}}$|$\color{green}{\textbf{318.82}}$|2🏆|$\color{green}{\textbf{bwtsatan 7}}$|cockroach.node1.log|
 |267697716|  2.55%   |31.65|67.63|5🥉|bsc 0e2|cockroach.node1.log|
-|434411520|  4.13%   |150|||CLP 3|cockroach.node1.log|
+|434411520|  4.13%   |150.00|||CLP 3|cockroach.node1.log|
 
 |C Size|ratio%|C MB/s|D MB/s|Rank|Name|2026/10|
 |--------:|-----:|--------:|--------:|----------------|----------------|------------------------------|
