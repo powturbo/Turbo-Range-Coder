@@ -73,9 +73,9 @@ void *bsc_malloc(size_t s) { return malloc(s); }
 #define NO_RC
 #endif
 
-unsigned bwtx, forcelzp, xprep8, xsort, nutf8;
+unsigned bwtx, forcelzp, xprep8, xsort, nutf8, lzpnrev;
 int BGFREQMIN = 50, BGMAX = 250, itmax;
-#define bwtflag(z) (z==2?BWT_BWT16:0) | (xprep8?BWT_PREP8:0) | (forcelzp?BWT_LZP:0) | (nutf8?BWT_NUTF8:0) | (verbose?BWT_VERBOSE:0) | xsort <<14 | itmax <<10 | lenmin
+#define bwtflag(z) (z==2?BWT_BWT16:0) | (xprep8?BWT_PREP8:0) | (forcelzp?BWT_LZP:0) | (nutf8?BWT_NUTF8:0) | (verbose?BWT_VERBOSE:0) | (lzpnrev?BWT_LZPNREV:0) | xsort <<14 | itmax <<10 | lenmin
 
 #define MAGIC     0x154 // 12 bits
 #define BLKMAX    3584
@@ -289,10 +289,10 @@ int memcheck(unsigned char *in, unsigned n, unsigned char *cpy) {
   int i;
   for(i = 0; i < n; i++)
     if(in[i] != cpy[i]) {
-      printf("ERROR in[%d]=%x dec[%d]=%x\n", i, in[i], i, cpy[i]);
-      in[n]=0;
-      fprintf(stderr, "%s\n\n", in); 
-      fprintf(stderr, "%s", in+i); exit(0);
+      printf("ERROR in[%d]=%x dec[%d]=%x\n", i, in[i], i, cpy[i]);  getchar();
+      //in[n]=0;
+      //fprintf(stderr, "%s\n\n", in); 
+      //fprintf(stderr, "%s", in+i); exit(0);
       return i+1;
     }
   return 0;
@@ -574,7 +574,7 @@ unsigned bench(unsigned char *in, unsigned n, unsigned char *out, unsigned char 
       #endif
       #ifdef _FASTA
     case 88:         TM("84 fasta simple                         ",l=fastasenc(in,n,out),                       n,l,fastasdec(out,l,cpy)); break;
-    case 89:         TM("85 fasta                                ",l=fastaenc( in,n,out),                       n,l,fastadec( out,l,cpy)); break;
+    case 89:         TM("85 fasta                                ",l=fastaenc(in,n,out, n),                     n,l,fastadec( out,l,cpy,n)); break;
 //    case 86:         TM("86 fasta0                               ",l=fastaenc0(in,n,out),                       n,l,CCPY:fastadec0(out,l,cpy)); break;
       #endif
 
@@ -778,7 +778,7 @@ int main(int argc, char* argv[]) {
       { "help",     0, 0, 'h'},
       { 0,          0, 0, 0}
     };
-    if((c = getopt_long(argc, argv, "0:1:2:3:4:5:6:7:8:9:a:b:B:cde:fF:g:G:hH:I:J:k:K:l:m:noO:p:P:q:Q:r:S:t:T:UV:v:x:XY:zZ:", long_options, &optind)) == -1) break;
+    if((c = getopt_long(argc, argv, "0:1:2:3:4:5:6:7:8:9:a:b:B:cde:fF:g:G:hH:I:J:k:K:l:m:noO:p:P:q:Q:r:RS:t:T:UV:v:x:XY:zZ:", long_options, &optind)) == -1) break;
     switch(c) {
       case 0:
         printf("Option %s", long_options[optind].name);
@@ -842,6 +842,7 @@ int main(int argc, char* argv[]) {
       //case 'Q': qmax   = atoi(optarg); break;
       case 'v': verbose = atoi(optarg); break;
 
+      case 'R': lzpnrev++;    break;
       case 'U': nutf8++;    break;
       case 'X': bwtx++;    break;
       case 'S': xsort = atoi(optarg); break;
@@ -1117,7 +1118,7 @@ int main(int argc, char* argv[]) {
         } break;
             #ifdef _FASTA
         case 29: clen = fastasenc(in,inlen,out); break;
-        case 30: clen = fastaenc( in,inlen,out); break;
+        case 30: clen = fastaenc( in,inlen,out, inlen); break;
             #endif
           #endif
         case 31: clen = lzpenc(in,inlen,out,lenmin, 0); break;
@@ -1183,7 +1184,7 @@ int main(int argc, char* argv[]) {
           #endif
             #ifdef _FASTA
         case 29: fastasdec(in,outlen,out); break;
-        case 30: fastadec( in,outlen,out); break;
+        case 30: fastadec(in,0, out, outlen); break;
             #endif
         case 31: lzpdec(in,0, out, outlen,lenmin, 0); break;
 
