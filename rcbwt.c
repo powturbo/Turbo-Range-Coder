@@ -86,14 +86,14 @@ size_t rcbwtenc(unsigned char *in, size_t inlen, unsigned char *out, unsigned le
     ip = bwt;
     switch(lenmin) {
         #ifdef _FASTA
-      case 2  : iplen = fastaenc(in, inlen, ip, inlen);                              if(verbose) { printf("GenTR %u->%u ", inlen, iplen); fflush(stdout); } break;
+      case 2  : iplen = fastaenc(in, inlen, ip, inlen);                              if(verbose) { printf("Fasta:%u->%u ", inlen, iplen); fflush(stdout); } break;
         #endif
       default : if(!nutf8) { iplen = utf8enc(in, inlen, ip, opt);                    if(verbose) { if(iplen == inlen) printf("NoUTF8 "); else printf("UTF8:%zu->%zu ", inlen, iplen); fflush(stdout); }} break;                  // try utf8 preprocessing
     }
     if(lenmin < LZPLENMIN || iplen != inlen && iplen != -1) {
-      lenmin = lenmin<LZPLENMIN?128-lenmin:127;                                      if(verbose) printf("No Lzp run %d %d ", lenmin, iplen); // lenmin = 127-LM for other preprocessing ids
+      lenmin = lenmin<LZPLENMIN?64-lenmin:63;                                      if(verbose) printf("No Lzp run %d %d ", lenmin, iplen); // lenmin = 127-LM for other preprocessing ids
     } else {
-      lenmin = (lenmin+3)/4; lenmin = lenmin >63?63:lenmin;                          if(verbose) { printf("Lzp: minlen=%d ", lenmin*4); fflush(stdout); } 
+      lenmin = (lenmin+3)/4; lenmin = lenmin >55?55:lenmin;                          if(verbose) { printf("Lzp: minlen=%d ", lenmin*4); fflush(stdout); } 
       ip     = bwt; if(lzprev) { memcpy(out, in, inlen); memrev(out, inlen); }
       iplen  = lzpenc(lzprev?OUT:in, inlen, ip, lenmin*4, lev >= LZPLEV?0:LZPHBITS); if(verbose) { printf("Lzp=%zu->%zu=%.2f%% ", inlen, iplen, (double)iplen*100.0/inlen);fflush(stdout); }
       if(iplen == inlen || iplen+(inlen>>7)+256 > inlen && !forcelzp) {              if(verbose) { printf("Not enough saving ");fflush(stdout); }  //Not enough saving
@@ -213,9 +213,9 @@ size_t rcbwtdec(unsigned char *in, size_t outlen, unsigned char *out, unsigned l
 
   if(lenmin) {
     switch(lenmin) {
-      case 127: utf8dec(op, outlen, out);  break;
+      case 63: utf8dec(op, outlen, out);  break;
         #ifdef _FASTA
-      case 126: fastadec(op, 0, out, outlen); break;
+      case 62: fastadec(op, 0, out, outlen); break;
         #endif
       default:                                                                        if(lzprev) memrev(op, oplen);
         lzpdec(op, oplen, out, outlen, lenmin*4, lev >= LZPLEV?0:LZPHBITS);           if(lzprev) memrev(out, outlen);
