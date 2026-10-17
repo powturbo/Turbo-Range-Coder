@@ -23,8 +23,8 @@ TP=1
 CC ?= gcc
 #CC ?= clang
 CXX ?= g++
-CX ?= clang
-#CX ?= gcc
+CY ?= clang
+#CY ?= gcc
 #CC = clang
 
 #DEBUG=-DDEBUG -g
@@ -43,42 +43,44 @@ BUILD_DATE := $(shell date +%Y%m%d)
 VPATH := .:libdivsufsort:libdivsufsort/lib:libsais/src:../bwt
 
 #------- OS/ARCH -------------------
+#------- OS/ARCH -------------------
 ifneq (,$(filter Windows%,$(OS)))
   OS := Windows
   CC=gcc
 # CC=clang
-# CX=gcc
-  CX=clang
+# CY=gcc
+  CY=clang
   CXX=g++
   ARCH=x86_64
 else
   OS := $(shell uname -s)
   ARCH := $(shell uname -m)
 endif
-#$(info OS="$(OS)")
 
 ifndef CROSS
 else
+
 ifeq ($(OS), Windows)
 CP=$(CROSS)-unknown-elf
 else
 CP=$(CROSS)-linux-gnu
 endif
-
-CXX:=$(CP)-g++
-ifeq ($(CX),clang)
-CX=clang --target=$(CP) --sysroot=/usr/$(CP) -fuse-ld=lld
+ifeq ($(CY),clang)
+CY=clang --target=$(CP) --sysroot=/usr/$(CP) -fuse-ld=lld
+CXX:=$(CP)-clang++
 ifeq ($(CC),clang)
-CC=$(CX)
+CC=$(CY)
 else
 CC:=$(CP)-gcc
+CXX:=$(CP)-g++
 endif
 else
 CC:=$(CP)-gcc
-CX=$(CC)
+CY=$(CC)
 endif
-CROSS=$(CC)
+#CROSS:=$(CC)
 endif
+CHOST=$(CROSS)
 
 ifneq (,$(or $(findstring aarch64,$(CC) $(ARCH)),$(findstring arm64,$(CC) $(ARCH))))
   ARCH = aarch64
@@ -86,7 +88,7 @@ else ifneq (,$(findstring riscv64,$(CC) $(ARCH)))
   ARCH = riscv64
 else ifneq (,$(findstring iPhone,$(ARCH)))
   ARCH = aarch64
-  CFLAGS+=-DHAVE_MALLOC_MALLOC
+  CFLAGS=-DHAVE_MALLOC_MALLOC
 else ifneq (,$(findstring powerpc64le,$(CC) $(ARCH)))
   ARCH = ppc64le
 else ifneq (,$(findstring loongarch64,$(CC) $(ARCH)))
@@ -97,24 +99,22 @@ endif
 
 ifeq ($(ARCH),aarch64)
   _SSE=-march=armv8-a
-  CFLAGS+=$(_SSE)
+  CFLAGS=$(_SSE)
 else ifeq ($(ARCH),riscv64)
-#  CFLAGS+=-march=rv64gcv -mabi=lp64d
-  CFLAGS+=-march=rv64gcv_zvbb -mabi=lp64d
+#  CFLAGS=-march=rv64gc_zba_zbb_zbs
+#  CFLAGS=-mabi=lp64d -mno-strict-align
+  CFLAGS=-march=rv64gc -mabi=lp64d -fno-tree-vectorize  
+#-fno-tree-loop-vectorize
+  _SSE=-march=rv64gcv_zvbb
 else ifeq ($(ARCH),ppc64le)
   _SSE=-D__SSE4_1__
-  CFLAGS+=-mcpu=power9 -mtune=power9 $(_SSE)
+  CFLAGS=-mcpu=power9 -mtune=power9 $(_SSE)
+  CHOST=powerpc64le
 else ifeq ($(ARCH),loongarch64)
   _SSE=-mlsx
-  CFLAGS+=$(_SSE)
+  CFLAGS=$(_SSE)
 else ifeq ($(ARCH),x86_64)
-# _SSE=-mssse3 
-# _SSE+=-mno-avx -mno-aes
-# _SSE=-march=corei7-avx -mtune=corei7-avx
-# _SSE=-march=ivybridge -mavx
   _SSE=-mavx -mpopcnt
-
-# _AVX2=-march=skylake-avx512 -mavx512vbmi -mavx512f -mavx512vl
   _AVX2=-march=haswell
 endif
 
@@ -305,7 +305,7 @@ ifeq ($(BWT), 1)
 OBJS_CX_SSE += $(BUILD)/xrcbwt_sf.o
 endif
 endif
-$(OBJS_CX_SSE): COMP = $(CX)
+$(OBJS_CX_SSE): COMP = $(CY)
 $(OBJS_CX_SSE): SIMD = $(_SSE)
 $(BUILD)/anscdfs.o:    anscdf.c anscdf_.h 
 $(BUILD)/rccmc_s.o:    rccmc_s.c
@@ -322,7 +322,7 @@ ifeq ($(ARCH),x86_64)
 OBJS_CX_AVX2 += $(BUILD)/tp256.o
 endif
 endif
-$(OBJS_CX_AVX2): COMP = $(CX)
+$(OBJS_CX_AVX2): COMP = $(CY)
 $(OBJS_CX_AVX2): SIMD = $(_AVX2)
 $(BUILD)/anscdfx.o:    anscdf.c anscdf_.h 
 $(BUILD)/tp256.o:      tp.c
@@ -355,7 +355,7 @@ $(BUILD)/librc.so: $(LIB) | $(BUILD)
 	$(CC) -shared $+ -o $@
 
 $(BUILD)/turborc.o: turborc.c | $(BUILD)
-	$(CX) -O3 $(CFLAGS) $(MARCH) -c turborc.c -o $(BUILD)/turborc.o
+	$(CY) -O3 $(CFLAGS) $(MARCH) -c turborc.c -o $(BUILD)/turborc.o
 
 $(BUILD)/turborc: $(LIB) $(LIBBWT) $(BUILD)/librc.a $(BUILD)/turborc.o
 	$(CC) $^ $(LDFLAGS) $(FOPENMP) -o $(BUILD)/turborc
