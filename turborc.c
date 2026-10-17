@@ -75,7 +75,7 @@ void *bsc_malloc(size_t s) { return malloc(s); }
 
 unsigned bwtx, forcelzp, xprep8, xsort, nutf8, lzpnrev;
 int BGFREQMIN = 50, BGMAX = 250, itmax;
-#define bwtflag(z) (z==2?BWT_BWT16:0) | (xprep8?BWT_PREP8:0) | (forcelzp?BWT_LZP:0) | (nutf8?BWT_NUTF8:0) | (verbose?BWT_VERBOSE:0) | (lzpnrev?BWT_LZPNREV:0) | xsort <<14 | itmax <<10 | lenmin
+#define bwtflag(z) (z==2?BWT_BWT16:0) | (xprep8?BWT_PREP8:0) | (forcelzp?BWT_LZP:0) | (nutf8?BWT_NUTF8:0) | (verbose?BWT_VERBOSE:0) | (lzpnrev?BWT_LZPNREV:0) | xsort << 14 | itmax << 10 | lenmin
 
 #define MAGIC     0x154 // 12 bits
 #define BLKMAX    3584
