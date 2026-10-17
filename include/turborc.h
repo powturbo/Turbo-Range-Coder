@@ -32,15 +32,37 @@
   #endif
 
 //----------- BWT -------------------
-#define BWT_RDONLY  (1<<30) // input is read only, no overwrite
-#define BWT_BWT16   (1<<29) // 16 bits bwt
-#define BWT_PREP8   (1<<28) // preprocessor output 8-16 bits 
-#define BWT_LZP     (1<<27) // Force lzp
-#define BWT_VERBOSE (1<<26) // verbose
-#define BWT_COPY    (1<<25) // memcpy in to out in case of no compression
-#define BWT_RATIO   (1<<24) // No ratio check
-#define BWT_NUTF8   (1<<23) // No utf8-preprocessing
-#define BWT_LZPNREV (1<<22) // No reversing before lzp
+#define BWT_RDONLY  (1u<<31) // input is read only, no overwrite
+#define BWT_BWT16   (1u<<30) // 16 bits bwt
+#define BWT_PREP8   (1u<<29) // preprocessor output 8-16 bits 
+#define BWT_LZP     (1u<<28) // Force lzp
+#define BWT_VERBOSE (1u<<27) // verbose
+#define BWT_COPY    (1u<<26) // memcpy in to out in case of no compression
+#define BWT_RATIO   (1u<<25) // No ratio check
+#define BWT_NUTF8   (1u<<24) // No utf8-preprocessing
+#define BWT_LZPNREV (1u<<23) // No reversing before lzp
+
+#define PRP_UTF8    1
+#define PRP_FASTA   2
+
+typedef struct {
+  unsigned char prid;    // preprocessor id;
+  unsigned char xrdonly; // input is read only, no overwrite
+  unsigned char xbwt16;  // 16 bits bwt
+  unsigned char verbose; // verbose
+  unsigned char xcopy;   // memcpy in to out in case of no compression
+  unsigned char threads;
+  
+  // lzp
+  unsigned char xlzp;    // Force lzp
+  unsigned char xlzpnrev; 
+  unsigned char lenmin;
+  // utf8
+  unsigned char xnutf8;  // No utf8-preprocessing
+  unsigned char xratio;  // No ratio check
+  unsigned char xprep8;  // preprocessor output 8-16 bits 
+  unsigned char itmax;
+} optbwt_t;
 
 #ifdef __cplusplus
 extern "C" {
