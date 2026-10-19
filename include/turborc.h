@@ -141,6 +141,8 @@ size_t rcrle1sdec16(unsigned char *in, size_t outlen, unsigned char *out );
 size_t rcu3senc(    unsigned char *in, size_t inlen,  unsigned char *out ); // structured/segmented 3/5/8 varint
 size_t rcu3sdec(    unsigned char *in, size_t outlen, unsigned char *out );
 
+size_t rcqlfc0senc(  unsigned char *in, size_t inlen,  unsigned char *out ); // //--- QLFC :  Quantized Local Frequency Coding
+size_t rcqlfc0sdec(  unsigned char *in, size_t outlen, unsigned char *out );
 size_t rcqlfcsenc(  unsigned char *in, size_t inlen,  unsigned char *out ); // //--- QLFC :  Quantized Local Frequency Coding
 size_t rcqlfcsdec(  unsigned char *in, size_t outlen, unsigned char *out );
 
@@ -290,7 +292,9 @@ size_t rcrle1ssdec16(unsigned char *in, size_t outlen, unsigned char *out, unsig
 size_t rcu3ssenc(    unsigned char *in, size_t inlen,  unsigned char *out, unsigned prm0, unsigned prm1 );  // structured/segmented 3/5/8 varint
 size_t rcu3ssdec(    unsigned char *in, size_t outlen, unsigned char *out, unsigned prm0, unsigned prm1 ); 
 
-size_t rcqlfcssenc(  unsigned char *in, size_t inlen,  unsigned char *out, unsigned prm0, unsigned prm1 );  // //--- QLFC :  Quantized Local Frequency Coding
+size_t rcqlfc0ssenc( unsigned char *in, size_t inlen,  unsigned char *out, unsigned prm0, unsigned prm1 );  // //--- QLFC :  Quantized Local Frequency Coding
+size_t rcqlfc0ssdec( unsigned char *in, size_t outlen, unsigned char *out, unsigned prm0, unsigned prm1 ); 
+size_t rcqlfcssenc(  unsigned char *in, size_t inlen,  unsigned char *out, unsigned prm0, unsigned prm1 ); 
 size_t rcqlfcssdec(  unsigned char *in, size_t outlen, unsigned char *out, unsigned prm0, unsigned prm1 ); 
 
 size_t rc4ssenc(     unsigned char *in, size_t inlen,  unsigned char *out, unsigned prm0, unsigned prm1 ); // nibble adaptive
@@ -435,7 +439,9 @@ size_t rcrle1sfdec16(unsigned char *in, size_t outlen, unsigned char *out, fsm_t
 size_t rcu3sfenc(    unsigned char *in, size_t inlen,  unsigned char *out, fsm_t *fsm);  // structured/segmented 3/5/8 varint
 size_t rcu3sfdec(    unsigned char *in, size_t outlen, unsigned char *out, fsm_t *fsm); 
 
-size_t rcqlfcsfenc(  unsigned char *in, size_t inlen,  unsigned char *out, fsm_t *fsm);  // //--- QLFC :  Quantized Local Frequency Coding
+size_t rcqlfc0sfenc( unsigned char *in, size_t inlen,  unsigned char *out, fsm_t *fsm);  // //--- QLFC :  Quantized Local Frequency Coding
+size_t rcqlfc0sfdec( unsigned char *in, size_t outlen, unsigned char *out, fsm_t *fsm); 
+size_t rcqlfcsfenc(  unsigned char *in, size_t inlen,  unsigned char *out, fsm_t *fsm); 
 size_t rcqlfcsfdec(  unsigned char *in, size_t outlen, unsigned char *out, fsm_t *fsm); 
 
 size_t rc4sfenc(     unsigned char *in, size_t inlen,  unsigned char *out, fsm_t *fsm); // nibble adaptive
