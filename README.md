@@ -330,4 +330,4 @@ See examples in "turborc.c"
 * **References:**
   * <a name="a"></a>[Entropy Coder Benchmark](https://sites.google.com/site/powturbo/entropy-coder) 
 
-Last update: 10 OCT 2026
+Last update: 19 OCT 2026
