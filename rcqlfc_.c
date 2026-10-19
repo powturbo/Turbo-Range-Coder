@@ -58,13 +58,14 @@ static ALWAYS_INLINE unsigned riceq( uint16_t q,    unsigned cap) { unsigned x =
 enum { KU0=11, KU=11, KB=11,
        RU0=13, RU=12, RB= 8 };
 
+#define QLFCM MBG_DEC( mbg0a,         mbgua,        mbgba,        33, 33);\
+              MBG_DEC2(mbg0c, 1<<KU0, mbguc, 1<<KU, mbgbc, 1<<KB, 33, 33);\
+              MBG_DEC2(mbg0r, 1<<RU0, mbgur, 1<<RU, mbgbr, 1<<RB, 33, 33);
+
   #ifndef NCOMP
 size_t T3(rcqlfc,RC_PRD,enc)(uint8_t *in, size_t inlen, unsigned char *out RCPRM) {
   uint8_t _r2cr[(1<<8)+32], *r2cr = &_r2cr[32], *ip = in, *in_, *op = out, *out_ = out+(inlen*255)/256-8, *_rk = vmalloc((inlen+1)*sizeof(in[0])), *rk; if(!_rk) die("malloc failed. size=%zu\n", inlen);
-  MBG_DEC( mbg0a,         mbgua,        mbgba,        33, 33);                  //initial mtf r2c
-  MBG_DEC2(mbg0c, 1<<KU0, mbguc, 1<<KU, mbgbc, 1<<KB, 33, 33);                  //rank
-  MBG_DEC2(mbg0r, 1<<RU0, mbgur, 1<<RU, mbgbr, 1<<RB, 33, 33);                  //run length
-  rcencdec(rcrange,rclow,rcilow);                                               //range coder
+  QLFCM; rcencdec(rcrange,rclow,rcilow);                                               //range coder
   uint16_t Kq[1<<8], Rq[1<<8]; for(unsigned i = 0; i < 256; i++) Rq[i] = EMAQ_ONE; // 1.0 in Q8
   unsigned cx;
   rk = rcqlfc(in, inlen, _rk, r2cr);
@@ -86,10 +87,7 @@ size_t T3(rcqlfc,RC_PRD,enc)(uint8_t *in, size_t inlen, unsigned char *out RCPRM
   #ifndef NDECOMP
 size_t T3(rcqlfc,RC_PRD,dec)(uint8_t *in, size_t outlen, uint8_t *out RCPRM) {
   uint8_t  r2c[257+O], *op, *out_ = out+outlen, *ip = in, *p; 
-  MBG_DEC( mbg0a,         mbgua,        mbgba,        33, 33);
-  MBG_DEC2(mbg0c, 1<<KU0, mbguc, 1<<KU, mbgbc, 1<<KB, 33, 33);
-  MBG_DEC2(mbg0r, 1<<RU0, mbgur, 1<<RU, mbgbr, 1<<RB, 33, 33);
-  rcdecdec(rcrange,rccode, ip);
+  QLFCM; rcdecdec(rcrange,rccode, ip);
   uint16_t Kq[1<<8], Rq[1<<8]; for(unsigned i = 0; i < 256; i++) Rq[i] = EMAQ_ONE;
 
   for(unsigned i = 0; i < (1<<8); i++) { unsigned x; mbgdec(rcrange,rccode, &mbg0a, mbgua, mbgba, RCPRM0,RCPRM1,ip, x); r2c[O+i] = x; Kq[i] = (uint16_t)x << EMAQ; }
@@ -98,6 +96,54 @@ size_t T3(rcqlfc,RC_PRD,dec)(uint8_t *in, size_t outlen, uint8_t *out RCPRM) {
     unsigned k,r;
     CXK; _mbgxdec(rcrange,rccode, &mbg0c[       cxk], mbguc[           cxk], mbgbc[cxk], RCPRM0K,RCPRM1K,ip, k, MTFD1(r2c,u), MTFD(r2c,k+1,u)); Kq[u] = ema_kq(Kq[u], (uint8_t)k);
     CXR;  mbgxdec(rcrange,rccode, &mbg0r[ku<<11|cxr], mbgur[(ku>0)<<11|cxr], mbgbr[u  ], RCPRM0R,RCPRM1R,ip, r);                                Rq[u] = ema_rq(Rq[u], r);
+    r++; memset_(op, u, r);
+  }
+  return outlen;
+}
+  #endif
+
+
+#define CXK                 unsigned cxk = u;            // cxk: 3+8bits
+#define CXR                 unsigned ku  = 0, cxr = u; // cxr: 3+8 = 11, ku:2bits
+enum { JU0=8, JU=8, JB=8,
+       QU0=8, QU=8, QB=8 };
+
+#define QLFCM0 MBG_DEC( mbg0a,         mbgua,        mbgba,        33, 33);                  /*initial mtf r2c*/\
+               MBG_DEC2(mbg0c, 1<<JU0, mbguc, 1<<JU, mbgbc, 1<<JB, 33, 33);                  /*rank*/\
+               MBG_DEC2(mbg0r, 1<<QU0, mbgur, 1<<QU, mbgbr, 1<<QB, 33, 33);                  //run length
+
+  #ifndef NCOMP
+size_t T3(rcqlfc0,RC_PRD,enc)(uint8_t *in, size_t inlen, unsigned char *out RCPRM) {
+  uint8_t _r2cr[(1<<8)+32], *r2cr = &_r2cr[32], *ip = in, *in_, *op = out, *out_ = out+(inlen*255)/256-8, *_rk = vmalloc((inlen+1)*sizeof(in[0])), *rk; if(!_rk) die("malloc failed. size=%zu\n", inlen);
+  QLFCM0; rcencdec(rcrange,rclow,rcilow);                                               //range coder
+  unsigned cx;
+  rk = rcqlfc(in, inlen, _rk, r2cr);
+  for(cx = 0; cx < (1<<8); cx++) { mbgenc(rcrange,rclow,rcilow, &mbg0a, mbgua, mbgba, RCPRM0,RCPRM1,op, r2cr[cx]); }
+
+  for(ip = in, in_ = in+inlen; ip < in_;) {
+    unsigned k = *--rk,r;
+    uint8_t  u = *ip++, *p = ip; while(ip < in_ && *ip == u) ip++; r = ip - p;
+    mbgxenc(rcrange,rclow,rcilow, &mbg0c[u], mbguc[u], mbgbc[u], RCPRM0K,RCPRM1K,op, k);    
+    mbgxenc(rcrange,rclow,rcilow, &mbg0r[u], mbgur[u], mbgbr[u], RCPRM0R,RCPRM1R,op, r);       if(op >= out_) goto e;
+  }
+  rceflush(rcrange,rclow,rcilow, op);                                                  
+  e:vfree(_rk); 
+  if(op >= out_) { memcpy(out, in, inlen); op = out_; }
+  return op - out;
+}
+  #endif
+
+  #ifndef NDECOMP
+size_t T3(rcqlfc0,RC_PRD,dec)(uint8_t *in, size_t outlen, uint8_t *out RCPRM) {
+  uint8_t  r2c[257+O], *op, *out_ = out+outlen, *ip = in, *p; 
+  QLFCM0; rcdecdec(rcrange,rccode, ip);
+
+  for(unsigned i = 0; i < (1<<8); i++) { unsigned x; mbgdec(rcrange,rccode, &mbg0a, mbgua, mbgba, RCPRM0,RCPRM1,ip, x); r2c[O+i] = x; }
+  for(op = out; op < out_;) {
+    uint8_t  u = r2c[O+0];
+    unsigned k,r;
+    _mbgxdec(rcrange,rccode,&mbg0c[u], mbguc[u], mbgbc[u], RCPRM0K,RCPRM1K,ip, k, MTFD1(r2c,u), MTFD(r2c,k+1,u)); 
+    mbgxdec(rcrange,rccode, &mbg0r[u], mbgur[u], mbgbr[u], RCPRM0R,RCPRM1R,ip, r);                             
     r++; memset_(op, u, r);
   }
   return outlen;
