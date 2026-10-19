@@ -1,4 +1,4 @@
-/** Copyright (C) powturbo 2013-2023
+/** Copyright (C) powturbo 2013-2026
     GPL v3 License
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -148,8 +148,8 @@ size_t rcbwtenc(unsigned char *in, size_t inlen, unsigned char *out, unsigned le
   switch(lev) {
     case  0: memcpy(op, bwt, iplen); op += iplen; if(op-out == inlen) *op++ = 0; if(bwt) vfree(bwt); return op - out; break; // op > out_
     case  3: op += xbwt16?becenc16((uint16_t *)bwt, iplen, op):becenc8( bwt, iplen, op); break;
-    case  4: op += xbwt16?rcrlesenc16( bwt, iplen, op):      rcrlesenc( bwt, iplen, op); break;
-    case  5: op += xbwt16?rcrle1senc16(bwt, iplen, op):      rcrle1senc(bwt, iplen, op); break;
+    case  4: op += xbwt16?rcrlesenc16( bwt, iplen, op):      rcqlfc0senc( bwt, iplen, op); break;
+    case  5: op += xbwt16?rcrle1senc16(bwt, iplen, op):      rcqlfc0ssenc(bwt, iplen, op, 4, 7); break;
     case  6: op +=        rcqlfcsenc(  bwt, iplen, op);       break;
     case  7: op +=        rcqlfcssenc( bwt, iplen, op, 4, 7); break;
     case  8: op +=        rcmrrsenc(   bwt, iplen, op);       break;
@@ -184,8 +184,8 @@ size_t rcbwtdec(unsigned char *in, size_t outlen, unsigned char *out, unsigned l
   switch(lev) {
     case  0: memcpy(bwt,         ip, oplen+bwtx); break;
     case  3: xbwt16?becdec16(    ip, oplen+bwtx, (uint16_t *)bwt):becdec8(ip, oplen+bwtx, bwt); break;
-    case  4: xbwt16?rcrlesdec16( ip, oplen+bwtx, bwt):      rcrlesdec(    ip, oplen+bwtx, bwt); break;
-    case  5: xbwt16?rcrle1sdec16(ip, oplen+bwtx, bwt):      rcrle1sdec(   ip, oplen+bwtx, bwt); break;
+    case  4: xbwt16?rcrlesdec16( ip, oplen+bwtx, bwt):      rcqlfc0sdec(    ip, oplen+bwtx, bwt); break;
+    case  5: xbwt16?rcrle1sdec16(ip, oplen+bwtx, bwt):      rcqlfc0ssdec(   ip, oplen+bwtx, bwt, 4, 7); break;
     case  6:        rcqlfcsdec(  ip, oplen+bwtx, bwt);       break;
     case  7:        rcqlfcssdec( ip, oplen+bwtx, bwt, 4, 7); break; 
     case  8:        rcmrrsdec(   ip, oplen+bwtx, bwt);       break;
