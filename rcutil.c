@@ -114,8 +114,7 @@ void vfree(void *address) {
 #define emitch(_ch_,_op_)      { *_op_++ = _ch_; if(_ch_ == LZPESC) *_op_++ = 0; if(op >= out_) goto end; }
 
 #define C32                    123456791u
-#define LZPHASH(_x_, _hbits_)  (((_x_) * C32) >> (32-_hbits_))
-#define LZPHASH(_x_, _hbits_)  ((_x_ >> 15 ^ _x_ ^ _x_ >> 3) & ((int32_t)(1 << _hbits_) - 1))
+#define LZPHASH(_x_, _hbits_)  (((_x_) * C32) >> (32-_hbits_)) //#define LZPHASH(_x_, _hbits_)  ((_x_ >> 15 ^ _x_ ^ _x_ >> 3) & ((int32_t)(1 << _hbits_) - 1))
 
 #define LZPINI(_n_) hbits = hbits?hbits:(_n_ >= (1<<24)?21:LZPHBITS);\
   hbits = hbits<12?12:hbits;\
@@ -285,14 +284,15 @@ size_t lzpdec(unsigned char *in, size_t inlen, unsigned char *out, size_t outlen
   return ip - in;
 }
 #else
+  #ifndef NCOMP
 size_t lzpenc(unsigned char *__restrict in, size_t inlen, unsigned char *__restrict out, unsigned lenmin, unsigned hbits) { 
   unsigned      _htab[1<<LZPHBITS] = {0}, *htab = _htab, cx;
-  unsigned char *ip = in, *op = out, *out_ = out + inlen;
+  unsigned char *ip = in, *op = out, *out_ = out + inlen, *oip = out_;
   if(lenmin < LZPLENMIN) lenmin = LZPLENMIN;
   if(inlen < lenmin) { memcpy(out, in, inlen); return inlen; }
   LZPINI(inlen);
  
-  for(cx = ctou32(ip), ctou32(op) = cx, cx = BSWAP32(cx), op += 4, ip += 4; ip < in+inlen-lenmin;) {
+  for(cx = ctou32(op) = ctou32(ip), cx = BSWAP32(cx), op += 4, ip += 4; ip < in+inlen-lenmin;) {
     unsigned       h4 = LZPHASH(cx, hbits);
     unsigned char *cp = in + htab[h4];
     htab[h4] = ip - in;
@@ -303,34 +303,42 @@ size_t lzpenc(unsigned char *__restrict in, size_t inlen, unsigned char *__restr
       emitmatch(cl, op);
       ip += cl;
       cx  = BSWAP32(ctou32(ip-4));  
-    } else { unsigned c = *ip++; emitch(c, op); cx = cx<<8 | c; }       
+    } else {
+      unsigned c = *ip++;
+      emitch(c, op); 
+      cx = cx<<8 | c; 
+    }       
   }
   while(ip < in+inlen) { unsigned c = *ip++; emitch(c, op); }                                   
   end: if(htab != _htab) free(htab);
   if(op >= out_) { memcpy(out, in, inlen); op = out_; }
   return op - out;
 }
+  #endif
 
+  #ifndef NDECOMP
 size_t lzpdec(unsigned char *in, size_t inlen, unsigned char *out, size_t outlen, unsigned lenmin, unsigned hbits) {
-  unsigned char *ip = in, *op = out, *out_ = out+outlen;
+  unsigned char *ip = in, *in_ = in+inlen, *op = out, *out_ = out+outlen;
   unsigned      _htab[1<< LZPHBITS] = {0}, *htab = _htab, cx;
   if(lenmin < LZPLENMIN) lenmin = LZPLENMIN;
   LZPINI(outlen);     
                              
-  for(cx = ctou32(ip), ctou32(op) = cx, cx = BSWAP32(cx), op += 4, ip += 4; op < out_;) {
+  for(cx = ctou32(op) = ctou32(ip), cx = BSWAP32(cx), op += 4, ip += 4; op < out_;) {
     unsigned    c, h4 = LZPHASH(cx, hbits);
     unsigned char *cp = out + htab[h4],*op_;
              htab[h4] = op - out;
     if((c = *ip++) != LZPESC) { cx = cx << 8 | (*op++ = c); continue; }
     if(*ip) { 
-      c = 0; do c += *ip; while(*ip++ == 254);
-      for(op_ = op+c+lenmin-1; op < op_; *op++ = *cp++);
+      c = 0; do { if(ip >= in_) return 0; c += *ip; } while(*ip++ == 254);
+      op_ = op+c+lenmin-1;                                                  if(op_ > out_) return 0;  
+      for(;op < op_; *op++ = *cp++);
       cx = BSWAP32(ctou32(op-4));
-    } else ip++, cx = cx << 8 | (*op++ = LZPESC);
+    } else { ip++; cx = cx << 8 | (*op++ = LZPESC);                         if(ip > in_) return 0; }
   }
   if(htab != _htab) free(htab);
   return ip - in;
 }
+  #endif
 #endif
 
   #ifndef NCOMP
@@ -338,7 +346,6 @@ size_t lzpdec(unsigned char *in, size_t inlen, unsigned char *out, size_t outlen
 // QLFC=MTF-Backward: number of different symbols until the next occurrence (number of symbols will be seen before the next one)
 // MTF:  number of different symbols since the last occurence  (number of symbols were seen until the current one)
 // References: https://ieeexplore.ieee.org/document/1402216
-#if 1
 // bytes 0..k set when loading 32 (or 16) bytes at mtfmsk+31-k
 #define _ 0xff
 static const uint8_t mtfmsk[64] = { _,_,_,_,_,_,_,_, _,_,_,_,_,_,_,_,  _,_,_,_,_,_,_,_, _,_,_,_,_,_,_,_, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,  0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0 };
@@ -347,7 +354,7 @@ static const uint8_t mtfmsk[64] = { _,_,_,_,_,_,_,_, _,_,_,_,_,_,_,_,  _,_,_,_,_
 #if defined(__SSE4_1__) || defined(__ARM_NEON) || defined(__riscv_vector) || defined(__powerpc64__) || defined(__loongarch_sx)
 #define MTFBLEND128(a, b, mk) _mm_blendv_epi8(a, b, mk)
 #else
-#define MTFBLEND128(a,b,mk) _mm_or_si128(_mm_and_si128(mk,b), _mm_andnot_si128(mk,a)) // SSE2/NEON blend
+#define MTFBLEND128(a,b,mk)   _mm_or_si128(_mm_and_si128(mk,b), _mm_andnot_si128(mk,a))
 #endif
 
 uint8_t *rcqlfc(uint8_t *__restrict in, size_t n, uint8_t *__restrict out, uint8_t *__restrict r2c) {
@@ -357,11 +364,11 @@ uint8_t *rcqlfc(uint8_t *__restrict in, size_t n, uint8_t *__restrict out, uint8
   for(m = 0; m < (1<<8); m++) r2c[m] = m;
 
     #ifdef __AVX2__
-  __m256i r0 = _mm256_loadu_si256((const __m256i*)r2c);              
+  __m256i v0 = _mm256_loadu_si256((const __m256i*)r2c);              
     #elif defined(__SSE2__) || defined(__ARM_NEON) || defined(__riscv_vector) || defined(__powerpc64__) || defined(__loongarch_sx)
-  __m128i r0 = _mm_loadu_si128((const __m128i*)r2c),                  // r2c[0..15]
-          r1 = _mm_loadu_si128((const __m128i*)(r2c+16));             // r2c[16..31]
-  const __m128i b0 = _mm_cvtsi32_si128(0xff);                         // byte 0 mask
+  __m128i v0 = _mm_loadu_si128((const __m128i*)r2c),                  // r2c[0..15]
+          v1 = _mm_loadu_si128((const __m128i*)(r2c+16));             // r2c[16..31]
+  const __m128i vc0 = _mm_cvtsi32_si128(0xff);                         // byte 0 mask
     #endif
 
   for(m = -1, ip = in+n; ip > in; ) {
@@ -369,109 +376,63 @@ uint8_t *rcqlfc(uint8_t *__restrict in, size_t n, uint8_t *__restrict out, uint8
     a:;
     //-------------- mtf: search + move to front, k = rank -------------------------------------------------------
       #ifdef __AVX2__
-    { unsigned msk = _mm256_movemask_epi8(_mm256_cmpeq_epi8(r0, cv));
-      __m256i  s   = _mm256_alignr_epi8(r0, _mm256_permute2x128_si256(r0, cv, 0x02), 15); // [c, r0[0..30]]
-      if(likely(msk)) {                                                                  
+    unsigned msk = _mm256_movemask_epi8(_mm256_cmpeq_epi8(v0, cv));
+    __m256i  vs  = _mm256_alignr_epi8(v0, _mm256_permute2x128_si256(v0, cv, 0x02), 15); // [c, v0[0..30]]
+    if(msk) {                                                                  
+      k  = ctz32(msk);
+      v0 = _mm256_blendv_epi8(v0, vs, _mm256_loadu_si256((const __m256i*)(mtfmsk+31-k)));
+    } else {                                                                            
+      __m256i prev = v0, v = _mm256_loadu_si256((const __m256i*)(r2c+32));
+      uint8_t *p = r2c+32; v0 = vs;
+      for(;;) {
+        msk = _mm256_movemask_epi8(_mm256_cmpeq_epi8(v, cv));
+        vs  = _mm256_alignr_epi8(v, _mm256_permute2x128_si256(v, prev, 0x03), 15);      // [prev[31], v[0..30]]
+        if(msk) break;
+        _mm256_storeu_si256((__m256i*)p, vs);                                           
+        prev = v; p += 32; v = _mm256_loadu_si256((const __m256i*)p);
+      } 
+      k = ctz32(msk);
+      _mm256_storeu_si256((__m256i*)p, _mm256_blendv_epi8(v, vs, _mm256_loadu_si256((const __m256i*)(mtfmsk+31-k))));
+      k += p - r2c;
+    }
+      #elif defined(__SSE2__) || defined(__ARM_NEON) || defined(__riscv_vector) || defined(__powerpc64__) || defined(__loongarch_sx)
+    unsigned msk = _mm_movemask_epi8(_mm_cmpeq_epi8(v0, cv));
+    __m128i  vs0 = _mm_or_si128(_mm_slli_si128(v0,1), _mm_and_si128(cv, vc0));          // [c, v0[0..14]]
+    if(msk) {                                                                  // rank < 16
+      k  = ctz32(msk);  v0 = MTFBLEND128(v0, vs0, _mm_loadu_si128((const __m128i*)(mtfmsk+31-k)));
+    } else {
+      __m128i vs1 = _mm_or_si128(_mm_slli_si128(v1,1), _mm_srli_si128(v0,15));          // [v0[15], v1[0..14]]
+      msk = _mm_movemask_epi8(_mm_cmpeq_epi8(v1, cv)); v0 = vs0;
+      if(msk) {                                                                         // rank 16..31
         k  = ctz32(msk);
-        r0 = _mm256_blendv_epi8(r0, s, _mm256_loadu_si256((const __m256i*)(mtfmsk+31-k)));
-      } else {                                                                            
-        __m256i prev = r0, v = _mm256_loadu_si256((const __m256i*)(r2c+32));
-        uint8_t *p = r2c+32; r0 = s;
+        v1 = MTFBLEND128(v1, vs1, _mm_loadu_si128((const __m128i*)(mtfmsk+31-k))); k += 16;
+      } else {                                                                          // rank >= 32
+        __m128i prev = v1, v = _mm_loadu_si128((const __m128i*)(r2c+32));
+        uint8_t *p = r2c+32; v1 = vs1;
         for(;;) {
-          msk = _mm256_movemask_epi8(_mm256_cmpeq_epi8(v, cv));
-          s   = _mm256_alignr_epi8(v, _mm256_permute2x128_si256(v, prev, 0x03), 15);      // [prev[31], v[0..30]]
+          msk = _mm_movemask_epi8(_mm_cmpeq_epi8(v, cv));
+          vs1  = _mm_or_si128(_mm_slli_si128(v,1), _mm_srli_si128(prev,15));             // [prev[15], v[0..14]]
           if(msk) break;
-          _mm256_storeu_si256((__m256i*)p, s);                                           
-          prev = v; p += 32; v = _mm256_loadu_si256((const __m256i*)p);
+          _mm_storeu_si128((__m128i*)p, vs1);
+          prev = v; p += 16; v = _mm_loadu_si128((const __m128i*)p);
         }
         k = ctz32(msk);
-        _mm256_storeu_si256((__m256i*)p, _mm256_blendv_epi8(v, s, _mm256_loadu_si256((const __m256i*)(mtfmsk+31-k))));
+        _mm_storeu_si128((__m128i*)p, MTFBLEND128(v, vs1, _mm_loadu_si128((const __m128i*)(mtfmsk+31-k))));
         k += p - r2c;
       }
     }
-      #elif defined(__SSE2__) || defined(__ARM_NEON) || defined(__riscv_vector) || defined(__powerpc64__) || defined(__loongarch_sx)
-    { unsigned msk = _mm_movemask_epi8(_mm_cmpeq_epi8(r0, cv));
-      __m128i  s0  = _mm_or_si128(_mm_slli_si128(r0,1), _mm_and_si128(cv, b0));          // [c, r0[0..14]]
-      if(likely(msk)) {                                                                  // rank < 16
-        k  = ctz32(msk);  r0 = MTFBLEND128(r0, s0, _mm_loadu_si128((const __m128i*)(mtfmsk+31-k)));
-      } else {
-        __m128i s1 = _mm_or_si128(_mm_slli_si128(r1,1), _mm_srli_si128(r0,15));           // [r0[15], r1[0..14]]
-        msk = _mm_movemask_epi8(_mm_cmpeq_epi8(r1, cv)); r0 = s0;
-        if(msk) {                                                                         // rank 16..31
-          k  = ctz32(msk);
-          r1 = MTFBLEND128(r1, s1, _mm_loadu_si128((const __m128i*)(mtfmsk+31-k))); k += 16;
-        } else {                                                                          // rank >= 32
-          __m128i prev = r1, v = _mm_loadu_si128((const __m128i*)(r2c+32));
-          uint8_t *p = r2c+32; r1 = s1;
-          for(;;) {
-            msk = _mm_movemask_epi8(_mm_cmpeq_epi8(v, cv));
-            s1  = _mm_or_si128(_mm_slli_si128(v,1), _mm_srli_si128(prev,15));             // [prev[15], v[0..14]]
-            if(msk) break;
-            _mm_storeu_si128((__m128i*)p, s1);
-            prev = v; p += 16; v = _mm_loadu_si128((const __m128i*)p);
-          }
-          k = ctz32(msk);
-          _mm_storeu_si128((__m128i*)p, MTFBLEND128(v, s1, _mm_loadu_si128((const __m128i*)(mtfmsk+31-k))));
-          k += p - r2c;
-        }
-      }
-    }
       #else
-    { uint8_t *p = r2c; while(*p != c) p++; k = p - r2c; memmove(r2c+1, r2c, k); r2c[0] = c; }
+    uint8_t *p = r2c; while(*p != c) p++; k = p - r2c; memmove(r2c+1, r2c, k); r2c[0] = c;
       #endif
     if(!f[c]) *op++ = m++, f[c] = 1; else *op++ = k-1;
   }
     #ifdef __AVX2__
-  _mm256_storeu_si256((__m256i*)r2c, r0);                                                 // write the register part back
+  _mm256_storeu_si256((__m256i*)r2c, v0);                                                 // write the register part back
     #elif defined(__SSE2__) || defined(__ARM_NEON) || defined(__riscv_vector) || defined(__powerpc64__) || defined(__loongarch_sx)
-  _mm_storeu_si128((__m128i*)r2c, r0); _mm_storeu_si128((__m128i*)(r2c+16), r1);
+  _mm_storeu_si128((__m128i*)r2c, v0); _mm_storeu_si128((__m128i*)(r2c+16), v1);
     #endif
   return op;
 }
-#else
-uint8_t *rcqlfc(uint8_t *__restrict in, size_t n, uint8_t *__restrict out, uint8_t *__restrict r2c) {
-  unsigned char f[1<<8] = {0};
-  uint8_t       *ip, *op = out;
-  int           m;
-  for(m = 0; m < (1<<8); m++) r2c[m] = m;                   //if(!in[n-1]) r2c[0] = 1, r2c[1] = 0;
-  for(m = -1,ip = in+n; ip > in; ) {
-    uint8_t *p, c = *--ip;  //--------- run length ---------------------------
-    MEMDEC8(cv, c); MEMRUNR8(in,ip,cv,c,goto a);
-    a:;
-    //-------------- mtf: move to front -----------------------------------
-      #if 0 //combined search + move to front.
-    unsigned c0, c1;
-    for(c0 = r2c[0], r2c[0] = c,p = &r2c[1];;p += 4) {
-      c1 = p[0]; p[0] = c0; if(c1 == c)           break;
-      c0 = p[1]; p[1] = c1; if(c0 == c) { p++;    break; }
-      c1 = p[2]; p[2] = c0; if(c1 == c) { p += 2; break; }
-      c0 = p[3]; p[3] = c1; if(c0 == c) { p += 3; break; }
-    }
-      #else
-    uint8_t *pb=NULL,*q=NULL; p = r2c; // search
-      #ifdef __AVX2__
-    for(;;) { unsigned m = _mm256_movemask_epi8(_mm256_cmpeq_epi8(_mm256_loadu_si256((__m256i*)p), cv)); if(m) { p += ctz32(m); break; } p += 32;}
-      #elif defined(__SSE2__) || defined(__ARM_NEON) || defined(__riscv_vector) || defined(__powerpc64__) || defined(__loongarch_sx)
-    for(;;) { uint16_t m =    _mm_movemask_epi8(   _mm_cmpeq_epi8(   _mm_loadu_si128((__m128i*)p), cv)); if(m) { p += ctz16(m); break; } p += 16; }
-      #else
-    while(*p != c) p++;
-      #endif
-    for(q = p; q > r2c; ) { // move to front
-          #ifdef __AVX2__
-      q -= 32; _mm256_storeu_si256((__m256i*)(q+1),_mm256_loadu_si256((__m256i*)q));
-          #elif defined(__SSE2__) || defined(__ARM_NEON) || defined(__riscv_vector) || defined(__powerpc64__) || defined(__loongarch_sx)
-      q -= 16; _mm_storeu_si128((__m128i *)(q+1),   _mm_loadu_si128((__m128i*)q));
-          #else
-      q -= 16; ctou64(q+1+8) = ctou64(q+8); ctou64(q+1) = ctou64(q);
-          #endif
-    }
-    r2c[0] = c;
-      #endif
-    if(!f[c]) *op++ = m++,f[c]++; else *op++ = p-r2c-1;
-  }
-  return op;
-}
-#endif
   #endif
 
 //------------------------------------------- utf8 preprocessing -----------------------------------------------
