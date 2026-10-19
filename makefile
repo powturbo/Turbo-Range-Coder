@@ -254,9 +254,9 @@ OBJS_CC_SSE += $(BUILD)/rcbwt.o
 endif
 ifeq ($(ANS), 1)
 CFLAGS+=-D_ANS
-OBJS_CX_SSE += $(BUILD)/anscdfs.o
+OBJS_CY_SSE += $(BUILD)/anscdfs.o
 ifeq ($(ARCH), x86_64)
-OBJS_CX_AVX2+=$(BUILD)/anscdfx.o
+OBJS_CY_AVX2+=$(BUILD)/anscdfx.o
 endif
 endif
 ifeq ($(V8), 1)
@@ -293,42 +293,42 @@ $(BUILD)/tp_.o:        tp_.c
 $(BUILD)/trlec.o:      trlec.c
 $(BUILD)/trled.o:      trled.c
 
-OBJS_CX_SSE := $(BUILD)/rccmc_s.o $(BUILD)/rccmc_ss.o $(BUILD)/anscdfs.o
+OBJS_CY_SSE := $(BUILD)/rccmc_s.o $(BUILD)/rccmc_ss.o $(BUILD)/anscdfs.o
 ifeq ($(TP), 1)
 CFLAGS+=-D_TP -D_NCPUISA
-OBJS_CX_SSE += $(BUILD)/tp.o $(BUILD)/tp_.o
+OBJS_CY_SSE += $(BUILD)/tp.o $(BUILD)/tp_.o
 endif
 ifeq ($(SF), 1)
 CFLAGS+=-D_SF
-OBJS_CX_SSE += $(BUILD)/rc_sf.o $(BUILD)/rccm_sf.o $(BUILD)/rcqlfc_sf.o
+OBJS_CY_SSE += $(BUILD)/rc_sf.o $(BUILD)/rccm_sf.o $(BUILD)/rcqlfc_sf.o
 ifeq ($(BWT), 1)
-OBJS_CX_SSE += $(BUILD)/xrcbwt_sf.o
+OBJS_CY_SSE += $(BUILD)/xrcbwt_sf.o
 endif
 endif
-$(OBJS_CX_SSE): COMP = $(CY)
-$(OBJS_CX_SSE): SIMD = $(_SSE)
+$(OBJS_CY_SSE): COMP = $(CY)
+$(OBJS_CY_SSE): SIMD = $(_SSE)
 $(BUILD)/anscdfs.o:    anscdf.c anscdf_.h 
 $(BUILD)/rccmc_s.o:    rccmc_s.c
 $(BUILD)/rccmc_ss.o:   rccmc_ss.c
 
-OBJS_CX_AVX2 := $(BUILD)/rcutil.o
+OBJS_CY_AVX2 := $(BUILD)/rcutil.o
 ifeq ($(ANS), 1)
 ifeq ($(ARCH), x86_64)
-OBJS_CX_AVX2+=$(BUILD)/anscdfx.o
+OBJS_CY_AVX2+=$(BUILD)/anscdfx.o
 endif
 endif
 ifeq ($(TP), 1)
 ifeq ($(ARCH),x86_64)
-OBJS_CX_AVX2 += $(BUILD)/tp256.o
+OBJS_CY_AVX2 += $(BUILD)/tp256.o
 endif
 endif
-$(OBJS_CX_AVX2): COMP = $(CY)
-$(OBJS_CX_AVX2): SIMD = $(_AVX2)
+$(OBJS_CY_AVX2): COMP = $(CY)
+$(OBJS_CY_AVX2): SIMD = $(_AVX2)
 $(BUILD)/anscdfx.o:    anscdf.c anscdf_.h 
 $(BUILD)/tp256.o:      tp.c
 $(BUILD)/rcutil.o:     rcutil.c
 
-ALL_OBJS := $(OBJS_CC_SSE) $(OBJS_CX_SSE) $(OBJS_CX_AVX2)
+ALL_OBJS := $(OBJS_CC_SSE) $(OBJS_CY_SSE) $(OBJS_CY_AVX2)
 $(ALL_OBJS): |  $(BUILD)
 	$(COMP) -O3 -falign-loops=32 $(CFLAGS) $(SIMD) -c $< -o $@
 
