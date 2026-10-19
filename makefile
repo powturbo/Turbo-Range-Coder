@@ -235,7 +235,12 @@ CFLAGS +=-D_LIBSAIS16
 LIBBWT += $(BUILD)/libsais16.o
 endif
 $(LIBBWT): COMP = $(CC)
+ifeq ($(ARCH), x86_64)
+$(LIBBWT): SIMD = $(_AVX2)
+else
 $(LIBBWT): SIMD = $(_SSE)
+endif
+
 $(BUILD)/libsais.o:    libsais/src/libsais.c
 $(BUILD)/libsais16.o:  libsais/src/libsais16.c
 $(LIBBWT): |  $(BUILD)
@@ -244,9 +249,6 @@ endif
 
 endif
 endif
-
-
-
 
 OBJS_CC_SSE := $(BUILD)/bec_b.o $(BUILD)/cpu.o $(BUILD)/rc_ss.o $(BUILD)/rc_s.o $(BUILD)/rccdf.o $(BUILD)/rccmd_s.o $(BUILD)/rccmd_ss.o $(BUILD)/rcqlfc_s.o $(BUILD)/rcqlfc_ss.o 
 ifeq ($(BWT), 1)
