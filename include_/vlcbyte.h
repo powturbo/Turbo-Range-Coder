@@ -213,6 +213,12 @@ extern unsigned char _vtab32_[];
 #define _vbget64(_ip_, _x_, _act_) _vbget(_ip_, _x_, 64, VB_MAX, 6, 5, _act_)
 #define vbput64(_op_, _x_)         do { uint64_t _x = _x_; _vbput64(_op_, _x_, ;); } while(0)
 #define vbget64(_ip_, _x_)         _vbget64(_ip_, _x_, ;)
+
+#define _vbrput64(_op_, _x_, _act_) _vbrput(_op_, _x_, 64, VB_MAX, 6, 5, _act_)
+#define _vbrget64(_ip_, _x_, _act_) _vbrget(_ip_, _x_, 64, VB_MAX, 6, 5, _act_)
+#define vbrput64(_op_, _x_)         do { uint64_t _x = _x_; _vbrput64(_op_, _x_, ;); } while(0)
+#define vbrget64(_ip_, _x_)         _vbrget64(_ip_, _x_, ;)
+
 //-- 32 bits -----
 #define vblen32(      _x_)         _vblen(      _x_, 32, VB_MAX, 6, 5)
 #define vbvlen32(     _x_)         _vbvlen(     _x_, 32, VB_MAX, 6, 5)
