@@ -464,15 +464,16 @@ size_t T3(rcu3,RC_PRD,dec)(unsigned char *in, size_t outlen, unsigned char *out 
 //------------------------------ Gamma coding for 8, 16 and 32 bits integers --------------------------------------
 // usage: Run length in RLE and BWT(MTF, QLFC), match/literal length in lz77, integer arrays with small values, large alphabet
 size_t T3(rcg,RC_PRD, enc8)(unsigned char *in, size_t inlen, unsigned char *out RCPRM) {
-  uint8_t *op = out, *ip;
+  uint8_t *op = out, *out_ = out+inlen, *ip;
   rcencdec(rcrange,rclow,rcilow);
   MBG_DEC(mbg0c, mbguc, mbgbc, 33, 33);
 
   for(ip = in; ip < in+inlen; ip++) {
-    mbgenc(rcrange,rclow,rcilow, &mbg0c,mbguc,mbgbc, RCPRM0,RCPRM1,op, ip[0]); OVERFLOW(in,inlen,out, op, goto e);
+    mbgenc(rcrange,rclow,rcilow, &mbg0c,mbguc,mbgbc, RCPRM0,RCPRM1,op, ip[0]); if(op > out_) goto e;
   }
   rceflush(rcrange,rclow,rcilow, op);
-  e:return op - out;
+  if(op >= out_) { e: memcpy(out, in, inlen); op = out_; }
+  return op - out;
 }
 
 size_t T3(rcg,RC_PRD,dec8)(unsigned char *in, size_t outlen, unsigned char *out RCPRM) {
