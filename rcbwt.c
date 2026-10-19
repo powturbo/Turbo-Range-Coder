@@ -71,6 +71,7 @@ static int sample(char *in, size_t n, int i, int j, char *out) {
   return n;
 }
 
+static int xbwts = 0;
 size_t rcbwtenc(unsigned char *in, size_t inlen, unsigned char *out, unsigned lev, unsigned threads, unsigned opt) {
   size_t        iplen  = inlen;
   unsigned      lenmin = opt & 0x3ff, xbwt16 = (opt & BWT_BWT16)?0x80:0, verbose = opt & BWT_VERBOSE, nutf8 = (opt & BWT_NUTF8)?1:0, 
@@ -116,17 +117,24 @@ size_t rcbwtenc(unsigned char *in, size_t inlen, unsigned char *out, unsigned le
               op += sizeof(sa[0]);
     #else
   unsigned idxs[256], iplen_ = xbwt16?(iplen/2):iplen,
-           mod = calcmod(iplen_/SR), idxsn = (iplen_-1)/mod + 1;                     //printf("bwt idxs=%d ", idxsn); //idxsn = (idxsn/SR)*SR;
+           mod = calcmod(iplen_/SR), idxsn = xbwts?1:(iplen_-1)/mod + 1;                     //printf("bwt idxs=%d ", idxsn); //idxsn = (idxsn/SR)*SR;
   *op++ = idxsn - 1;
   saidx_t *sa = (saidx_t *)vmalloc((iplen_+2+128)*sizeof(sa[0]));                    if(!sa) { op = out_; goto e; } if(verbose) { printf("bwt16=%u ", xbwt16>0);fflush(stdout); }
       #ifdef _LIBSAIS16
   if(xbwt16) {                                                                       if(verbose) { printf("-"); fflush(stdout); }
         #ifdef LIBSAIS_OPENMP
                                                                                      if(verbose) { printf("omp16=%d ", threads); fflush(stdout); }
-    unsigned rc = threads<=1?libsais16_bwt_aux(    (const uint16_t *)ip, (uint16_t *)bwt, sa, iplen_, 0, 0, mod, idxs): 
-                             libsais16_bwt_aux_omp((const uint16_t *)ip, (uint16_t *)bwt, sa, iplen_, 0, 0, mod, idxs, threads);
+    if(xbwts) {
+      idxs[0] = threads<=1?libsais16_bwt(    (const uint16_t *)ip, (uint16_t *)bwt, sa, iplen_, 0, 0): 
+                           libsais16_bwt_omp((const uint16_t *)ip, (uint16_t *)bwt, sa, iplen_, 0, 0, threads);
+    } else {
+      unsigned rc = threads<=1?libsais16_bwt_aux(    (const uint16_t *)ip, (uint16_t *)bwt, sa, iplen_, 0, 0, mod, idxs): 
+                               libsais16_bwt_aux_omp((const uint16_t *)ip, (uint16_t *)bwt, sa, iplen_, 0, 0, mod, idxs, threads);
+    }
         #else
-    unsigned rc = libsais16_bwt_aux(  (const uint16_t *)ip, (uint16_t *)bwt, sa, iplen_, 0, 0, mod, idxs); 
+    unsigned rc;
+    if(xbwts) idxs[0] = libsais16_bwt(  (const uint16_t *)ip, (uint16_t *)bwt, sa, iplen_, 0, 0); 
+    else                libsais16_bwt(  (const uint16_t *)ip, (uint16_t *)bwt, sa, iplen_, 0, 0, mod, idxs); 
         #endif     
                                                                                      if(verbose) { printf("+"); fflush(stdout); }
     if(iplen & 1) bwt[iplen-1] = ip[iplen-1];
@@ -134,11 +142,17 @@ size_t rcbwtenc(unsigned char *in, size_t inlen, unsigned char *out, unsigned le
       #endif
   {
       #ifdef LIBSAIS_OPENMP
-                                                                                     if(verbose) { printf("omp=%d ", threads); fflush(stdout); }
-    threads<=1?libsais_bwt_aux(    ip, bwt, sa, iplen,  0, 0, mod, idxs):
-               libsais_bwt_aux_omp(ip, bwt, sa, iplen,  0, 0, mod, idxs, threads);                     
+                                                                                     if(verbose) { printf("omp=%d %s ", threads, xbwts?"single":""); fflush(stdout); }
+    if(xbwts) {
+      idxs[0] = threads<=1?libsais_bwt(    ip, bwt, sa, iplen,  0, 0):
+                           libsais_bwt_omp(ip, bwt, sa, iplen,  0, 0, threads);
+    } else {
+      threads<=1?libsais_bwt_aux(    ip, bwt, sa, iplen,  0, 0, mod, idxs):
+                 libsais_bwt_aux_omp(ip, bwt, sa, iplen,  0, 0, mod, idxs, threads);
+    }                     
       #else
-    libsais_bwt_aux(ip, bwt, sa, iplen,  0, 0, mod, idxs);                          
+    if(xbwts) idxs[0] = libsais_bwt(    ip, bwt, sa, iplen,  0, 0);  
+    else                libsais_bwt_aux(ip, bwt, sa, iplen,  0, 0, mod, idxs);                          
       #endif
   }
   memcpy(op, idxs, idxsn*sizeof(idxs[0]));
@@ -175,7 +189,7 @@ size_t rcbwtdec(unsigned char *in, size_t outlen, unsigned char *out, unsigned l
   saidx_t       bwtidx = *(saidx_t *)ip; ip += sizeof(saidx_t);
     #else
   unsigned idxs[256];
-  int oplen_ = xbwt16?oplen/2:oplen, mod = calcmod(oplen_/SR), idxsn = (oplen_-1)/mod + 1;  //idxsn = (idxsn/SR)*SR;
+  int oplen_ = xbwt16?oplen/2:oplen, mod = calcmod(oplen_/SR), idxsn = xbwts?1:(oplen_-1)/mod + 1;  //idxsn = (idxsn/SR)*SR;
   ip++; // idxsn
   memcpy(idxs, ip, idxsn*sizeof(idxs[0])); ip += idxsn*sizeof(idxs[0]);
     #endif
@@ -209,10 +223,15 @@ size_t rcbwtdec(unsigned char *in, size_t outlen, unsigned char *out, unsigned l
   else
       #endif
       #ifdef LIBSAIS_OPENMP
-   rc = threads<=1?libsais_unbwt_aux(    bwt, op, sa, oplen, 0, mod, idxs):
-                   libsais_unbwt_aux_omp(bwt, op, sa, oplen, 0, mod, idxs, threads);  //libsais_unbwt(bwt, op, sa, oplen, idxs[0]);  //#bwtinv(bwt, oplen, op, NULL, idxs, idxsn); memrev(op, oplen);  //op[256]=0; printf("%s ", op);
+   if(xbwts) {             
+     rc = threads<=1?libsais_unbwt(    bwt, op, sa, oplen, 0, idxs[0]):
+                     libsais_unbwt_omp(bwt, op, sa, oplen, 0, idxs[0], threads);  
+   } else {
+     rc = threads<=1?libsais_unbwt_aux(    bwt, op, sa, oplen, 0, mod, idxs):
+                     libsais_unbwt_aux_omp(bwt, op, sa, oplen, 0, mod, idxs, threads);  //libsais_unbwt(bwt, op, sa, oplen, idxs[0]);  //#bwtinv(bwt, oplen, op, NULL, idxs, idxsn); memrev(op, oplen);  //op[256]=0; printf("%s ", op);
+   }
       #else
-   rc = libsais_unbwt_aux(bwt, op, sa, oplen, 0, mod, idxs);  
+   rc = xbwts?libsais_unbwt(bwt, op, sa, oplen, 0, idxs[0]):libsais_unbwt_aux(bwt, op, sa, oplen, 0, mod, idxs);  
       #endif
     #endif
   vfree(sa);
