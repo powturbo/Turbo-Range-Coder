@@ -152,7 +152,7 @@ ifneq ($(OPENMP),0)
       rm -f _omp_test.c _omp_test _omp_test.exe)
   else
     # Linux
-    ifeq ($(findstring clang,$(CG)),clang)
+    ifeq ($(findstring clang,$(CC)),clang)
       FOPENMP := -fopenmp
 #-fopenmp=libgomp -Xclang -fopenmp
       OMP_LDFLAGS := -lomp
@@ -160,7 +160,7 @@ ifneq ($(OPENMP),0)
       FOPENMP := -fopenmp
       OMP_LDFLAGS := -fopenmp
     endif
-    HAVE_OPENMP := $(shell echo 'int main(){return 0;}' | $(CG) $(FOPENMP) -x c - -o /dev/null 2>/dev/null && echo 1 || echo 0)
+    HAVE_OPENMP := $(shell echo 'int main(){return 0;}' | $(CC) $(FOPENMP) -x c - -o /dev/null 2>/dev/null && echo 1 || echo 0)
   endif
 endif
 
@@ -236,7 +236,7 @@ ifeq ($(LIBSAIS16), 1)
 RC_FLAGS +=-D_LIBSAIS16
 LIBBWT += $(BUILD)/libsais16.o
 endif
-$(LIBBWT): COMP = $(CG)
+$(LIBBWT): COMP = $(CC)
 ifeq ($(ARCH), x86_64)
 $(LIBBWT): SIMD = $(_AVX2)
 else
