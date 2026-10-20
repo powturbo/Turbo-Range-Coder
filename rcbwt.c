@@ -71,7 +71,7 @@ static int sample(char *in, size_t n, int i, int j, char *out) {
   return n;
 }
 
-static int xbwts = 0;
+static int xbwts = 1;
 size_t rcbwtenc(unsigned char *in, size_t inlen, unsigned char *out, unsigned lev, unsigned threads, unsigned opt) {
   size_t        iplen  = inlen;
   unsigned      lenmin = opt & 0x3ff, xbwt16 = (opt & BWT_BWT16)?0x80:0, verbose = opt & BWT_VERBOSE, nutf8 = (opt & BWT_NUTF8)?1:0, 
@@ -133,8 +133,8 @@ size_t rcbwtenc(unsigned char *in, size_t inlen, unsigned char *out, unsigned le
     }
         #else
     unsigned rc;
-    if(xbwts) idxs[0] = libsais16_bwt(  (const uint16_t *)ip, (uint16_t *)bwt, sa, iplen_, 0, 0); 
-    else                libsais16_bwt(  (const uint16_t *)ip, (uint16_t *)bwt, sa, iplen_, 0, 0, mod, idxs); 
+    if(xbwts) idxs[0] = libsais16_bwt(      (const uint16_t *)ip, (uint16_t *)bwt, sa, iplen_, 0, 0); 
+    else                libsais16_bwt_aux(  (const uint16_t *)ip, (uint16_t *)bwt, sa, iplen_, 0, 0, mod, idxs); 
         #endif     
                                                                                      if(verbose) { printf("+"); fflush(stdout); }
     if(iplen & 1) bwt[iplen-1] = ip[iplen-1];
