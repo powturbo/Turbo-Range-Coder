@@ -71,17 +71,18 @@ static int sample(char *in, size_t n, int i, int j, char *out) {
   return n;
 }
 
-static int xbwts = 1;
-size_t rcbwtenc(unsigned char *in, size_t inlen, unsigned char *out, unsigned lev, unsigned threads, unsigned opt) {
+static int xbwts = 0;
+size_t rcbwtenc(unsigned char *in, size_t inlen, unsigned char *out, unsigned lev, unsigned threads, unsigned opts) {
   size_t        iplen  = inlen;
-  unsigned      lenmin = opt & 0x3ff, xbwt16 = (opt & BWT_BWT16)?0x80:0, verbose = opt & BWT_VERBOSE, nutf8 = (opt & BWT_NUTF8)?1:0, 
-                lzprev = (lev>=LZPLEV && (opt & BWT_LZPNREV)==0)?0x40:0, forcelzp = (opt & BWT_LZP)?1:0; 
+  unsigned      lenmin = opts & 0x3ff, xbwt16 = (opts & BWT_BWT16)?0x80:0, verbose = opts & BWT_VERBOSE, nutf8 = (opts & BWT_UTF8_NO)?1:0,
+                lzprev = (lev>=LZPLEV && (opts & BWT_LZP_NREV)==0)?0x40:0, forcelzp = (opts & BWT_LZP_FORCE)?1:0; 
   unsigned char *op    = out, *out_ = out+inlen, *bwt = vmalloc(inlen+1024), *ip = in;  // inlen + space for bwt indexes idxns  
   if(!lev) lenmin = 0;                                                               if(!bwt) { op = out_; goto e; } //lenmin = histopt(in, inlen, lev>=LZPLEV); 
+  if(!threads) threads = 4;
   if(lenmin == 1) { int nrev; 
     lenmin = sample(in, inlen, 16, 16*1024, out); 
     lenmin = histopt(out, lenmin, lev>=8, &nrev); 
-    if(!(opt & BWT_LZPNREV)) lzprev = nrev?0:0x40;
+    if(!(opts & BWT_LZP_NREV)) lzprev = nrev?0:0x40;
   }                                                                                  if(verbose) { printf("\nlev=%u len(MB)=%zu nutf8=%d rev=%d threads=%d ", lev, inlen/(1<<20), nutf8, lzprev, threads); fflush(stdout); }
   if(lenmin) {                                                                       if(verbose) { printf("lenmin=%u ", lenmin);fflush(stdout); }
     ip = bwt;
@@ -95,7 +96,7 @@ size_t rcbwtenc(unsigned char *in, size_t inlen, unsigned char *out, unsigned le
         ctou32(ip) = iplen;                                                          if(verbose) { printf("->Lzp:%u=%.2f%% ", iplen, (double)iplen*100.0/inlen); fflush(stdout); }
         break;
         #endif
-      default : if(!nutf8) { iplen = utf8enc(in, inlen, ip, opt);                    if(verbose) { if(iplen == inlen) printf("NoUTF8 "); else printf("UTF8:%zu->%zu ", inlen, iplen); fflush(stdout); }} break;                  // try utf8 preprocessing
+      default : if(!nutf8) { iplen = utf8enc(in, inlen, ip, opts);                    if(verbose) { if(iplen == inlen) printf("NoUTF8 "); else printf("UTF8:%zu->%zu ", inlen, iplen); fflush(stdout); }} break;                  // try utf8 preprocessing
     }
     if(lenmin < LZPLENMIN || iplen != inlen && iplen != -1) {
       lenmin = lenmin<LZPLENMIN?64-lenmin:63;                                        if(verbose && lenmin < 56) printf("No Lzp run %d %d ", lenmin, iplen); // lenmin = 63-LM for other preprocessing ids
@@ -181,7 +182,7 @@ size_t rcbwtdec(unsigned char *in, size_t outlen, unsigned char *out, unsigned l
   unsigned char *ip    = in;
   unsigned      lenmin = *ip++, xbwt16 = lenmin&0x80, lzprev = lenmin & 0x40;  lenmin &=0x3f;
   size_t        oplen  = outlen, rc;
-
+  if(!threads) threads = 4;
   if(lenmin) oplen = ctou32(ip),ip += 4;
 
     #ifdef _BWTDIV
