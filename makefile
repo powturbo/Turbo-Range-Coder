@@ -21,11 +21,9 @@ ANS=1
 TP=1
 #----------------------------------------------
 CC ?= gcc
-#CC ?= clang
 CXX ?= g++
 CG ?= clang
-#CG ?= gcc
-#CC = clang
+CO := $(CC)
 
 #DEBUG=-DDEBUG -g
 DEBUG=-DNDEBUG
@@ -42,7 +40,6 @@ BUILD_DATE := $(shell date +%Y%m%d)
 # source files in their original (sub)directories.
 VPATH := .:libdivsufsort:libdivsufsort/lib:libsais/src:../bwt
 
-#------- OS/ARCH -------------------
 #------- OS/ARCH -------------------
 ifneq (,$(filter Windows%,$(OS)))
   OS := Windows
@@ -122,23 +119,19 @@ endif
 
 # ---------- OpenMP detection ----------
 HAVE_OPENMP := 0
-FOPENMP     :=
-OMP_CFLAGS  :=
-OMP_LDFLAGS :=
 ifneq ($(OPENMP),0) 
   ifeq ($(OS),Darwin)
     LIBOMP_PREFIX := $(shell brew --prefix libomp 2>/dev/null)
     ifneq ($(LIBOMP_PREFIX),)
-      FOPENMP     := -Xpreprocessor -fopenmp
-      OMP_CFLAGS  := -I$(LIBOMP_PREFIX)/include
+      OMP_CFLAGS  := -Xpreprocessor -fopenmp -I$(LIBOMP_PREFIX)/include
       OMP_LDFLAGS := -L$(LIBOMP_PREFIX)/lib -lomp
-      ifneq ($(shell echo 'int main(){return 0;}' | $(CC) $(FOPENMP) $(OMP_CFLAGS) $(OMP_LDFLAGS) -x c - -o /dev/null 2>/dev/null && echo ok),)
+      ifneq ($(shell echo 'int main(){return 0;}' | $(CC) $(OMP_CFLAGS) $(OMP_LDFLAGS) -x c - -o /dev/null 2>/dev/null && echo ok),)
         HAVE_OPENMP := 1
       endif
     endif
   else ifneq (,$(filter MINGW% MSYS% UCRT% CLANG%,$(MSYSTEM)))
     # Windows / MSYS2 – test whether -fopenmp actually works
-    FOPENMP     := -fopenmp
+    OMP_CFLAGS := -fopenmp
     ifeq ($(findstring clang,$(CC)),clang)
       OMP_LDFLAGS := -lomp
     else
@@ -147,35 +140,35 @@ ifneq ($(OPENMP),0)
     HAVE_OPENMP := $(shell \
       echo '#include <omp.h>' > _omp_test.c && \
       echo 'int main(){return omp_get_max_threads();}' >> _omp_test.c && \
-      $(CC) $(FOPENMP) _omp_test.c -o _omp_test $(OMP_LDFLAGS) 2>/dev/null && \
+      $(CC) $(OMP_CFLAGS) _omp_test.c -o _omp_test $(OMP_LDFLAGS) 2>/dev/null && \
       echo 1 || echo 0; \
       rm -f _omp_test.c _omp_test _omp_test.exe)
   else
     # Linux
-    ifeq ($(findstring clang,$(CC)),clang)
-      FOPENMP := -fopenmp
+    ifeq ($(findstring clang,$(CO)),clang)
+      OMP_CFLAGS  := -fopenmp     
 #-fopenmp=libgomp -Xclang -fopenmp
       OMP_LDFLAGS := -lomp
     else
-      FOPENMP := -fopenmp
+      OMP_CFLAGS  := -fopenmp
       OMP_LDFLAGS := -fopenmp
     endif
-    HAVE_OPENMP := $(shell echo 'int main(){return 0;}' | $(CC) $(FOPENMP) -x c - -o /dev/null 2>/dev/null && echo 1 || echo 0)
+    HAVE_OPENMP := $(shell echo 'int main(){return 0;}' | $(CO) $(OMP_CFLAGS) -x c - -o /dev/null 2>/dev/null && echo 1 || echo 0)
   endif
 endif
 
 ifeq ($(HAVE_OPENMP),0)
   $(warning OpenMP not available)
-  FOPENMP :=
+  OMP_CFLAGS  :=
+  OMP_LDFLAGS :=
 else
-  $(info OpenMP enabled with $(FOPENMP))
-  CFLAGS_BWT += -DLIBSAIS_OPENMP $(OMP_CFLAGS)
-  CFLAGS_OMP  = -DLIBSAIS_OPENMP
+  $(info OpenMP enabled with $(OMP_CFLAGS) and $(OMP_LDFLAGS))
+# OMP_CFLAGS += -DLIBSAIS_OPENMP
   LDFLAGS += $(OMP_LDFLAGS)
 endif
 
 #---------------------------------------------------------------
-CFLAGS+=-w -Wall $(DDEBUG) 
+CFLAGS+=-w $(DDEBUG) -falign-loops=32 
 CXXFLAGS+=$(DDEBUG) -w -Wall -fpermissive  -fno-rtti
 RC_FLAGS = $(DEFS)
 
@@ -230,13 +223,19 @@ RC_FLAGS+=-D_BWTX
 
 else
 RC_FLAGS += -D_LIBSAIS
-CFLAGS_BWT += -Ilibsais/include 
+OMP_CFLAGS += -Ilibsais/include 
 LIBBWT = $(BUILD)/libsais.o
 ifeq ($(LIBSAIS16), 1)
 RC_FLAGS +=-D_LIBSAIS16
 LIBBWT += $(BUILD)/libsais16.o
 endif
-$(LIBBWT): COMP = $(CC)
+
+ifeq ($(HAVE_OPENMP),1)
+$(LIBBWT): COMP = $(CO) -DLIBSAIS_OPENMP
+else
+$(LIBBWT): COMP = $(CO) 
+endif
+
 ifeq ($(ARCH), x86_64)
 $(LIBBWT): SIMD = $(_AVX2)
 else
@@ -246,7 +245,7 @@ endif
 $(BUILD)/libsais.o:    libsais/src/libsais.c
 $(BUILD)/libsais16.o:  libsais/src/libsais16.c
 $(LIBBWT): |  $(BUILD)
-	$(COMP) -O3 -falign-loops=32 -DNDEBUG $(FOPENMP) $(CFLAGS_BWT) $(CFLAGS_OMP) $(SIMD) -c $< -o $@
+	$(COMP) -O3 $(CFLAGS) $(OMP_CFLAGS) $(SIMD) -c $< -o $@
 #-Wno-deprecated-openmp 
 endif
 
@@ -307,7 +306,7 @@ ifeq ($(BWT), 1)
 OBJS_CG_SSE += $(BUILD)/rcbwt.o
 endif
 
-$(OBJS_CG_SSE): COMP = $(CG) $(FOPENMP)
+$(OBJS_CG_SSE): COMP = $(CG) $(OMP_CFLAGS)
 $(OBJS_CG_SSE): SIMD = $(_SSE)
 $(BUILD)/anscdfs.o:    anscdf.c anscdf_.h 
 $(BUILD)/rccmc_s.o:    rccmc_s.c
@@ -336,7 +335,7 @@ $(BUILD)/rcqlfc_sf.o:  rcqlfc_sf.c
 
 ALL_OBJS := $(OBJS_CC_SSE) $(OBJS_CG_SSE) $(OBJS_CG_AVX2)
 $(ALL_OBJS): |  $(BUILD)
-	$(COMP) -O3 -falign-loops=32 -DNDEBUG $(CFLAGS) $(SIMD) -c $< -o $@
+	$(COMP) -O3 $(CFLAGS) $(SIMD) -c $< -o $@
 
 LIB+=$(ALL_OBJS)
 
