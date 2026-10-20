@@ -73,9 +73,9 @@ void *bsc_malloc(size_t s) { return malloc(s); }
 #define NO_RC
 #endif
 
-unsigned bwtx, forcelzp, xprep8, xsort, nutf8, lzpnrev;
-int BGFREQMIN = 50, BGMAX = 250, itmax;
-#define bwtflag(z) (z==2?BWT_BWT16:0) | (xprep8?BWT_PREP8:0) | (forcelzp?BWT_LZP:0) | (nutf8?BWT_NUTF8:0) | (verbose?BWT_VERBOSE:0) | (lzpnrev?BWT_LZPNREV:0) | xsort << 14 | itmax << 10 | lenmin
+unsigned bwtx, lzp_force, utf8_o8, utf8_sort, utf8_no, lzp_nrev, bwt_nratio;
+int BGFREQMIN = 50, BGMAX = 250, utf8_itmax;
+#define BWT_OPTIONS(z) (bwt_flag(z==2, verbose) | bwt_lzp(lzp_force, lzp_nrev, lzp_lenmin) | bwt_utf8(utf8_o8, utf8_no, utf8_sort, utf8_itmax, bwt_nratio)) 
 
 #define MAGIC     0x154 // 12 bits
 #define BLKMAX    3584
@@ -88,7 +88,7 @@ enum { E_FOP=1, E_FCR, E_FRD, E_FWR, E_MEM, E_CORR, E_MAG, E_CODEC, E_FSAME };
 static char *errs[] = {"", "open error", "create error", "read error", "write error", "malloc failed", "file corrupted", "no TurboRc file", "no codec", "input and output files are same" };
 
 // program parameters
-static unsigned xnibble, lenmin = 1, lev=9, threads=1, xtpbyte=-1;
+static unsigned xnibble, lzp_lenmin = 1, lev=9, threads=1, xtpbyte=-1;
 unsigned prm1=5, prm2=6;
 
 //       0       1        2         3         4         5         6         7,       8        9        10      11      12      13      14       15
@@ -422,7 +422,7 @@ unsigned quantb;
 #define OSIZE(_n_) ((_n_)*4/3)
 #define ID_RC16 8
 unsigned bench(unsigned char *in, unsigned n, unsigned char *out, unsigned char *cpy, int id, int r, int z) { //rcxor(in, n); return n;
-  unsigned i, m, flag = bwtflag(z), on = OSIZE(n);
+  unsigned i, m, flag = BWT_OPTIONS(z), on = OSIZE(n);
   size_t l = 0;
   cdf_t cdf[0x100+1];
   if(xnibble)                                                                                                       // use only low nibble
@@ -551,8 +551,8 @@ unsigned bench(unsigned char *in, unsigned n, unsigned char *out, unsigned char 
                      TM("80:bwt libsais                          ",l=libsais_bwt(in,out,sa,n,0,0), n,n, libsais_unbwt(out,cpy,sa,n,0,l)); free(sa);} break;
         #endif
       #endif
-    case 81:         TM("81:utf8 preprocessor                    ",l=utf8enc(in,n,out, flag|BWT_COPY|BWT_RATIO),n,l,CCPY:utf8dec(out,n,cpy)); break;
-    case 82:         TM("82:lzp                                  ",l=lzpenc( in,n,out,lenmin,0),                n,l,CCPY:lzpdec( out,l,cpy,n,lenmin,0)); break;
+    case 81:         TM("81:utf8 preprocessor                    ",l=utf8enc(in,n,out, flag|BWT_NRATIO),n,l,CCPY:utf8dec(out,n,cpy)); break;
+    case 82:         TM("82:lzp                                  ",l=lzpenc( in,n,out,lzp_lenmin,0),                n,l,CCPY:lzpdec( out,l,cpy,n,lzp_lenmin,0)); break;
     case 83:         TM("83:bitenc                               ",l=bitenc( in,n,out),                         n,l,     bitdec(out,n,cpy)); break;
       #ifndef _NDELTA
     case 84:l=n;     TM("84:delta8e24                            ",delta8e24( in,n,out),                        n,l,     delta8d24( out,n,cpy)); break;
@@ -787,7 +787,7 @@ int main(int argc, char* argv[]) {
       case 'b': bsize = argtol(optarg, MB); if(bsize < 16) bsize = 16;/*else if(bsize > BLKMAX*Mb) bsize = BLKMAX*Mb;*/ break;
       case 'e': scmd = optarg; dobench++; break;
       case 't': threads = atoi(optarg); threads = CLAMP(threads, 1, 64); break;
-      case 'f': xprep8++; break;
+      case 'f': utf8_o8++; break;
       case 'F': { char *s = optarg;    // Input format
         switch(*s) {
           case 'c': dfmt = T_CHAR; s++; break;
@@ -824,7 +824,7 @@ int main(int argc, char* argv[]) {
       case 'H': skiph = atoi(optarg); break;
       case 'K': { kid = atoi(optarg); if(!keysep) keysep = ",;\t"; } break;
       case 'k': keysep = optarg; break;
-      case 'T': itmax = atoi(optarg); break;
+      case 'T': utf8_itmax = atoi(optarg); break;
       case 'c': cmp++;     break;
       case 'd': decomp++;  break;
       case 'n': xnibble++; break;
@@ -842,11 +842,11 @@ int main(int argc, char* argv[]) {
       //case 'Q': qmax   = atoi(optarg); break;
       case 'v': verbose = atoi(optarg); break;
 
-      case 'R': lzpnrev++;    break;
-      case 'U': nutf8++;    break;
+      case 'R': lzp_nrev++;    break;
+      case 'U': utf8_no++;    break;
       case 'X': bwtx++;    break;
-      case 'S': xsort = atoi(optarg); break;
-      case 'z': forcelzp++; break;
+      case 'S': utf8_sort = atoi(optarg); break;
+      case 'z': lzp_force++; break;
       case 'r': { char *p = optarg; if(*p >= '0' && *p <= '9') { prm1 = p[0]-'0'; prm2 = p[1]-'0'; } if(prm1>9) prm1=9; if(prm2>9) prm2=9; } break;
       case 'a': xtpbyte = atoi(optarg); if(xtpbyte) { if(xtpbyte < 1) xtpbyte = 1;else if(xtpbyte > 30) xtpbyte = 30; } break;
         #ifndef NO_BENCH
@@ -854,7 +854,7 @@ int main(int argc, char* argv[]) {
       case 'J': tm_Rep2 = atoi(optarg); if(tm_Rep2<0) xcheck++,tm_Rep2=-tm_Rep2; if(!tm_Rep2) tm_rep= tm_Rep2=1;  break;
         #endif
       case 'l': lev = atoi(optarg); if(lev>9) lev=9; break;
-      case 'm': lenmin = atoi(optarg); if(lenmin > 256) lenmin = 256; break;
+      case 'm': lzp_lenmin = atoi(optarg); if(lzp_lenmin > 256) lzp_lenmin = 256; break;
       case 'Y':      if(!strcasecmp(optarg,"sse"))    cpuini(0x33);
                 else if(!strcasecmp(optarg,"avx"))    cpuini(0x50);
                 else if(!strcasecmp(optarg,"avx2"))   cpuini(0x60);
@@ -873,8 +873,8 @@ int main(int argc, char* argv[]) {
         if(l >= 0 && l <= 9)
           codec = (c-'0')*10 + l;
                 if(q = strchr(optarg,'e')) lev    = atoi(q+(q[1]=='='?2:1));  if(lev>9) lev=9;
-            if(q = strchr(optarg,'m')) lenmin = atoi(q+(q[1]=='='?2:1));
-            if(q = strchr(optarg,'U')) nutf8  = 1;                        if(verbose>2) printf("codec=%d lev=%d lmin=%d nutf8=%d ", codec, lev, lenmin, nutf8);
+            if(q = strchr(optarg,'m')) lzp_lenmin = atoi(q+(q[1]=='='?2:1));
+            if(q = strchr(optarg,'U')) utf8_no  = 1;                        if(verbose>2) printf("codec=%d lev=%d lmin=%d utf8_no=%d ", codec, lev, lzp_lenmin, utf8_no);
                 decomp = 0;
         if(codec>=0 && codec<=99) break;
       }
@@ -1081,9 +1081,9 @@ int main(int argc, char* argv[]) {
         case 19: clen = becenc16((uint16_t *)in, inlen, out);        break;
                   #endif
           #ifdef _BWT
-        case 20: clen = rcbwtenc( in, inlen, out, lev, threads, bwtflag(osize)); break;
+        case 20: clen = rcbwtenc( in, inlen, out, lev, threads, BWT_OPTIONS(osize)); break;
           #endif
-        case 21: clen = utf8enc( in, inlen, out, bwtflag(osize)); break;
+        case 21: clen = utf8enc( in, inlen, out, BWT_OPTIONS(osize)); break;
           #ifndef _NDELTA
         case 22: delta8e24(in,inlen,out); clen = inlen+1; break;
           #endif
@@ -1121,7 +1121,7 @@ int main(int argc, char* argv[]) {
         case 30: clen = fastaenc( in,inlen,out, inlen); break;
             #endif
           #endif
-        case 31: clen = lzpenc(in,inlen,out,lenmin, 0); break;
+        case 31: clen = lzpenc(in,inlen,out,lzp_lenmin, 0); break;
         default: ERR(E_CODEC);
       }
       hdb_t hdb = { 0 }; hdb.inlen = inlen; hdb.bsize = bsize; hdb.clen = clen; if ((rc = hdbwr(&hdb, fo)) < 0) ERR(-rc); folen += rc;
@@ -1186,7 +1186,7 @@ int main(int argc, char* argv[]) {
         case 29: fastasdec(in,outlen,out); break;
         case 30: fastadec(in,0, out, outlen); break;
             #endif
-        case 31: lzpdec(in,0, out, outlen,lenmin, 0); break;
+        case 31: lzpdec(in,0, out, outlen,lzp_lenmin, 0); break;
 
         default: ERR(E_CODEC);
       }
