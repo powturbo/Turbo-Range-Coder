@@ -139,7 +139,7 @@ ifneq ($(OPENMP),0)
   else ifneq (,$(filter MINGW% MSYS% UCRT% CLANG%,$(MSYSTEM)))
     # Windows / MSYS2 – test whether -fopenmp actually works
     FOPENMP     := -fopenmp
-    ifeq ($(findstring clang,$(CG)),clang)
+    ifeq ($(findstring clang,$(CC)),clang)
       OMP_LDFLAGS := -lomp
     else
       OMP_LDFLAGS := -lgomp
@@ -153,11 +153,12 @@ ifneq ($(OPENMP),0)
   else
     # Linux
     ifeq ($(findstring clang,$(CG)),clang)
-      FOPENMP := -fopenmp=libgomp
+      FOPENMP := -fopenmp
+#-fopenmp=libgomp -Xclang -fopenmp
       OMP_LDFLAGS := -lomp
     else
       FOPENMP := -fopenmp
-      OMP_LDFLAGS := -lgomp
+      OMP_LDFLAGS := -fopenmp
     endif
     HAVE_OPENMP := $(shell echo 'int main(){return 0;}' | $(CG) $(FOPENMP) -x c - -o /dev/null 2>/dev/null && echo 1 || echo 0)
   endif
@@ -253,9 +254,6 @@ endif
 endif
 
 OBJS_CC_SSE := $(BUILD)/bec_b.o $(BUILD)/cpu.o $(BUILD)/rc_ss.o $(BUILD)/rc_s.o $(BUILD)/rccdf.o $(BUILD)/rccmd_s.o $(BUILD)/rccmd_ss.o 
-ifeq ($(BWT), 1)
-OBJS_CC_SSE += $(BUILD)/rcbwt.o
-endif
 ifeq ($(ANS), 1)
 RC_FLAGS+=-D_ANS
 OBJS_CG_SSE += $(BUILD)/anscdfs.o
@@ -279,13 +277,12 @@ ifeq ($(TURBORLE), 1)
 RC_FLAGS+=-D_TURBORLE
 OBJS_CC_SSE += $(BUILD)/trlec.o $(BUILD)/trled.o
 endif
-$(OBJS_CC_SSE): COMP = $(CC) $(CFLAGS_OMP) 
+$(OBJS_CC_SSE): COMP = $(CC)
 $(OBJS_CC_SSE): SIMD = $(_SSE)
 $(BUILD)/bec_b.o:      bec_b.c 
 $(BUILD)/cpu.o:        cpu.c
 $(BUILD)/rc_s.o:       rc_s.c
 $(BUILD)/rc_ss.o:      rc_ss.c
-$(BUILD)/rcbwt.o:      rcbwt.c
 $(BUILD)/rccdf.o:      rccdf.c
 $(BUILD)/rccmd_s.o:    rccmd_s.c
 $(BUILD)/rccmd_ss.o:   rccmd_ss.c
@@ -306,11 +303,16 @@ ifeq ($(BWT), 1)
 OBJS_CG_SSE += $(BUILD)/xrcbwt_sf.o
 endif
 endif
-$(OBJS_CG_SSE): COMP = $(CG)
+ifeq ($(BWT), 1)
+OBJS_CG_SSE += $(BUILD)/rcbwt.o
+endif
+
+$(OBJS_CG_SSE): COMP = $(CG) $(FOPENMP)
 $(OBJS_CG_SSE): SIMD = $(_SSE)
 $(BUILD)/anscdfs.o:    anscdf.c anscdf_.h 
 $(BUILD)/rccmc_s.o:    rccmc_s.c
 $(BUILD)/rccmc_ss.o:   rccmc_ss.c
+$(BUILD)/rcbwt.o:      rcbwt.c
 
 OBJS_CG_AVX2 := $(BUILD)/rcutil.o $(BUILD)/rcqlfc_s.o $(BUILD)/rcqlfc_ss.o  $(BUILD)/rcqlfc_sf.o
 ifeq ($(ANS), 1)
