@@ -32,37 +32,20 @@
   #endif
 
 //----------- BWT -------------------
-#define BWT_RDONLY  (1u<<31) // input is read only, no overwrite
-#define BWT_BWT16   (1u<<30) // 16 bits bwt
-#define BWT_PREP8   (1u<<29) // preprocessor output 8-16 bits 
-#define BWT_LZP     (1u<<28) // Force lzp
-#define BWT_VERBOSE (1u<<27) // verbose
-#define BWT_COPY    (1u<<26) // memcpy in to out in case of no compression
-#define BWT_RATIO   (1u<<25) // No ratio check
-#define BWT_NUTF8   (1u<<24) // No utf8-preprocessing
-#define BWT_LZPNREV (1u<<23) // No reversing before lzp
+#define BWT_NRDONLY   (1u<<31) // input can be overwritten
+#define BWT_BWT16     (1u<<30) // 16 bits bwt
+#define BWT_VERBOSE   (1u<<29) // verbose
+#define BWT_NRATIO    (1u<<28) // No ratio check in preprocessing
 
-#define PRP_UTF8    1
-#define PRP_FASTA   2
+#define BWT_UTF8_O8   (1u<<27) // utf8: preprocessor output 8-16 bits 
+#define BWT_UTF8_NO   (1u<<26) // utf8: No utf8-preprocessing
 
-typedef struct {
-  unsigned char prid;    // preprocessor id;
-  unsigned char xrdonly; // input is read only, no overwrite
-  unsigned char xbwt16;  // 16 bits bwt
-  unsigned char verbose; // verbose
-  unsigned char xcopy;   // memcpy in to out in case of no compression
-  unsigned char threads;
-  
-  // lzp
-  unsigned char xlzp;    // Force lzp
-  unsigned char xlzpnrev; 
-  unsigned char lenmin;
-  // utf8
-  unsigned char xnutf8;  // No utf8-preprocessing
-  unsigned char xratio;  // No ratio check
-  unsigned char xprep8;  // preprocessor output 8-16 bits 
-  unsigned char itmax;
-} optbwt_t;
+#define BWT_LZP_FORCE (1u<<25) // lzp:orce lzp
+#define BWT_LZP_NREV  (1u<<24) // lzp: No reversing before lzp
+
+#define bwt_flag(bwt16,verbose)                         (bwt16?BWT_BWT16:0) | (verbose?BWT_VERBOSE:0)
+#define bwt_lzp(lzp_force,lzp_nrev,lenmin)              ((lzp_force?BWT_LZP_FORCE:0) | (lzp_nrev?BWT_LZP_NREV:0) | (lenmin)>0xff?0xff:(lenmin))
+#define bwt_utf8(utf8_o8, utf8_no, sort, itmax, nratio) (((utf8_o8)?BWT_UTF8_O8:0) | ((utf8_no)?BWT_UTF8_NO:0) | ((nratio)?BWT_NRATIO:0) | ((sort) << 14) | ((itmax) << 10))
 
 #ifdef __cplusplus
 extern "C" {
