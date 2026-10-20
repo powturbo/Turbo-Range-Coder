@@ -139,7 +139,7 @@ ifneq ($(OPENMP),0)
   else ifneq (,$(filter MINGW% MSYS% UCRT% CLANG%,$(MSYSTEM)))
     # Windows / MSYS2 – test whether -fopenmp actually works
     FOPENMP     := -fopenmp
-    ifeq ($(findstring clang,$(CC)),clang)
+    ifeq ($(findstring clang,$(CG)),clang)
       OMP_LDFLAGS := -lomp
     else
       OMP_LDFLAGS := -lgomp
@@ -152,12 +152,14 @@ ifneq ($(OPENMP),0)
       rm -f _omp_test.c _omp_test _omp_test.exe)
   else
     # Linux
-    ifeq ($(findstring clang,$(CC)),clang)
+    ifeq ($(findstring clang,$(CG)),clang)
       FOPENMP := -fopenmp=libgomp
+      OMP_LDFLAGS := -lomp
     else
       FOPENMP := -fopenmp
+      OMP_LDFLAGS := -lgomp
     endif
-    HAVE_OPENMP := $(shell echo 'int main(){return 0;}' | $(CC) $(FOPENMP) -x c - -o /dev/null 2>/dev/null && echo 1 || echo 0)
+    HAVE_OPENMP := $(shell echo 'int main(){return 0;}' | $(CG) $(FOPENMP) -x c - -o /dev/null 2>/dev/null && echo 1 || echo 0)
   endif
 endif
 
@@ -233,7 +235,7 @@ ifeq ($(LIBSAIS16), 1)
 RC_FLAGS +=-D_LIBSAIS16
 LIBBWT += $(BUILD)/libsais16.o
 endif
-$(LIBBWT): COMP = $(CC)
+$(LIBBWT): COMP = $(CG)
 ifeq ($(ARCH), x86_64)
 $(LIBBWT): SIMD = $(_AVX2)
 else
@@ -243,7 +245,8 @@ endif
 $(BUILD)/libsais.o:    libsais/src/libsais.c
 $(BUILD)/libsais16.o:  libsais/src/libsais16.c
 $(LIBBWT): |  $(BUILD)
-	$(COMP) -O3 -falign-loops=32 -DNDEBUG $(FOPENMP) -Wno-deprecated-openmp $(CFLAGS_BWT) $(CFLAGS_OMP) $(SIMD) -c $< -o $@
+	$(COMP) -O3 -falign-loops=32 -DNDEBUG $(FOPENMP) $(CFLAGS_BWT) $(CFLAGS_OMP) $(SIMD) -c $< -o $@
+#-Wno-deprecated-openmp 
 endif
 
 endif
@@ -359,7 +362,7 @@ $(BUILD)/turborc.o: turborc.c | $(BUILD)
 	$(CG) -O3 $(CFLAGS) $(MARCH) $(RC_FLAGS) -c turborc.c -o $(BUILD)/turborc.o
 
 $(BUILD)/turborc: $(LIB) $(LIBBWT) $(BUILD)/librc.a $(BUILD)/turborc.o
-	$(CC) $^ $(LDFLAGS) $(FOPENMP) -o $(BUILD)/turborc
+	$(CC) $^ $(LDFLAGS) -o $(BUILD)/turborc
 
 reorder: $(LIBDIV) $(BUILD)/reorder.o
 	$(CC) $^ $(LDFLAGS) -o $(BUILD)/reorder
