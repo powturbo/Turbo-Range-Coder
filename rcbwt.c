@@ -78,7 +78,7 @@ size_t rcbwtenc(unsigned char *in, size_t inlen, unsigned char *out, unsigned le
                 lzprev = (lev>=LZPLEV && (opts & BWT_LZP_NREV)==0)?0x40:0, forcelzp = (opts & BWT_LZP_FORCE)?1:0; 
   unsigned char *op    = out, *out_ = out+inlen, *bwt = vmalloc(inlen+1024), *ip = in;  // inlen + space for bwt indexes idxns  
   if(!lev) lenmin = 0;                                                               if(!bwt) { op = out_; goto e; } //lenmin = histopt(in, inlen, lev>=LZPLEV); 
-  if(!threads) threads = 4;
+  if(!threads) threads = 1;
   if(lenmin == 1) { int nrev; 
     lenmin = sample(in, inlen, 16, 16*1024, out); 
     lenmin = histopt(out, lenmin, lev>=8, &nrev); 
@@ -182,7 +182,7 @@ size_t rcbwtdec(unsigned char *in, size_t outlen, unsigned char *out, unsigned l
   unsigned char *ip    = in;
   unsigned      lenmin = *ip++, xbwt16 = lenmin&0x80, lzprev = lenmin & 0x40;  lenmin &=0x3f;
   size_t        oplen  = outlen, rc;
-  if(!threads) threads = 4;
+  if(!threads) threads = 1;
   if(lenmin) oplen = ctou32(ip),ip += 4;
 
     #ifdef _BWTDIV
