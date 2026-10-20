@@ -536,7 +536,7 @@ static unsigned char *symsput(sym_t *stab, unsigned stabn, unsigned char *out, u
 
 size_t utf8enc(unsigned char *__restrict in, size_t inlen, unsigned char *__restrict out, unsigned flag) {
   #define SYMBITS     16
-  unsigned char *ip, *op = out, cinv = 0;
+  unsigned char *ip, *op = out, *out_ = out+inlen, cinv = 0;
   sym_t          stab[1<<SYMBITS] = {0};
 
     #ifdef NOHASH
@@ -547,7 +547,7 @@ size_t utf8enc(unsigned char *__restrict in, size_t inlen, unsigned char *__rest
   #define HMASK ((1<<HBITS)-1)
   unsigned short stabh[1<<  HBITS] = {0};
     #endif
-  unsigned       stabn = 0, xprep8 = flag & BWT_PREP8, verbose = flag & BWT_VERBOSE, itmax = (flag>>10) & 0xf, xsort = (flag>>14) & 0x3, cnt;
+  unsigned       stabn = 0, xprep8 = flag & BWT_UTF8_NO, verbose = flag & BWT_VERBOSE, itmax = (flag>>10) & 0xf, xsort = (flag>>14) & 0x3, cnt;
                                                                                 if(verbose) { printf("utf8:sort=%u prep8=%d ", xsort, xprep8); fflush(stdout); } //unsigned st_crd=0;
   for(ip = in; ip < in+inlen;) {                                                // build the symbol dictionary
     unsigned c, ci, l = 1, h;
@@ -589,7 +589,7 @@ size_t utf8enc(unsigned char *__restrict in, size_t inlen, unsigned char *__rest
     cnt += stab[i].cnt;
   }
   cnt8 = (uint64_t)cnt8*128 / cnt;                                              if(verbose) { printf("ratio=%u ", cnt8);fflush(stdout); }
-  if(cnt8 > 64 && !(flag & BWT_RATIO)) { op = out+inlen; goto e; }                                                      // enough saving for converting to 16-bits?
+  if(cnt8 > 64 && !(flag & BWT_NRATIO)) { op = out+inlen; goto e; }                                                      // enough saving for converting to 16-bits?
 
   CREHASH(stab, stabh,HBITS,HMASK, stabn);                                      // rehash after sort
   op = out+4;
@@ -610,17 +610,14 @@ size_t utf8enc(unsigned char *__restrict in, size_t inlen, unsigned char *__rest
       unsigned c, l, ci;
       UCGET(ip, c, l);
       CGET(stab, stabh,HBITS,HMASK, c, ci);
-      vsput20(op, ci);                                                          OVERFLOW(in,inlen,out, op, goto e);
+      vsput20(op, ci);                                                          if(op >= out_) goto e;
     }
   } ctou32(out) = op - out;                                                     if(verbose) { printf("len='%u' ", (unsigned)(op-out));fflush(stdout); }
   e:
     #ifdef NOHASH
   if(stabh) free(stabh);
     #endif
-  if(op >= out+inlen) {
-    op = out+inlen;
-    if(flag & BWT_COPY) memcpy(out,in, inlen);
-  }
+  if(op >= out_) { memcpy(out,in, inlen); op = out_; }
   return op - out;
 }
   #endif
