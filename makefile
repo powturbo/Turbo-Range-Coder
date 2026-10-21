@@ -127,7 +127,7 @@ ifneq ($(OPENMP),0)
     endif
   else ifneq (,$(filter MINGW% MSYS% UCRT% CLANG%,$(MSYSTEM)))
     OMP_CFLAGS  := -fopenmp
-    OMP_LDFLAGS := -fopenmp -lgomp          # force GNU OpenMP (most reliable with -static)
+    OMP_LDFLAGS := -lgomp          # force GNU OpenMP (most reliable with -static)
   # ifeq ($(findstring clang,$(CXL)),clang)
   #   OMP_LDFLAGS += -lomp
   # else
