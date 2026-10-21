@@ -36,18 +36,12 @@ DIRLIB ?= $(PREFIX)/lib
 SRC ?= lib/
 BUILD_DATE := $(shell date +%Y%m%d)
 
-# All object files that would normally be built next to their sources are
-# instead placed into $(BUILD). VPATH lets make locate the corresponding
-# source files in their original (sub)directories.
 VPATH := .:libdivsufsort:libdivsufsort/lib:libsais/src:../bwt
 
 #------- OS/ARCH -------------------
 ifneq (,$(filter Windows%,$(OS)))
   OS := Windows
   CC=gcc
-# CC=clang
-# CG=gcc
-#  CG=clang
   CXX=g++
   CXL=clang++
   ARCH=x86_64
@@ -133,12 +127,7 @@ ifneq ($(OPENMP),0)
     endif
   else ifneq (,$(filter MINGW% MSYS% UCRT% CLANG%,$(MSYSTEM)))
     # Windows / MSYS2 – test whether -fopenmp actually works
-    OMP_CFLAGS := -fopenmp
-    ifeq ($(findstring clang,$(CC)),clang)
-      OMP_LDFLAGS := -lomp
-    else
-      OMP_LDFLAGS := -lgomp
-    endif
+    OMP_CFLAGS  := -fopenmp
     OMP_LDFLAGS := -fopenmp
     HAVE_OPENMP := $(shell \
       echo '#include <omp.h>' > _omp_test.c && \
