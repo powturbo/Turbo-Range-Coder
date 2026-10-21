@@ -219,7 +219,7 @@ RC_FLAGS +=-D_LIBSAIS16
 LIBBWT += $(BUILD)/libsais16.o
 endif
 
-ifeq ($(HAVE_OPENMP),1)
+ifneq ($(HAVE_OPENMP),0)
 $(LIBBWT): COMP = $(CO) -DLIBSAIS_OPENMP
 else
 $(LIBBWT): COMP = $(CO) 
