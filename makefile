@@ -21,10 +21,13 @@ ANS=1
 TP=1
 #----------------------------------------------
 CC ?= gcc
-#CXX ?= $(CC)++
-CXL = $(CC)
-CG ?= clang
-CO := $(CC)
+CXL ?= $(CC)   # linker
+CG ?= clang    # clang faster
+CO ?= $(CC)    # openmp compiler
+ifeq ($(STATIC),1)
+CO := gcc
+CXL := gcc
+endif
 
 #DEBUG=-DDEBUG -g
 DEBUG=-DNDEBUG
