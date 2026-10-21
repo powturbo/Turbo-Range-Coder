@@ -47,7 +47,7 @@ ifneq (,$(filter Windows%,$(OS)))
 # CC=clang
 # CG=gcc
   CG=clang
-  CXX=g++
+  CXX=clang++
   ARCH=x86_64
 else
   OS := $(shell uname -s)
