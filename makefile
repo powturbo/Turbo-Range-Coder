@@ -133,7 +133,9 @@ ifneq ($(OPENMP),0)
   # else
   #   OMP_LDFLAGS += -lgomp
   # endif
-    HAVE_OPENMP := $(shell echo '#include <omp.h>' > _omp_test.c && echo 'int main(){return omp_get_max_threads();}' >> _omp_test.c && 
+    HAVE_OPENMP := $(shell \
+      echo '#include <omp.h>' > _omp_test.c && \
+      echo 'int main(){return omp_get_max_threads();}' >> _omp_test.c && \
       $(CG) $(OMP_CFLAGS) _omp_test.c -o _omp_test $(OMP_LDFLAGS) 2>/dev/null && \
       echo 1 || echo 0; \
       rm -f _omp_test.c _omp_test _omp_test.exe)  
