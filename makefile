@@ -23,7 +23,7 @@ TP=1
 CC ?= gcc
 CXX ?= g++
 CG ?= clang
-CO := $(CC)
+CO := $(CG)
 
 #DEBUG=-DDEBUG -g
 DEBUG=-DNDEBUG
