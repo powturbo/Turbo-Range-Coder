@@ -127,12 +127,16 @@ ifneq ($(OPENMP),0)
     endif
   else ifneq (,$(filter MINGW% MSYS% UCRT% CLANG%,$(MSYSTEM)))
     OMP_CFLAGS  := -fopenmp
-    OMP_LDFLAGS := -fopenmp -lgomp         
   # ifeq ($(findstring clang,$(CXL)),clang)
   #   OMP_LDFLAGS += -lomp
   # else
   #   OMP_LDFLAGS += -lgomp
   # endif
+    ifeq ($(STATIC),1)
+      OMP_LDFLAGS := -fopenmp -static-openmp
+    else
+      OMP_LDFLAGS := -fopenmp -lgomp  
+    endif
     HAVE_OPENMP := $(shell \
       echo '#include <omp.h>' > _omp_test.c && \
       echo 'int main(){return omp_get_max_threads();}' >> _omp_test.c && \
