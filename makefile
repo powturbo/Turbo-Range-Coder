@@ -35,6 +35,7 @@ DIRINC ?= $(PREFIX)/include
 DIRLIB ?= $(PREFIX)/lib
 SRC ?= lib/
 BUILD_DATE := $(shell date +%Y%m%d)
+
 VPATH := .:libdivsufsort:libdivsufsort/lib:libsais/src:../bwt
 
 #------- OS/ARCH -------------------
