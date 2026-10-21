@@ -147,6 +147,11 @@ ifneq ($(OPENMP),0)
     # Linux
     OMP_CFLAGS  := -fopenmp     
     OMP_LDFLAGS := -fopenmp
+    ifeq ($(STATIC),1)
+      OMP_LDFLAGS := -fopenmp -static-openmp
+    else
+      OMP_LDFLAGS := -fopenmp -lgomp  
+    endif
     HAVE_OPENMP := $(shell echo 'int main(){return 0;}' | $(CO) $(OMP_CFLAGS) -x c - -o /dev/null 2>/dev/null && echo 1 || echo 0)
   endif
 endif
