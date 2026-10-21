@@ -48,7 +48,8 @@ ifneq (,$(filter Windows%,$(OS)))
 # CC=clang
 # CG=gcc
   CG=clang
-  CXX=clang++
+  CXX=g++
+  CXL=clang++
   ARCH=x86_64
 else
   OS := $(shell uname -s)
@@ -357,7 +358,7 @@ $(BUILD)/turborc.o: turborc.c | $(BUILD)
 	$(CG) -O3 $(CFLAGS) $(MARCH) $(RC_FLAGS) -c turborc.c -o $(BUILD)/turborc.o
 
 $(BUILD)/turborc: $(LIB) $(LIBBWT) $(BUILD)/librc.a $(BUILD)/turborc.o
-	$(CG) $^ $(LDFLAGS) -o $(BUILD)/turborc
+	$(CXL) $^ $(LDFLAGS) -o $(BUILD)/turborc
 
 reorder: $(LIBDIV) $(BUILD)/reorder.o
 	$(CC) $^ $(LDFLAGS) -o $(BUILD)/reorder
