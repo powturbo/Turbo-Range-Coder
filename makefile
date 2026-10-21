@@ -152,7 +152,7 @@ ifneq ($(OPENMP),0)
       OMP_CFLAGS  := -fopenmp
     endif
     ifeq ($(findstring clang,$(CC)),clang)
-      OMP_LDFLAGS := -fopenmp=libgomp
+      OMP_LDFLAGS := -fopenmp
     else
       OMP_LDFLAGS := -fopenmp
     endif
