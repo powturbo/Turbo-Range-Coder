@@ -159,7 +159,6 @@ else
   $(info OpenMP enabled with $(OMP_CFLAGS) and $(OMP_LDFLAGS))
   LDFLAGS += $(OMP_LDFLAGS)
 endif
-
 #---------------------------------------------------------------
 CFLAGS+=-w $(DDEBUG) -falign-loops=32 
 CXXFLAGS+=$(DDEBUG) -w -Wall -fpermissive  -fno-rtti
