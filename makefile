@@ -21,8 +21,8 @@ ANS=1
 TP=1
 #----------------------------------------------
 CC ?= gcc
-CXX ?= clang++
-CXL = $(CXX)
+#CXX ?= $(CC)++
+CXL = $(CC)
 CG ?= clang
 CO := $(CC)
 
