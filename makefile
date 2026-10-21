@@ -21,7 +21,7 @@ ANS=1
 TP=1
 #----------------------------------------------
 CC ?= gcc
-CXX ?= g++
+CXX ?= clang++
 CG ?= clang
 CO := $(CG)
 
@@ -356,7 +356,7 @@ $(BUILD)/turborc.o: turborc.c | $(BUILD)
 	$(CG) -O3 $(CFLAGS) $(MARCH) $(RC_FLAGS) -c turborc.c -o $(BUILD)/turborc.o
 
 $(BUILD)/turborc: $(LIB) $(LIBBWT) $(BUILD)/librc.a $(BUILD)/turborc.o
-	$(CC) $^ $(LDFLAGS) -o $(BUILD)/turborc
+	$(CG) $^ $(LDFLAGS) -o $(BUILD)/turborc
 
 reorder: $(LIBDIV) $(BUILD)/reorder.o
 	$(CC) $^ $(LDFLAGS) -o $(BUILD)/reorder
