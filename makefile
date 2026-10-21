@@ -47,7 +47,7 @@ ifneq (,$(filter Windows%,$(OS)))
   CC=gcc
 # CC=clang
 # CG=gcc
-  CG=clang
+#  CG=clang
   CXX=g++
   CXL=clang++
   ARCH=x86_64
@@ -139,6 +139,7 @@ ifneq ($(OPENMP),0)
     else
       OMP_LDFLAGS := -lgomp
     endif
+    OMP_LDFLAGS := -fopenmp
     HAVE_OPENMP := $(shell \
       echo '#include <omp.h>' > _omp_test.c && \
       echo 'int main(){return omp_get_max_threads();}' >> _omp_test.c && \
@@ -358,7 +359,7 @@ $(BUILD)/turborc.o: turborc.c | $(BUILD)
 	$(CG) -O3 $(CFLAGS) $(MARCH) $(RC_FLAGS) -c turborc.c -o $(BUILD)/turborc.o
 
 $(BUILD)/turborc: $(LIB) $(LIBBWT) $(BUILD)/librc.a $(BUILD)/turborc.o
-	$(CXL) $^ $(LDFLAGS) -o $(BUILD)/turborc
+	$(CG) $^ $(LDFLAGS) -o $(BUILD)/turborc
 
 reorder: $(LIBDIV) $(BUILD)/reorder.o
 	$(CC) $^ $(LDFLAGS) -o $(BUILD)/reorder
