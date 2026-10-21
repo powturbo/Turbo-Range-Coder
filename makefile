@@ -22,6 +22,7 @@ TP=1
 #----------------------------------------------
 CC ?= gcc
 CXX ?= clang++
+CXL = clang++
 CG ?= clang
 CO := $(CG)
 
@@ -47,7 +48,7 @@ ifneq (,$(filter Windows%,$(OS)))
 # CC=clang
 # CG=gcc
   CG=clang
-  CXX=clang++
+  CXX=g++
   ARCH=x86_64
 else
   OS := $(shell uname -s)
