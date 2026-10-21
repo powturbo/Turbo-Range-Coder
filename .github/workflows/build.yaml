@@ -21,7 +21,7 @@ jobs:
         with:
           submodules: 'true'     
       - run: git submodule update --init --recursive
-      - run: sudo apt-get install libomp-dev
+      - run: sudo apt-get install libomp-dev libgomp1
       - run: make STATIC=1
       - run: lscpu
       - run: build/turborc -e0 build/turborc -V1
