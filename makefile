@@ -23,7 +23,7 @@ TP=1
 CC ?= gcc
 CXX ?= clang++
 
-CXL = g++
+CXL = $(CXX)
 CG ?= clang
 CO := $(CC)
 
