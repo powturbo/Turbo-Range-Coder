@@ -24,7 +24,7 @@ CC ?= gcc
 CXX ?= clang++
 CXL = g++
 CG ?= clang
-CO := $(CG)
+CO := $(CC)
 
 #DEBUG=-DDEBUG -g
 DEBUG=-DNDEBUG
@@ -148,7 +148,8 @@ ifneq ($(OPENMP),0)
     OMP_CFLAGS  := -fopenmp     
     OMP_LDFLAGS := -fopenmp
     ifeq ($(STATIC),1)
-      OMP_LDFLAGS := -fopenmp -static-openmp
+      OMP_LDFLAGS := -fopenmp=libgomp
+#      OMP_LDFLAGS := -fopenmp -static-openmp
     else
       OMP_LDFLAGS := -fopenmp -lgomp  
     endif
