@@ -23,9 +23,9 @@ TP=1
 CC ?= gcc
 CXL ?= $(CC)   # linker
 CG ?= clang    # clang faster
-CO ?= $(CC)    # openmp compiler
+CCO ?= $(CC)    # openmp compiler
 ifeq ($(STATIC),1)
-CO := gcc
+CCO := gcc
 CXL := gcc
 endif
 
@@ -46,7 +46,7 @@ ifneq (,$(filter Windows%,$(OS)))
   OS := Windows
   CC=gcc
   CXX=g++
-  CXL=clang++
+  CXL=g++
   ARCH=x86_64
 else
   OS := $(shell uname -s)
@@ -157,7 +157,7 @@ ifneq ($(OPENMP),0)
     else
       OMP_LDFLAGS := -fopenmp
     endif
-    HAVE_OPENMP := $(shell echo 'int main(){return 0;}' | $(CO) $(OMP_CFLAGS) -x c - -o /dev/null 2>/dev/null && echo 1 || echo 0)
+    HAVE_OPENMP := $(shell echo 'int main(){return 0;}' | $(CCO) $(OMP_CFLAGS) -x c - -o /dev/null 2>/dev/null && echo 1 || echo 0)
   endif
 endif
 
@@ -169,7 +169,7 @@ else
   $(info OpenMP enabled with $(OMP_CFLAGS) and $(OMP_LDFLAGS))
   LDFLAGS += $(OMP_LDFLAGS)
 endif
-$(info CC="$(CC)" CXX="$(CXX)"  CXL="$(CXL)"  CG="$(CG)" CO="$(CO)" )
+$(info CC="$(CC)" CXX="$(CXX)"  CXL="$(CXL)"  CG="$(CG)" CCO="$(CCO)" )
 
 #---------------------------------------------------------------
 CFLAGS+=-w $(DDEBUG) -falign-loops=32 
@@ -235,9 +235,9 @@ LIBBWT += $(BUILD)/libsais16.o
 endif
 
 ifneq ($(HAVE_OPENMP),0)
-$(LIBBWT): COMP = $(CO) -DLIBSAIS_OPENMP
+$(LIBBWT): COMP = $(CCO) -DLIBSAIS_OPENMP
 else
-$(LIBBWT): COMP = $(CO) 
+$(LIBBWT): COMP = $(CCO) 
 endif
 
 ifeq ($(ARCH), x86_64)
