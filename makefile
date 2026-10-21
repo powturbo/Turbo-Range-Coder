@@ -149,7 +149,8 @@ ifneq ($(OPENMP),0)
     OMP_CFLAGS  := -fopenmp     
     OMP_LDFLAGS := -fopenmp
     ifeq ($(STATIC),1)
-      OMP_LDFLAGS := -fopenmp=libgomp
+       OMP_LDFLAGS := -fopenmp
+#      OMP_LDFLAGS := -fopenmp=libgomp
 #      OMP_LDFLAGS := -fopenmp -static-openmp
     else
       OMP_LDFLAGS := -fopenmp -lgomp  
@@ -362,7 +363,7 @@ $(BUILD)/turborc.o: turborc.c | $(BUILD)
 	$(CG) -O3 $(CFLAGS) $(MARCH) $(RC_FLAGS) -c turborc.c -o $(BUILD)/turborc.o
 
 $(BUILD)/turborc: $(LIB) $(LIBBWT) $(BUILD)/librc.a $(BUILD)/turborc.o
-	$(CG) $^ $(LDFLAGS) -o $(BUILD)/turborc
+	$(CXL) $^ $(LDFLAGS) -o $(BUILD)/turborc
 
 reorder: $(LIBDIV) $(BUILD)/reorder.o
 	$(CC) $^ $(LDFLAGS) -o $(BUILD)/reorder
