@@ -135,7 +135,7 @@ ifneq ($(OPENMP),0)
     ifeq ($(STATIC),1)
       OMP_LDFLAGS := -fopenmp -static-openmp
     else
-      OMP_LDFLAGS := -fopenmp  
+      OMP_LDFLAGS := -fopenmp -lgomp  
     endif
     HAVE_OPENMP := $(shell \
       echo '#include <omp.h>' > _omp_test.c && \
@@ -152,7 +152,7 @@ ifneq ($(OPENMP),0)
 #      OMP_LDFLAGS := -fopenmp=libgomp
 #      OMP_LDFLAGS := -fopenmp -static-openmp
     else
-      OMP_LDFLAGS := -fopenmp -lgomp  
+      OMP_LDFLAGS := -fopenmp
     endif
     HAVE_OPENMP := $(shell echo 'int main(){return 0;}' | $(CO) $(OMP_CFLAGS) -x c - -o /dev/null 2>/dev/null && echo 1 || echo 0)
   endif
