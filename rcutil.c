@@ -565,7 +565,7 @@ size_t lzpdec128(unsigned char *in, size_t inlen, unsigned char *out, size_t out
   return ip - in;
 }
 #else
-size_t lzpdec0(unsigned char *in, size_t inlen, unsigned char *out, size_t outlen, unsigned lenmin, unsigned hbits) {
+size_t lzpdec(unsigned char *in, size_t inlen, unsigned char *out, size_t outlen, unsigned lenmin, unsigned hbits) {
   unsigned char *ip = in, *in_ = in+inlen, *op = out, *out_ = out+outlen;
   unsigned      _htab[1<< LZPHBITS] = {0}, *htab = _htab, cx;
   if(lenmin < LZPLENMIN) lenmin = LZPLENMIN;
