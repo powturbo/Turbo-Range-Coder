@@ -346,22 +346,16 @@ size_t lzpdec128(unsigned char *in, size_t inlen, unsigned char *out, size_t out
   if(lenmin < LZPLENMIN) lenmin = LZPLENMIN;
   LZPINI(outlen);
 
-  cx = ctou32(op) = ctou32(ip); cx = BSWAP32(cx); op += 4; ip += 4;
-
   const __m128i vesc = _mm_set1_epi8((char)LZPESC);
   enum { SIDD_MODE = _SIDD_UBYTE_OPS | _SIDD_CMP_EQUAL_ANY | _SIDD_LEAST_SIGNIFICANT };
 
-  for(; op+16 <= out_ && ip + 16 <= in_;) {
+  for(cx = ctou32(op) = ctou32(ip), cx = BSWAP32(cx), op += 4, ip += 4; op+16 <= out_ && ip + 16 <= in_;) {
     unsigned h4, c;
     unsigned char *cp, *op_;
-
-    /* ---- SSE4.2 fast path: scan 16 input bytes for the next LZPESC ---- */
     {
       __m128i v   = _mm_loadu_si128((const __m128i*)ip);
       unsigned run = (unsigned)_mm_cmpestri(vesc, 16, v, 16, SIDD_MODE); /* 0..16 */
       if(run) {
-        /* bulk copy: writes up to 16 bytes, only 'run' of them are "final" - the rest are harmless scratch that will be
-           overwritten by the next store (bounds already verified) */
         _mm_storeu_si128((__m128i*)op, v);
           #if 1
         unsigned char *rp = ip, *re = ip + run;
@@ -404,8 +398,8 @@ size_t lzpdec128(unsigned char *in, size_t inlen, unsigned char *out, size_t out
         }
           #endif
         ip += run;
-        if(run == 16) continue;              /* whole 16-byte chunk was literal, rescan */
-      }      // run < 16: ip now points exactly at the LZPESC byte -> fall through
+        if(run == 16) continue;          
+      }      
     }
 
     h4 = LZPHASH(cx, hbits);  cp = out + htab[h4];  htab[h4] = op - out;
@@ -445,12 +439,6 @@ size_t lzpdec128(unsigned char *in, size_t inlen, unsigned char *out, size_t out
   return ip - in;
 }
 
-#if defined(_MSC_VER)
-  #define LZP_CTZ32(m) _tzcnt_u32(m)
-#else
-  #define LZP_CTZ32(m) ((unsigned)__builtin_ctz(m))
-#endif
-
 #include <immintrin.h>
 #define USE_SIMD 0
 #define SIMDHTAB 0
@@ -464,7 +452,6 @@ size_t lzpdec(unsigned char *in, size_t inlen, unsigned char *out, size_t outlen
   #if defined(USE_SIMD) && defined(SIMDHTAB)
   const __m256i vc32  = _mm256_set1_epi32((int)C32);
   const __m128i shamt = _mm_cvtsi32_si128((int)(32 - hbits));
-  /* In-lane vpshufb mask: extracts + BSWAP32s 8 sliding 4-byte contexts from [b[-4..-1], rp[0..7]] */
   const __m256i vshuf = _mm256_setr_epi8(3, 2, 1, 0,  4, 3, 2, 1,  5, 4, 3, 2,  6, 5, 4, 3,    7, 6, 5, 4,  8, 7, 6, 5,  9, 8, 7, 6,  10, 9, 8, 7 );
   #endif
 
@@ -474,7 +461,7 @@ size_t lzpdec(unsigned char *in, size_t inlen, unsigned char *out, size_t outlen
     {
       __m256i  v    = _mm256_loadu_si256((const __m256i *)ip);
       uint32_t mask = (uint32_t)_mm256_movemask_epi8(_mm256_cmpeq_epi8(v, vesc));
-      unsigned run  = mask ? LZP_CTZ32(mask) : 32u; /* 0..32 */
+      unsigned run  = mask ? ctz32(mask) : 32u; /* 0..32 */
       if(run) {
         _mm256_storeu_si256((__m256i *)op, v);
         #ifdef USE_SIMD
@@ -557,8 +544,8 @@ size_t lzpdec(unsigned char *in, size_t inlen, unsigned char *out, size_t outlen
         }
         #endif
         ip += run;
-        if(run == 32) continue; /* whole 32-byte chunk was literal, rescan */
-      } /* run < 32: ip now points exactly at the LZPESC byte -> fall through */
+        if(run == 32) continue;
+      } 
     }
 
     h4 = LZPHASH(cx, hbits);  cp = out + htab[h4];  htab[h4] = (unsigned)(op - out);
