@@ -47,7 +47,7 @@ typedef int32_t saidx_t;
 static int bwtx;
 static inline unsigned calcmod(size_t len) { return 1<<__bsr32(len); }
 #define SR 16
-#define LZPLEV 3
+#define LZPLEV 5
 #define REVLEV 3
 
 #ifdef LZPREVERSE   // use reverse lzp 
