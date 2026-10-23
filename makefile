@@ -240,7 +240,7 @@ endif
 endif
 endif
 
-OBJS_CC_SSE := $(BUILD)/bec_b.o $(BUILD)/cpu.o $(BUILD)/rc_ss.o $(BUILD)/rc_s.o $(BUILD)/rccdf.o $(BUILD)/rccmd_s.o $(BUILD)/rccmd_ss.o 
+OBJS_CC_SSE := $(BUILD)/bec_b.o $(BUILD)/cpu.o $(BUILD)/rc_ss.o $(BUILD)/rc_s.o $(BUILD)/rccdf.o $(BUILD)/rccmd_s.o $(BUILD)/rccmd_ss.o $(BUILD)/rcutil.o 
 ifeq ($(ANS), 1)
 RC_FLAGS+=-D_ANS
 OBJS_CG_SSE += $(BUILD)/anscdfs.o
@@ -264,8 +264,8 @@ ifeq ($(TURBORLE), 1)
 RC_FLAGS+=-D_TURBORLE
 OBJS_CC_SSE += $(BUILD)/trlec.o $(BUILD)/trled.o
 endif
-$(OBJS_CC_SSE): COMP = $(CC)
-$(OBJS_CC_SSE): SIMD = $(_SSE)
+$(OBJS_CC_SSE): COMP = $(CC) -DBUILD_VERSION="\"v$(BUILD_DATE)\"" 
+$(OBJS_CC_SSE): SIMD = $(_AVX2)
 $(BUILD)/bec_b.o:      bec_b.c 
 $(BUILD)/cpu.o:        cpu.c
 $(BUILD)/rc_s.o:       rc_s.c
@@ -301,7 +301,7 @@ $(BUILD)/rccmc_s.o:    rccmc_s.c
 $(BUILD)/rccmc_ss.o:   rccmc_ss.c
 $(BUILD)/rcbwt.o:      rcbwt.c
 
-OBJS_CG_AVX2 := $(BUILD)/rcutil.o $(BUILD)/rcqlfc_s.o $(BUILD)/rcqlfc_ss.o  $(BUILD)/rcqlfc_sf.o
+OBJS_CG_AVX2 := $(BUILD)/rcqlfc_s.o $(BUILD)/rcqlfc_ss.o  $(BUILD)/rcqlfc_sf.o
 ifeq ($(ANS), 1)
 ifeq ($(ARCH), x86_64)
 OBJS_CG_AVX2+=$(BUILD)/anscdfx.o
@@ -312,7 +312,7 @@ ifeq ($(ARCH),x86_64)
 OBJS_CG_AVX2 += $(BUILD)/tp256.o
 endif
 endif
-$(OBJS_CG_AVX2): COMP = $(CG) -DBUILD_VERSION="\"v$(BUILD_DATE)\"" 
+$(OBJS_CG_AVX2): COMP = $(CG) 
 $(OBJS_CG_AVX2): SIMD = $(_AVX2)
 $(BUILD)/anscdfx.o:    anscdf.c anscdf_.h 
 $(BUILD)/tp256.o:      tp.c
