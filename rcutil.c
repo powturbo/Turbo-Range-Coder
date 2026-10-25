@@ -258,7 +258,7 @@ size_t lzpenc(unsigned char *__restrict in, size_t inlen, unsigned char *__restr
   #endif
 
   #ifndef NDECOMP
-#if 0 //def __AVX2__
+#ifdef __AVX2__
 #include <immintrin.h>
 
 size_t lzpdec(unsigned char *in, size_t inlen, unsigned char *out, size_t outlen) {
