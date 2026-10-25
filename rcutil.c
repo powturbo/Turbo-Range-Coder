@@ -259,8 +259,6 @@ size_t lzpenc(unsigned char *__restrict in, size_t inlen, unsigned char *__restr
 
   #ifndef NDECOMP
 #if defined(__SSE2__) || defined(__ARM_NEON) || defined(__riscv_vector) || defined(__powerpc64__) || defined(__loongarch_sx)
-#include <immintrin.h>
-
 size_t lzpdec(unsigned char *in, size_t inlen, unsigned char *out, size_t outlen) {
   unsigned      _htab[1 << LZPHBITS] = {0}, *htab = _htab, cx, lenmin, hbits;
   unsigned char *ip = in, *in_ = in + inlen, *op = out, *out_;
