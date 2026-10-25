@@ -43,8 +43,8 @@
 #define BWT_LZP_FORCE (1u<<25) // lzp:orce lzp
 #define BWT_LZP_NREV  (1u<<24) // lzp: No reversing before lzp
 
-#define bwt_flag(bwt16,verbose)                         (bwt16?BWT_BWT16:0) | (verbose?BWT_VERBOSE:0)
-#define bwt_lzp(lzp_force,lzp_nrev,lenmin)              ((lzp_force?BWT_LZP_FORCE:0) | (lzp_nrev?BWT_LZP_NREV:0) | (lenmin)>0xff?0xff:(lenmin))
+#define bwt_flag(bwt16,verbose)                         ((bwt16?BWT_BWT16:0) | (verbose?BWT_VERBOSE:0))
+#define bwt_lzp(lzp_force,lzp_nrev,lenmin)              ((lzp_force?BWT_LZP_FORCE:0) | (lzp_nrev?BWT_LZP_NREV:0) | ((lenmin)>0xff?0xff:(lenmin)))
 #define bwt_utf8(utf8_o8, utf8_no, sort, itmax, nratio) (((utf8_o8)?BWT_UTF8_O8:0) | ((utf8_no)?BWT_UTF8_NO:0) | ((nratio)?BWT_NRATIO:0) | ((sort) << 14) | ((itmax) << 10))
 
 #ifdef __cplusplus
