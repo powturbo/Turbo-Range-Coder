@@ -1,5 +1,5 @@
 /**
-    Copyright (C) powturbo 2013-2023
+    Copyright (C) powturbo 2013-2026
     GPL v3 License
 
     This program is free software; you can redistribute it and/or modify
@@ -108,17 +108,13 @@ void vfree(void *address) {
 #define BSWAP64(a) bswap64(a)
   #endif
 
-//--------------------------- lzp preprocessor (lenmin >= 32) ------------------------------------------------------------------------
+//--------------------------- lzp preprocessor (lenmin >= 8) ------------------------------------------------------------------------
 #define LZPESC                 255
 #define emitmatch(_l_,_op_)    { unsigned _l = _l_-lenmin+1; *_op_++ = LZPESC; while(_l >= 254) { *_op_++ = 254; _l -= 254; if(op >= out_) goto end; } *_op_++ = _l; }
 #define emitch(_ch_,_op_)      { *_op_++ = _ch_; if(_ch_ == LZPESC) *_op_++ = 0; if(op >= out_) goto end; }
 
 #define C32                    123456791u
 #define LZPHASH(_x_, _hbits_)  (((_x_) * C32) >> (32-_hbits_)) //#define LZPHASH(_x_, _hbits_)  ((_x_ >> 15 ^ _x_ ^ _x_ >> 3) & ((int32_t)(1 << _hbits_) - 1))
-
-#define LZPINI(_n_) hbits = hbits?hbits:(_n_ >= (1<<24)?21:LZPHBITS);\
-  hbits = hbits<12?12:hbits;\
-  if(hbits > LZPHBITS && !(htab = calloc(1<<hbits, 4))) { htab = _htab; hbits = LZPHBITS; }
 
 #ifdef __AVX2__
 #define matchlen(ip, cp, cl) \
@@ -229,12 +225,17 @@ int histopt(const unsigned char *in, int inlen, int lev, int *lznprev) {
   #ifndef NCOMP
 size_t lzpenc(unsigned char *__restrict in, size_t inlen, unsigned char *__restrict out, unsigned lenmin, unsigned hbits) { 
   unsigned      _htab[1<<LZPHBITS] = {0}, *htab = _htab, cx;
-  unsigned char *ip = in, *op = out, *out_ = out + inlen, *oip = out_;
-  if(lenmin < LZPLENMIN) lenmin = LZPLENMIN;
-  if(inlen < lenmin) { memcpy(out, in, inlen); return inlen; }
-  LZPINI(inlen);
- 
-  for(cx = ctou32(op) = ctou32(ip), cx = BSWAP32(cx), op += 4, ip += 4; ip < in+inlen-lenmin;) { 
+  unsigned char *ip = in, *op = out, *out_ = out + inlen, *oip = out_;             
+  
+  hbits = hbits?hbits:(inlen >= (1<<24)?20:LZPHBITS);
+  hbits = CLAMP(hbits, LZPHBITS, 22); hbits &= ~1; /*16,18,20,22*/    
+  if(hbits > LZPHBITS && !(htab = calloc(1<<hbits, 4))) { htab = _htab; hbits = LZPHBITS; }
+  
+  lenmin = CLAMP(lenmin, LZPLENMIN, 32*4); lenmin &= ~3;              //printf("\nchbits=%d lmin=%d \n", hbits, lenmin);
+  if(inlen <= lenmin+4) { op = out_; goto end; }
+  *op++ = ((hbits-LZPHBITS)/2)<<5 | ((lenmin/4) - 1);
+
+  for(cx = ctou32(op) = ctou32(ip), cx = BSWAP32(cx), op += 4, ip += 4; ip < in+inlen-lenmin-(32+4);) { 
     unsigned       h4 = LZPHASH(cx, hbits);
     unsigned char *cp = in + htab[h4];
              htab[h4] = ip - in;
@@ -251,54 +252,23 @@ size_t lzpenc(unsigned char *__restrict in, size_t inlen, unsigned char *__restr
   }
   while(ip < in+inlen) { unsigned c = *ip++; emitch(c, op); }                                   
   end: if(htab != _htab) free(htab);
-  if(op >= out_) { memcpy(out, in, inlen); op = out_; }
+  if(op >= out_) { *out = 0xff; memcpy(out+1, in, inlen); return inlen+1; }
   return op - out;
 }
-
-/*size_t lzprenc(unsigned char *__restrict in, size_t inlen, unsigned char *__restrict out, unsigned lenmin, unsigned hbits) {
-  unsigned      _htab[1<<LZPHBITS] = {0}, *htab = _htab, cl, h4 = 0;  uint32_t cx;
-  unsigned char *inend = in+inlen, *ip = inend, *cp, *op = out, *out_ = out + inlen;
-  if(lenmin < LZPLENMIN) lenmin = LZPLENMIN;
-  if(inlen < lenmin) { size_t i; for(i = 0; i < inlen; i++) out[i] = in[inlen-1-i]; return inlen; }
-  LZPINI(inlen);
-  for(cx = ctou32(ip-4), ctou32(op) = BSWAP32(cx), op += 4, ip -= 4; ip > in+lenmin;) {
-    h4       = LZPHASH(cx, hbits);
-    cp       = inend - htab[h4];             
-    htab[h4] = inend - ip;
-    if(ctou64(ip-8)  == ctou64(cp-8) ) { // match
-      for(cl = 8;;) {
-        if(ip-cl <= in+32) break;
-        if(ctou64(ip-cl-8) != ctou64(cp-cl-8)) break; cl += 8;
-        if(ctou64(ip-cl-8) != ctou64(cp-cl-8)) break; cl += 8;
-        if(ctou64(ip-cl-8) != ctou64(cp-cl-8)) break; cl += 8;
-        if(ctou64(ip-cl-8) != ctou64(cp-cl-8)) break; cl += 8;
-      }
-      if(cl >= lenmin) {    
-        for(; ip-cl > in && *(ip-cl-1) == *(cp-cl-1); cl++);
-        emitmatch(cl, op);
-        ip -= cl;
-        cx  = ctou32(ip);                  
-        continue;
-      }
-    }
-    unsigned ch = *--ip; emitch(ch, op); cx = cx<<8 | ch;   // literal
-  }
-  while(ip > in) { unsigned c = *--ip; emitch(c, op); }
-  end:if(htab != _htab) free(htab);
-  if(op >= out_) { memcpy(out, in, inlen); op = out_; }
-  return op - out;
-}*/
   #endif
 
   #ifndef NDECOMP
 #ifdef __AVX2__
 #include <immintrin.h>
 
-size_t lzpdec(unsigned char *in, size_t inlen, unsigned char *out, size_t outlen, unsigned lenmin, unsigned hbits) {
-  unsigned char *ip = in, *in_ = in + inlen, *op = out, *out_ = out + outlen;
-  unsigned      _htab[1 << LZPHBITS] = {0}, *htab = _htab, cx;
-  if(lenmin < LZPLENMIN) lenmin = LZPLENMIN;
-  LZPINI(outlen);
+size_t lzpdec(unsigned char *in, size_t inlen, unsigned char *out, size_t outlen) {
+  unsigned      _htab[1 << LZPHBITS] = {0}, *htab = _htab, cx, lenmin, hbits;
+  unsigned char *ip = in, *in_ = in + inlen, *op = out, *out_;
+  
+  if((lenmin = *ip++) == 0xff) { memcpy(out, ip, outlen); return outlen+1; }
+  hbits = ((lenmin >> 5)*2) + LZPHBITS;  lenmin = ((lenmin&0x1f) + 1)*4;                   //printf("\ndhbits=%d,%d\n", hbits, lenmin);fflush(stdout);
+  if(hbits > LZPHBITS && !(htab = calloc(1<<hbits, 4))) return 0;
+  out_ = out + outlen + lenmin - (32+4);
 
   #ifdef __AVX2__
   const __m256i ev = _mm256_set1_epi8((char)LZPESC);
@@ -306,70 +276,48 @@ size_t lzpdec(unsigned char *in, size_t inlen, unsigned char *out, size_t outlen
   cx = ctou32(op) = ctou32(ip); cx = BSWAP32(cx); op += 4; ip += 4;
 
     #ifdef __AVX2__
-  if(outlen >= 32) {
-    while(op < out_ - 32 && ip < in_ - 32) {
-      uint32_t mask;
-      __m256i v = _mm256_loadu_si256((const __m256i*)ip); mask = (uint32_t)_mm256_movemask_epi8(_mm256_cmpeq_epi8(v, ev)); _mm256_storeu_si256((__m256i *)op, v); 
-      if(!mask) {
-        for(unsigned char *ip_ = ip + 32; ip < ip_; ip += 4) {  
-          uint32_t w  = BSWAP32(ctou32(ip));
-          uint64_t cz = ((uint64_t)cx << 32) | w;
-          htab[LZPHASH(cx,                   hbits)] = (unsigned)(op++ - out);
-          htab[LZPHASH((uint32_t)(cz >> 24), hbits)] = (unsigned)(op++ - out);
-          htab[LZPHASH((uint32_t)(cz >> 16), hbits)] = (unsigned)(op++ - out);
-          htab[LZPHASH((uint32_t)(cz >>  8), hbits)] = (unsigned)(op++ - out);
-          cx = w;
-        }
-        continue;
+  while(op < out_ && ip < in_) {
+    uint32_t mask;
+    __m256i v = _mm256_loadu_si256((const __m256i*)ip); mask = (uint32_t)_mm256_movemask_epi8(_mm256_cmpeq_epi8(v, ev)); _mm256_storeu_si256((__m256i *)op, v); 
+    if(!mask) {
+      for(unsigned char *ip_ = ip + 32; ip < ip_; ip += 4) {  
+        uint32_t w  = BSWAP32(ctou32(ip));
+        uint64_t cz = ((uint64_t)cx << 32) | w;
+        htab[LZPHASH(cx,                   hbits)] = (unsigned)(op++ - out);
+        htab[LZPHASH((uint32_t)(cz >> 24), hbits)] = (unsigned)(op++ - out);
+        htab[LZPHASH((uint32_t)(cz >> 16), hbits)] = (unsigned)(op++ - out);
+        htab[LZPHASH((uint32_t)(cz >>  8), hbits)] = (unsigned)(op++ - out);
+        cx = w;
       }
-      unsigned r = ctz32(mask);
-      unsigned char *re = ip + r;
-      #define STEP()  do { htab[LZPHASH(cx, hbits)] = (unsigned)(op++ - out); cx = (cx << 8) | *ip++; } while(0)
-      #define STEP4() do { STEP(); STEP(); STEP(); STEP(); } while(0)
-      while(ip + 4 <= re) STEP4(); while(ip < re) STEP();
-      unsigned c, h4 = LZPHASH(cx, hbits); unsigned char *cp = out + htab[h4]; htab[h4] = (unsigned)(op - out);
-      if(*++ip) {
-        c = 0; do { if(ip >= in_) return 0; c += *ip; } while(*ip++ == 254);
-        unsigned char *op_ = op + c + lenmin - 1;
-        if(op - cp >= 32) { do { _mm256_storeu_si256((__m256i*)op, _mm256_loadu_si256((__m256i const*)cp)); cp += 32; op+=32; } while(op < op_); op = op_; } 
-        else for(; op < op_; *op++ = *cp++);   
-        cx = BSWAP32(ctou32(op - 4));
-      } else { ip++; *op++ = LZPESC; cx = BSWAP32(ctou32(op-4)); /*cx = (cx << 8) | (*op++ = LZPESC);*/ }
+      continue;
     }
+    unsigned        r = ctz32(mask);
+    unsigned char *re = ip + r;
+    #define STEP()  do { htab[LZPHASH(cx, hbits)] = (unsigned)(op++ - out); /*cx = BSWAP32(ctou32(ip-4)); ip++;*/ cx = (cx << 8) | *ip++; } while(0)
+    #define STEP4() do { STEP(); STEP(); STEP(); STEP(); } while(0)
+    while(ip + 4 <= re) STEP4(); while(ip < re) STEP();
+    unsigned c, h4 = LZPHASH(cx, hbits); unsigned char *cp = out + htab[h4]; htab[h4] = (unsigned)(op - out);
+    if(*++ip) {
+      c = 0; do { if(ip >= in_) return 0; c += *ip; } while(*ip++ == 254);
+      unsigned char *op_ = op + c + lenmin - 1;
+      if(op - cp >= 32) { do { _mm256_storeu_si256((__m256i*)op, _mm256_loadu_si256((__m256i const*)cp)); cp += 32; op+=32; } while(op < op_); op = op_; } 
+      else for(; op < op_; *op++ = *cp++);   
+      cx = BSWAP32(ctou32(op - 4));
+    } else { ip++; *op++ = LZPESC; cx = BSWAP32(ctou32(op-4)); }
   }
     #endif
-
-  for(; op < out_;) {
-    unsigned h4, c;
-    unsigned char *cp, *op_;
-    h4 = LZPHASH(cx, hbits);
-    cp = out + htab[h4];
-    htab[h4] = (unsigned)(op - out);
-
-    if((c = *ip++) != LZPESC) { 
-      cx = (cx << 8) | (*op++ = (unsigned char)c); 
-      continue; 
-    }
-    if(*ip) {
-      c = 0; do { if(ip >= in_) return 0; c += *ip; } while(*ip++ == 254);
-      op_ = op + c + lenmin - 1;         if(op_ > out_) return 0;
-      for(; op < op_; *op++ = *cp++);
-      cx = BSWAP32(ctou32(op - 4));
-    } else {
-      ip++; 
-      cx = (cx << 8) | (*op++ = LZPESC); if(ip > in_) return 0;
-    }
-  }
-
+  while(op < out + outlen) *op++ = *ip++;
   if(htab != _htab) free(htab);
   return (size_t)(ip - in);
 }
 #else
-size_t lzpdec(unsigned char *in, size_t inlen, unsigned char *out, size_t outlen, unsigned lenmin, unsigned hbits) {
+size_t lzpdec(unsigned char *in, size_t inlen, unsigned char *out, size_t outlen) {
   unsigned char *ip = in, *in_ = in+inlen, *op = out, *out_ = out+outlen;
   unsigned      _htab[1<< LZPHBITS] = {0}, *htab = _htab, cx;
-  if(lenmin < LZPLENMIN) lenmin = LZPLENMIN;
-  LZPINI(outlen);     
+
+  if((lenmin = *ip++) == 0xff) { memcpy(out, ip, outlen); return outlen+1; }
+  lenmin = (lenmin+1)*4; hbits = (lenmin >> 5)*2 + LZPHBITS;
+  if(hbits > LZPHBITS && !(htab = calloc(1<<hbits, 4))) return 0;
                              
   for(cx = ctou32(op) = ctou32(ip), cx = BSWAP32(cx), op += 4, ip += 4; op < out_;) {
     unsigned    c, h4 = LZPHASH(cx, hbits);
@@ -388,28 +336,6 @@ size_t lzpdec(unsigned char *in, size_t inlen, unsigned char *out, size_t outlen
 }
 #endif
 
-/*size_t lzprdec(unsigned char *in, size_t inlen, unsigned char *out, size_t outlen, unsigned lenmin, unsigned hbits) {
-  unsigned      _htab[1<< LZPHBITS] = {0}, *htab = _htab, cx, h4 = 0;
-  unsigned char *ip = in, *outend = out+outlen, *op = outend;
-  if(lenmin < LZPLENMIN) lenmin = LZPLENMIN;
-  if(inlen >= outlen) { memcpy(out, in, outlen); return inlen; }
-  LZPINI(outlen);
-  for(cx = BSWAP32(ctou32(ip)), ctou32(op-4) = cx, op -= 4, ip += 4; op > out;) {
-    unsigned c;    h4 = LZPHASH(cx, hbits);
-    unsigned char *cp = outend - htab[h4], *op_;
-             htab[h4] = outend - op;
-    if((c = *ip++) == LZPESC)
-      if(*ip) { 
-        c = 0; do c += *ip; while(*ip++ == 254);
-        for(op_ = op-(c+lenmin-1); op > op_; *--op = *--cp);
-        cx = ctou32(op);
-        continue;
-      } else ip++, c = LZPESC;
-    cx = cx << 8 | (*--op = c);
-  }
-  if(htab != _htab) free(htab);
-  return ip - in;
-}*/
 #endif
 
   #ifndef NCOMP
