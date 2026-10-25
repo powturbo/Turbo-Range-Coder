@@ -258,7 +258,7 @@ size_t lzpenc(unsigned char *__restrict in, size_t inlen, unsigned char *__restr
   #endif
 
   #ifndef NDECOMP
-#ifdef __AVX2__
+#if defined(__SSE2__) || defined(__ARM_NEON) || defined(__riscv_vector) || defined(__powerpc64__) || defined(__loongarch_sx)
 #include <immintrin.h>
 
 size_t lzpdec(unsigned char *in, size_t inlen, unsigned char *out, size_t outlen) {
@@ -270,14 +270,16 @@ size_t lzpdec(unsigned char *in, size_t inlen, unsigned char *out, size_t outlen
   if(hbits > LZPHBITS && !(htab = calloc(1<<hbits, 4))) return 0;
   out_ = out + outlen + lenmin - (32+4);
 
-  #ifdef __AVX2__
+    #ifdef __AVX2__
   const __m256i ev = _mm256_set1_epi8((char)LZPESC);
-  #endif
+    #elif defined(__SSE2__) || defined(__ARM_NEON) || defined(__riscv_vector) || defined(__powerpc64__) || defined(__loongarch_sx)
+  const __m128i ev = _mm_set1_epi8((char)LZPESC);
+    #endif
   cx = ctou32(op) = ctou32(ip); cx = BSWAP32(cx); op += 4; ip += 4;
 
-    #ifdef __AVX2__
   while(op < out_ && ip < in_) {
     uint32_t mask;
+      #ifdef __AVX2__
     __m256i v = _mm256_loadu_si256((const __m256i*)ip); mask = (uint32_t)_mm256_movemask_epi8(_mm256_cmpeq_epi8(v, ev)); _mm256_storeu_si256((__m256i *)op, v); 
     if(!mask) {
       for(unsigned char *ip_ = ip + 32; ip < ip_; ip += 4) {  
@@ -289,6 +291,19 @@ size_t lzpdec(unsigned char *in, size_t inlen, unsigned char *out, size_t outlen
         htab[LZPHASH((uint32_t)(cz >>  8), hbits)] = (unsigned)(op++ - out);
         cx = w;
       }
+      #elif defined(__SSE4_1__) || defined(__ARM_NEON) || defined(__riscv_vector) || defined(__powerpc64__) || defined(__loongarch_sx)
+    __m128i v = _mm_loadu_si128((const __m128i*)ip); mask = (uint32_t)_mm_movemask_epi8(_mm_cmpeq_epi8(v, ev)); _mm_storeu_si128((__m128i *)op, v); 
+    if(!mask) {
+      for(unsigned char *ip_ = ip + 16; ip < ip_; ip += 4) {  
+        uint32_t w  = BSWAP32(ctou32(ip));
+        uint64_t cz = ((uint64_t)cx << 32) | w;
+        htab[LZPHASH(cx,                   hbits)] = (unsigned)(op++ - out);
+        htab[LZPHASH((uint32_t)(cz >> 24), hbits)] = (unsigned)(op++ - out);
+        htab[LZPHASH((uint32_t)(cz >> 16), hbits)] = (unsigned)(op++ - out);
+        htab[LZPHASH((uint32_t)(cz >>  8), hbits)] = (unsigned)(op++ - out);
+        cx = w;
+      }
+      #endif
       continue;
     }
     unsigned        r = ctz32(mask);
@@ -300,12 +315,15 @@ size_t lzpdec(unsigned char *in, size_t inlen, unsigned char *out, size_t outlen
     if(*++ip) {
       c = 0; do { if(ip >= in_) return 0; c += *ip; } while(*ip++ == 254);
       unsigned char *op_ = op + c + lenmin - 1;
-      if(op - cp >= 32) { do { _mm256_storeu_si256((__m256i*)op, _mm256_loadu_si256((__m256i const*)cp)); cp += 32; op+=32; } while(op < op_); op = op_; } 
+        #ifdef __AVX2__
+      if(op - cp >= 32) { do { _mm256_storeu_si256((__m256i*)op, _mm256_loadu_si256((__m256i const*)cp)); cp += 32; op+=32; } while(op < op_); op = op_; }
+        #elif defined(__SSE4_1__) || defined(__ARM_NEON) || defined(__riscv_vector) || defined(__powerpc64__) || defined(__loongarch_sx)
+      if(op - cp >= 16) { do { _mm_storeu_si128((__m128i*)op, _mm_loadu_si128((__m128i const*)cp)); cp += 16; op+=16; } while(op < op_); op = op_; }
+        #endif   
       else for(; op < op_; *op++ = *cp++);   
       cx = BSWAP32(ctou32(op - 4));
     } else { ip++; *op++ = LZPESC; cx = BSWAP32(ctou32(op-4)); }
   }
-    #endif
   while(op < out + outlen) *op++ = *ip++;
   if(htab != _htab) free(htab);
   return (size_t)(ip - in);
