@@ -552,7 +552,7 @@ unsigned bench(unsigned char *in, unsigned n, unsigned char *out, unsigned char 
         #endif
       #endif
     case 81:         TM("81:utf8 preprocessor                    ",l=utf8enc(in,n,out, flag|BWT_NRATIO),n,l,CCPY:utf8dec(out,n,cpy)); break;
-    case 82:         TM("82:lzp                                  ",l=lzpenc( in,n,out,lzp_lenmin,0),                n,l,CCPY:lzpdec( out,l,cpy,n,lzp_lenmin,0)); break;
+    case 82:         TM("82:lzp                                  ",l=lzpenc( in,n,out,lzp_lenmin,0),                n,l,CCPY:lzpdec( out,l,cpy,n)); break;
     case 83:         TM("83:bitenc                               ",l=bitenc( in,n,out),                         n,l,     bitdec(out,n,cpy)); break;
       #ifndef _NDELTA
     case 84:l=n;     TM("84:delta8e24                            ",delta8e24( in,n,out),                        n,l,     delta8d24( out,n,cpy)); break;
@@ -1186,7 +1186,7 @@ int main(int argc, char* argv[]) {
         case 29: fastasdec(in,outlen,out); break;
         case 30: fastadec(in,0, out, outlen); break;
             #endif
-        case 31: lzpdec(in,0, out, outlen,lzp_lenmin, 0); break;
+        case 31: lzpdec(in,0, out, outlen); break;
 
         default: ERR(E_CODEC);
       }
