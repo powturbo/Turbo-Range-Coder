@@ -258,7 +258,7 @@ size_t lzpenc(unsigned char *__restrict in, size_t inlen, unsigned char *__restr
   #endif
 
   #ifndef NDECOMP
-#ifdef __AVX2__
+#if 0 //def __AVX2__
 #include <immintrin.h>
 
 size_t lzpdec(unsigned char *in, size_t inlen, unsigned char *out, size_t outlen) {
@@ -312,27 +312,31 @@ size_t lzpdec(unsigned char *in, size_t inlen, unsigned char *out, size_t outlen
 }
 #else
 size_t lzpdec(unsigned char *in, size_t inlen, unsigned char *out, size_t outlen) {
-  unsigned char *ip = in, *in_ = in+inlen, *op = out, *out_ = out+outlen;
-  unsigned      _htab[1<< LZPHBITS] = {0}, *htab = _htab, cx;
-
+  unsigned      _htab[1 << LZPHBITS] = {0}, *htab = _htab, cx, lenmin, hbits;
+  unsigned char *ip = in, *in_ = in + inlen, *op = out, *out_;
+  
   if((lenmin = *ip++) == 0xff) { memcpy(out, ip, outlen); return outlen+1; }
-  lenmin = (lenmin+1)*4; hbits = (lenmin >> 5)*2 + LZPHBITS;
+  hbits = ((lenmin >> 5)*2) + LZPHBITS;  lenmin = ((lenmin&0x1f) + 1)*4;                  
   if(hbits > LZPHBITS && !(htab = calloc(1<<hbits, 4))) return 0;
+  out_ = out + outlen + lenmin - (32+4);
                              
-  for(cx = ctou32(op) = ctou32(ip), cx = BSWAP32(cx), op += 4, ip += 4; op < out_;) {
+  cx = ctou32(op) = ctou32(ip); cx = BSWAP32(cx); op += 4; ip += 4;
+
+  while(op < out_ && ip < in_) {
     unsigned    c, h4 = LZPHASH(cx, hbits);
     unsigned char *cp = out + htab[h4],*op_;
              htab[h4] = op - out;
     if((c = *ip++) != LZPESC) { cx = cx << 8 | (*op++ = c); continue; }
     if(*ip) { 
       c = 0; do { if(ip >= in_) return 0; c += *ip; } while(*ip++ == 254);
-      op_ = op+c+lenmin-1;                                                  if(op_ > out_) return 0;  
+      op_ = op+c+lenmin-1;                                                  //if(op_ > out_) return 0;  
       for(;op < op_; *op++ = *cp++);
       cx = BSWAP32(ctou32(op-4));
-    } else { ip++; cx = cx << 8 | (*op++ = LZPESC);                         if(ip > in_) return 0; }
+    } else { ip++; cx = cx << 8 | (*op++ = LZPESC);                         /*if(ip > in_) return 0;*/ }
   }
+  while(op < out + outlen) *op++ = *ip++;
   if(htab != _htab) free(htab);
-  return ip - in;
+  return (size_t)(ip - in);
 }
 #endif
 
