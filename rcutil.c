@@ -114,7 +114,7 @@ void vfree(void *address) {
 #define emitch(_ch_,_op_)      { *_op_++ = _ch_; if(_ch_ == LZPESC) *_op_++ = 0; if(op >= out_) goto end; }
 
 #define C32                    123456791u
-#define LZPHASH(_x_, _hbits_)  (((_x_) * C32) >> (32-_hbits_)) //#define LZPHASH(_x_, _hbits_)  ((_x_ >> 15 ^ _x_ ^ _x_ >> 3) & ((int32_t)(1 << _hbits_) - 1))
+#define LZPHASH(_x_, _hbits_)  (((_x_) * C32) >> (32-_hbits_))
 
 #ifdef __AVX2__
 #define matchlen(ip, cp, cl) \
@@ -231,7 +231,7 @@ size_t lzpenc(unsigned char *__restrict in, size_t inlen, unsigned char *__restr
   hbits = CLAMP(hbits, LZPHBITS, 22); hbits &= ~1; /*16,18,20,22*/    
   if(hbits > LZPHBITS && !(htab = calloc(1<<hbits, 4))) { htab = _htab; hbits = LZPHBITS; }
   
-  lenmin = CLAMP(lenmin, LZPLENMIN, 32*4); lenmin &= ~3;              //printf("\nchbits=%d lmin=%d \n", hbits, lenmin);
+  lenmin = CLAMP(lenmin, LZPLENMIN, 32*4); lenmin &= ~3;              
   if(inlen <= lenmin+4) { op = out_; goto end; }
   *op++ = ((hbits-LZPHBITS)/2)<<5 | ((lenmin/4) - 1);
 
@@ -266,7 +266,7 @@ size_t lzpdec(unsigned char *in, size_t inlen, unsigned char *out, size_t outlen
   unsigned char *ip = in, *in_ = in + inlen, *op = out, *out_;
   
   if((lenmin = *ip++) == 0xff) { memcpy(out, ip, outlen); return outlen+1; }
-  hbits = ((lenmin >> 5)*2) + LZPHBITS;  lenmin = ((lenmin&0x1f) + 1)*4;                   //printf("\ndhbits=%d,%d\n", hbits, lenmin);fflush(stdout);
+  hbits = ((lenmin >> 5)*2) + LZPHBITS;  lenmin = ((lenmin&0x1f) + 1)*4;                  
   if(hbits > LZPHBITS && !(htab = calloc(1<<hbits, 4))) return 0;
   out_ = out + outlen + lenmin - (32+4);
 
