@@ -347,10 +347,10 @@ size_t lzpdec(unsigned char *in, size_t inlen, unsigned char *out, size_t outlen
     if((c = *ip++) != LZPESC) { cx = cx << 8 | (*op++ = c); continue; }
     if(*ip) { 
       c = 0; do { if(ip >= in_) return 0; c += *ip; } while(*ip++ == 254);
-      op_ = op+c+lenmin-1;                                                  //if(op_ > out_) return 0;  
+      op_ = op+c+lenmin-1;                                                  if(op_ > out_) return 0;  
       for(;op < op_; *op++ = *cp++);
       cx = BSWAP32(ctou32(op-4));
-    } else { ip++; cx = cx << 8 | (*op++ = LZPESC);                         /*if(ip > in_) return 0;*/ }
+    } else { ip++; cx = cx << 8 | (*op++ = LZPESC);                         if(ip > in_) return 0; }
   }
   while(op < out + outlen) *op++ = *ip++;
   if(htab != _htab) free(htab);
