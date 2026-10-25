@@ -47,8 +47,8 @@ typedef int32_t saidx_t;
 static int bwtx;
 static inline unsigned calcmod(size_t len) { return 1<<__bsr32(len); }
 #define SR 16
-#define LZPLEV 5
-#define REVLEV 3
+#define LZPHLIM 4
+#define LZPRLEV 3
 
 #ifdef LZPREVERSE   // use reverse lzp 
 #define LZPREV(a) 
@@ -68,7 +68,7 @@ static int sample(char *in, size_t n, int i, int j, char *out) {
   if(n < j) { memcpy(out, in, n); return n; }
   size_t segment_size = n / (size_t)i;
   for (int k = 0; k < i; k++) {
-    size_t start = (size_t)k * segment_size; // copy first j consecutive bytes of segment k
+    size_t start = (size_t)k * segment_size; //  copy first j consecutive bytes of segment k
     memcpy(out + (size_t)k * (size_t)j, in + start, (size_t)j);
   }
   return n;
@@ -79,43 +79,45 @@ static int xbwts = 0;
   #endif
 size_t rcbwtenc(unsigned char *in, size_t inlen, unsigned char *out, unsigned lev, unsigned threads, unsigned opts) {
   size_t        iplen  = inlen;
-  unsigned      lenmin = opts & 0x3ff, xbwt16 = (opts & BWT_BWT16)?0x80:0, verbose = opts & BWT_VERBOSE, nutf8 = (opts & BWT_UTF8_NO)?1:0,
-                lzprev = (lev>=LZPLEV && (opts & BWT_LZP_NREV)==0)?0x40:0, forcelzp = (opts & BWT_LZP_FORCE)?1:0; 
+  unsigned      lenmin = opts & 0xff, xbwt16 = (opts & BWT_BWT16)?0x40:0, verbose = opts & BWT_VERBOSE, nutf8 = (opts & BWT_UTF8_NO)?1:0,
+                lzprev = (lev>=LZPRLEV && !(opts & BWT_LZP_NREV))?0x20:0, forcelzp = (opts & BWT_LZP_FORCE)?1:0; 
   unsigned char *op    = out, *out_ = out+inlen, *bwt = vmalloc(inlen+1024), *ip = in;  // inlen + space for bwt indexes idxns  
-  if(!lev) lenmin = 0;                                                               if(!bwt) { op = out_; goto e; } //lenmin = histopt(in, inlen, lev>=LZPLEV); 
-  if(!threads) threads = 1;
+  if(!lev) lenmin = 0;                                                               if(!bwt) { op = out_; goto e; }
+  if(!threads) threads = 1;                                                         if(verbose) printf("LMIN0=%d ", lenmin); 
   if(lenmin == 1) { int nrev; 
     lenmin = sample(in, inlen, 16, 16*1024, out); 
-    lenmin = histopt(out, lenmin, lev>=8, &nrev); 
-    if(!(opts & BWT_LZP_NREV)) lzprev = nrev?0:0x40;
-  }                                                                                  if(verbose) { printf("\nlev=%u len(MB)=%zu nutf8=%d rev=%d threads=%d ", lev, inlen/(1<<20), nutf8, lzprev, threads); fflush(stdout); }
+    lenmin = histopt(out, lenmin, lev>=8, &nrev);                                   if(verbose) printf("LMIN=%d ", lenmin);
+    if(!(opts & BWT_LZP_NREV)) lzprev = nrev?0:0x20;
+  } 
+  unsigned flag = xbwt16 | lzprev;
+                                                                                     if(verbose) { printf("\nlev=%u len(MB)=%zu nutf8=%d rev=%d threads=%d ", lev, inlen/(1<<20), nutf8, lzprev, threads); fflush(stdout); }
   if(lenmin) {                                                                       if(verbose) { printf("lenmin=%u ", lenmin);fflush(stdout); }
     ip = bwt;
-    switch(lenmin) {
+    switch(lenmin) { // lenmin = 1..7 preprocess id
         #ifdef _FASTA
       case 2: iplen = fastaenc(in, inlen, ip, inlen);                                if(verbose) { printf("Fasta:%u->%u:%.2f%%", inlen, iplen, (double)iplen*100.0/inlen); fflush(stdout); } 
         break;
       case 3: iplen = fastaenc(in, inlen, out, inlen);                             
         if(lzprev) memrev(out, iplen);                                               if(verbose) { printf("Fasta:%u->%u:%.2f%%", inlen, iplen, (double)iplen*100.0/inlen); fflush(stdout); } 
-        iplen = lzpenc(out, iplen, ip+4, 12, lev >= LZPLEV?0:LZPHBITS);                 
+        iplen = lzpenc(out, iplen, ip+4, 12, 0 lev >= LZPHLIM?0:LZPHBITS);                 
         ctou32(ip) = iplen;                                                          if(verbose) { printf("->Lzp:%u=%.2f%% ", iplen, (double)iplen*100.0/inlen); fflush(stdout); }
         break;
         #endif
       default : if(!nutf8) { iplen = utf8enc(in, inlen, ip, opts);                   if(verbose) { if(iplen == inlen) printf("NoUTF8 "); else printf("UTF8:%zu->%zu ", inlen, iplen); fflush(stdout); } }
     }
     if(lenmin < LZPLENMIN || iplen != inlen && iplen != -1) {
-      lenmin = lenmin<LZPLENMIN?64-lenmin:63;                                        if(verbose && lenmin < 56) printf("No Lzp run %d %d ", lenmin, iplen); // lenmin = 63-LM for other preprocessing ids
+      flag |= (lenmin < LZPLENMIN?lenmin:0);                                         if(verbose && lenmin < 32) printf("No Lzp run %d %d ", lenmin, iplen);
     } else {
-      lenmin = (lenmin+3)/4; lenmin = lenmin >55?55:lenmin;                          if(verbose) { printf("Lzp: minlen=%d ", lenmin*4); fflush(stdout); } 
+                                                                                     if(verbose) { printf("Lzp: minlen=%d ", lenmin); fflush(stdout); } 
       ip     = bwt; if(lzprev) { memcpy(out, in, inlen); memrev(out, inlen); }
-      iplen  = lzpenc(lzprev?OUT:in, inlen, ip, lenmin*4, lev >= LZPLEV?0:LZPHBITS); if(verbose) { printf("Lzp=%zu->%zu=%.2f%% ", inlen, iplen, (double)iplen*100.0/inlen);fflush(stdout); }
+      iplen  = lzpenc(lzprev?OUT:in, inlen, ip, lenmin, lev >= LZPHLIM?0:LZPHBITS);   if(verbose) { printf("Lzp=%zu->%zu=%.2f%% ", inlen, iplen, (double)iplen*100.0/inlen);fflush(stdout); }
       if(iplen == inlen || iplen+(inlen>>7)+256 > inlen && !forcelzp) {              if(verbose) { printf("Not enough saving ");fflush(stdout); }  //Not enough saving
         ip = in; iplen = inlen; lenmin = 0;
-      } else { if(lzprev) memrev(ip, iplen); }
+      } else { flag |= 0x80; if(lzprev) memrev(ip, iplen); }
     }
   }
-  *op++ = xbwt16 | lzprev | lenmin;
-  if(lenmin) ctou32(op) = iplen, op += 4;
+  *op++ = flag;                                     
+  if(flag & 0x80) ctou32(op) = iplen, op += 4;
     #ifdef _BWTDIV
   *op++ = 0;
   saidx_t   *sa   = (saidx_t *)vmalloc((iplen+2)*sizeof(sa[0]));                     if(!sa) { op = out_; goto e; }
@@ -192,10 +194,10 @@ size_t rcbwtenc(unsigned char *in, size_t inlen, unsigned char *out, unsigned le
   #ifndef NDECOMP
 size_t rcbwtdec(unsigned char *in, size_t outlen, unsigned char *out, unsigned lev, unsigned threads) {
   unsigned char *ip    = in;
-  unsigned      lenmin = *ip++, xbwt16 = lenmin&0x80, lzprev = lenmin & 0x40;  lenmin &=0x3f;
+  unsigned      lenmin = *ip++, lzp = lenmin & 0x80, xbwt16 = lenmin & 0x40, lzprev = lenmin & 0x20;           //printf("\nL=%d,%x\n ", lenmin & 0xf, lzp);  fflush(stdout);                
   size_t        oplen  = outlen, rc;
   if(!threads) threads = 1;
-  if(lenmin) oplen = ctou32(ip),ip += 4;
+  if(lzp) oplen = ctou32(ip),ip += 4;
 
     #ifdef _BWTDIV
   ip++;
@@ -212,7 +214,7 @@ size_t rcbwtdec(unsigned char *in, size_t outlen, unsigned char *out, unsigned l
   memcpy(idxs, ip, idxsn*sizeof(idxs[0])); ip += idxsn*sizeof(idxs[0]);
     #endif
   unsigned char *_bwt = vmalloc(oplen+128), *op = out, *bwt = _bwt; if(!_bwt) die("malloc failed\n");
-              { if(lenmin) { bwt = out; op = _bwt; } }
+              { if(lenmin & 0x8f) { bwt = out; op = _bwt; } }
   switch(lev) {
     case  0: memcpy(bwt,         ip, oplen+bwtx); break;
     case  3: xbwt16?becdec16(    ip, oplen+bwtx, (uint16_t *)bwt):becdec8(ip, oplen+bwtx, bwt); break;
@@ -254,22 +256,20 @@ size_t rcbwtdec(unsigned char *in, size_t outlen, unsigned char *out, unsigned l
     #endif
   vfree(sa);
 
-  if(lenmin) {
-    switch(lenmin) {
-      case 63: utf8dec(op, outlen, out); break;
-        #ifdef _FASTA
-      case 62: fastadec(op, 0, out, outlen); break;
-      case 61: { 
-        unsigned l = ctou32(op); op += 4;                                    //if(lzprev) memrev(op, l);       
-                                                                             //printf("\nlzplen=%u ", l);  fflush(stdout);
-        lzpdec(op, 0, _bwt, l, 8, lev >= LZPLEV?0:LZPHBITS);                 //if(lzprev) memrev(_bwt, l);         //printf("fasta len=%u ", l); fflush(stdout);
-        fastadec(_bwt, 0, out, outlen); 
-      } break;
-        #endif
-      default:                                                                if(lzprev) memrev(op, oplen);
-        lzpdec(op, oplen, out, outlen, lenmin*4, lev >= LZPLEV?0:LZPHBITS);           
-                                                                              if(lzprev) memrev(out, outlen);
-    }
+  switch(lenmin & 0xf) {
+    case 1: utf8dec(op, outlen, out); break;
+      #ifdef _FASTA
+    case 2: fastadec(op, 0, out, outlen); break;
+    case 3: { 
+      unsigned l = ctou32(op); op += 4;                                    //if(lzprev) memrev(op, l);        //printf("\nlzplen=%u ", l);  fflush(stdout);
+      lzpdec(op, inlen, _bwt, l);                                              //if(lzprev) memrev(_bwt, l);         //printf("fasta len=%u ", l); fflush(stdout);
+      fastadec(_bwt, 0, out, outlen); 
+    } break;
+      #endif
+    default: if(lenmin & 0x80) {                                             if(lzprev) memrev(op, oplen);
+      lzpdec(op, oplen, out, outlen);           
+                                                                             if(lzprev) memrev(out, outlen);
+    } 
   }
   vfree(_bwt);
   return rc;
