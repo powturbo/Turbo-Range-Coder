@@ -110,7 +110,7 @@ size_t rcbwtenc(unsigned char *in, size_t inlen, unsigned char *out, unsigned le
     } else {
                                                                                      if(verbose) { printf("Lzp: minlen=%d ", lenmin); fflush(stdout); } 
       ip     = bwt; if(lzprev) { memcpy(out, in, inlen); memrev(out, inlen); }
-      iplen  = lzpenc(lzprev?OUT:in, inlen, ip, lenmin, lev>8:22:(lev >= LZPHLIM?0:LZPHBITS));   if(verbose) { printf("Lzp=%zu->%zu=%.2f%% ", inlen, iplen, (double)iplen*100.0/inlen);fflush(stdout); }
+      iplen  = lzpenc(lzprev?OUT:in, inlen, ip, lenmin, lev>8?22:(lev >= LZPHLIM?0:LZPHBITS));   if(verbose) { printf("Lzp=%zu->%zu=%.2f%% ", inlen, iplen, (double)iplen*100.0/inlen);fflush(stdout); }
       if(iplen == inlen || iplen+(inlen>>7)+256 > inlen && !forcelzp) {              if(verbose) { printf("Not enough saving ");fflush(stdout); }  //Not enough saving
         ip = in; iplen = inlen; lenmin = 0;
       } else { flag |= 0x80; if(lzprev) memrev(ip, iplen); }
