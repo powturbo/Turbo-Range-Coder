@@ -181,8 +181,8 @@ hist_t hists[] = {
 };
 #define NHISTS ((int)(sizeof(hists) / sizeof(hists[0])))
 
-static int histoptlen(unsigned hist[64], unsigned inlen) {
-  int      bestidx = 0;
+static int histoptlen(size_t hist[64], size_t inlen) {
+  unsigned bestidx = 0;
   double   mindist = 1e30;
   uint64_t totin = 0;
 
@@ -201,19 +201,19 @@ static int histoptlen(unsigned hist[64], unsigned inlen) {
   return bestidx; 
 }
 
-int histopt(const unsigned char *in, int inlen, int lev, int *lznprev) {
+int histopt(const unsigned char *in, size_t inlen, int lev, int *lznprev) {
   unsigned      htab[1<<LZPHBITS] = {0};  uint32_t cx;
   unsigned char *ip = in;
-  unsigned      histlen[LZPMAXBIN+1] = {0};
+  size_t        histlen[LZPMAXBIN+1] = {0};
 
   for(cx = ctou32(ip), cx = BSWAP32(cx), ip += 4; ip < in+inlen-64/8;) {
     unsigned      h4  = LZPHASH(cx, LZPHBITS);
     unsigned char *cp = in + htab[h4];
              htab[h4] = ip - in;
     if(ctou64(ip) != ctou64(cp)) { cx = cx<<8 | (*ip++); continue; }  
-    int cl = 64/8;
+    size_t cl = 64/8;
     matchlen(ip, cp, cl);
-    unsigned l = cl>=256?LZPMAXBIN:(cl+3)/4; histlen[l-1]++;
+    size_t l = cl>=256?LZPMAXBIN:(cl+3)/4; histlen[l-1]++;
     ip += cl;
     cx  = BSWAP32(ctou32(ip-4));  
   }                                                                             // printf("\n\"\", %u, { 8, 8}, {", inlen);  for(int i = 0; i < LZPMAXBIN; i++) printf("%u,", histlen[i]);  printf("},\n"); exit(0);
@@ -227,12 +227,12 @@ size_t lzpenc(unsigned char *__restrict in, size_t inlen, unsigned char *__restr
   unsigned      _htab[1<<LZPHBITS] = {0}, *htab = _htab, cx;
   unsigned char *ip = in, *op = out, *out_ = out + inlen, *oip = out_;             
   
-  hbits = hbits?hbits:(inlen >= (1<<24)?20:LZPHBITS);
+  hbits = hbits?hbits:(inlen >= (1u<<24)?20:LZPHBITS);
   hbits = CLAMP(hbits, LZPHBITS, 22); hbits &= ~1; /*16,18,20,22*/    
   if(hbits > LZPHBITS && !(htab = calloc(1<<hbits, 4))) { htab = _htab; hbits = LZPHBITS; }
   
   lenmin = CLAMP(lenmin, LZPLENMIN, 32*4); lenmin &= ~3;              
-  if(inlen <= lenmin+4) { op = out_; goto end; }
+  if(inlen <= lenmin+4) { op = out_; goto end; }                                   //printf("\nH=%d,L=%d %zu\n", hbits, lenmin, inlen); fflush(stdout);
   *op++ = ((hbits-LZPHBITS)/2)<<5 | ((lenmin/4) - 1);
 
   for(cx = ctou32(op) = ctou32(ip), cx = BSWAP32(cx), op += 4, ip += 4; ip < in+inlen-lenmin-(32+4);) { 
@@ -240,7 +240,7 @@ size_t lzpenc(unsigned char *__restrict in, size_t inlen, unsigned char *__restr
     unsigned char *cp = in + htab[h4];
              htab[h4] = ip - in;
     if(ctou64(ip) != ctou64(cp) || ctou64(ip+lenmin-8) != ctou64(cp+lenmin-8) ) { unsigned c = *ip++; cx = BSWAP32(ctou32(ip-4)); emitch(c, op); continue; }  
-    int cl = 64/8;
+    unsigned cl = 64/8;
     matchlen(ip, cp, cl);
     if(cl >= lenmin) {
       emitmatch(cl, op);
