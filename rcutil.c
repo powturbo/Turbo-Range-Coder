@@ -289,7 +289,7 @@ size_t lzpdec(unsigned char *in, size_t inlen, unsigned char *out, size_t outlen
         htab[LZPHASH((uint32_t)(cz >>  8), hbits)] = (unsigned)(op++ - out);
         cx = w;
       }
-      #elif defined(__SSE4_1__) || defined(__ARM_NEON) || defined(__riscv_vector) || defined(__powerpc64__) || defined(__loongarch_sx)
+      #elif defined(__SSE2__) || defined(__ARM_NEON) || defined(__riscv_vector) || defined(__powerpc64__) || defined(__loongarch_sx)
     __m128i v = _mm_loadu_si128((const __m128i*)ip); mask = (uint32_t)_mm_movemask_epi8(_mm_cmpeq_epi8(v, ev)); _mm_storeu_si128((__m128i *)op, v); 
     if(!mask) {
       for(unsigned char *ip_ = ip + 16; ip < ip_; ip += 4) {  
