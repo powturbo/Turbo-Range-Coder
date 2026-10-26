@@ -749,7 +749,7 @@ static int cmpsna(const void *a, const void *b) { return CMPSA(a, b, len_t, len)
 
 //---------------------------------------------- main : benchmark + file compression ----------------------------------------------
 int main(int argc, char* argv[]) {
-  size_t   bsize = 2047*Mb; //libsais max. //1792*Mb; 
+  size_t   bsize = 2047*Mb; //libsais max. //2047*Mb; 
   unsigned prdid = RC_PRD_S;
   int      xstdout=0, xstdin=0, decomp=0, codec=0, dobench=0, cmp=1, c, digit_optind=0, decs=0, divs=0, skiph=0, isize=4, dfmt=0, mdelta=0, kid=0, osize=1;
   char     *scmd = NULL, prids[8]="s", *keysep = NULL;                                                  //fdbg = fopen("test.dat", "wb"); if(!fdbg) perror("fopen failed");
