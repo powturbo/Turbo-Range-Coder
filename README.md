@@ -8,7 +8,6 @@
   >
 </p>
 
-======================================
 * **Fastest (Branchless) Range Coder / Arithmetic Coder**
   * 100% C (C++ headers). 
   * OS/Arch: Linux amd/intel, arm, RISC-V, PowerPC, s390x, Apple M1-M5 MacOs. Windows: MSYS2, Mingw, visual c++
