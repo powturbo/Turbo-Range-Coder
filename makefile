@@ -264,7 +264,7 @@ ifeq ($(TURBORLE), 1)
 RC_FLAGS+=-D_TURBORLE
 OBJS_CC_SSE += $(BUILD)/trlec.o $(BUILD)/trled.o
 endif
-$(OBJS_CC_SSE): COMP = $(CC) -DBUILD_VERSION="\"v$(BUILD_DATE)\"" 
+$(OBJS_CC_SSE): COMP = $(CC) -DBUILD_VERSION="\"v$(BUILD_DATE)\"" $(DEFS) 
 $(OBJS_CC_SSE): SIMD = $(_AVX2)
 $(BUILD)/bec_b.o:      bec_b.c 
 $(BUILD)/cpu.o:        cpu.c
@@ -330,6 +330,11 @@ LIB+=$(ALL_OBJS)
 ifneq ($(wildcard fasta.c),)
 RC_FLAGS+=-D_FASTA
 LIB+=$(BUILD)/fasta.o 
+endif
+
+ifneq ($(wildcard rcexe.c),)
+RC_FLAGS+=-D_EXE
+LIB+=$(BUILD)/rcexe.o 
 endif
 
 ifeq ($(EXT), 1)
