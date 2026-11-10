@@ -56,6 +56,9 @@ int histopt(const unsigned char *in, size_t inlen, int lev, int *lznprev);
 size_t lzpenc(unsigned char *__restrict in, size_t inlen, unsigned char *__restrict out, unsigned lenmin, unsigned h_bits);
 size_t lzpdec(unsigned char *__restrict in, size_t inlen, unsigned char *__restrict out, size_t outlen);
 
+int exeenc(const unsigned char *in, size_t inlen, unsigned char *out);
+int exedec(const unsigned char *in, unsigned char *out, size_t outlen);
+
 unsigned char *rcqlfc(unsigned char *__restrict in, size_t n, unsigned char *__restrict out, unsigned char *__restrict r2c);
 
 size_t utf8enc(unsigned char *__restrict in, size_t inlen,  unsigned char *__restrict out, unsigned flag);
