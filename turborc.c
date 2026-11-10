@@ -1122,11 +1122,12 @@ int main(int argc, char* argv[]) {
             #endif
           #endif
         case 31: clen = lzpenc(in,inlen,out,lzp_lenmin, 0); break;
+        //case 32: { dic_t de; dic_init(&de, 3, 8); clen = pfpenc(in, inlen, out, inlen*4/3, &de); printf("clen=%zu ", clen); } break;
         default: ERR(E_CODEC);
       }
       hdb_t hdb = { 0 }; hdb.inlen = inlen; hdb.bsize = bsize; hdb.clen = clen; if ((rc = hdbwr(&hdb, fo)) < 0) ERR(-rc); folen += rc;
       if(fwrite(out, 1, clen, fo) != clen) ERR(E_FWR);
-          folen += clen;
+      folen += clen;
     }                                                                           if(verbose>2) printf("compress: '%s'  %lld->%lld\n", finame, filen, folen);
   } else
         #endif
@@ -1187,6 +1188,7 @@ int main(int argc, char* argv[]) {
         case 30: fastadec(in,0, out, outlen); break;
             #endif
         case 31: lzpdec(in,0, out, outlen); break;
+        //case 32: { dic_t dd; dic_init(&dd, 3, 6); pfpdec(in, inlen, out, outlen, &dd); } break;
 
         default: ERR(E_CODEC);
       }
