@@ -88,7 +88,7 @@ enum { E_FOP=1, E_FCR, E_FRD, E_FWR, E_MEM, E_CORR, E_MAG, E_CODEC, E_FSAME };
 static char *errs[] = {"", "open error", "create error", "read error", "write error", "malloc failed", "file corrupted", "no TurboRc file", "no codec", "input and output files are same" };
 
 // program parameters
-static unsigned xnibble, lzp_lenmin = 1, lev=9, threads=1, xtpbyte=-1;
+static unsigned xnibble, lzp_lenmin = 1, lev=9, threads=1, xtpbyte=-1, cmp = 2;
 unsigned prm1=5, prm2=6;
 
 //       0       1        2         3         4         5         6         7,       8        9        10      11      12      13      14       15
@@ -285,14 +285,28 @@ size_t befgen(FILE *fi, unsigned char *out, size_t outsize, int fmt, int isize, 
   return op - out;
 }
 
-int memcheck(unsigned char *in, unsigned n, unsigned char *cpy) {
+/*int memcheck(unsigned char *in, unsigned n, unsigned char *cpy) {
   int i;
   for(i = 0; i < n; i++)
     if(in[i] != cpy[i]) {
-      printf("ERROR in[%d]=%x dec[%d]=%x\n", i, in[i], i, cpy[i]);  getchar();
+      printf("ERROR in[%d]=%x dec[%d]=%x\n", i, in[i], i, cpy[i]);  //getchar();
       //in[n]=0;
       //fprintf(stderr, "%s\n\n", in); 
       //fprintf(stderr, "%s", in+i); exit(0);
+      return i+1;
+    }
+  return 0;
+}*/
+
+int memcheck(unsigned char *in, unsigned n, unsigned char *cpy, int cmp, char *finame) {
+  int i;
+  if(cmp <= 1)
+    return 0;
+  for(i = 0; i < n; i++)
+    if(in[i] != cpy[i]) {
+      if(cmp > 3) abort(); // crash (AFL) fuzzing
+      printf("\nERROR at %d:%x, %x file=%s\n", i, in[i], cpy[i], finame);
+      if(cmp > 2) exit(EXIT_FAILURE);
       return i+1;
     }
   return 0;
@@ -460,8 +474,8 @@ unsigned bench(unsigned char *in, unsigned n, unsigned char *out, unsigned char 
     case 19:if(z==2){TM("19:bec-16    Bit EC                     ",l=becenc16(   (uint16_t *)in,n,out),   n,l, CCPY:becdec16(   out,n,(uint16_t *)cpy  )); }
             else    {TM("19:bec       Bit EC                     ",l=becenc8(    in,n,out),   n,l, CCPY:becdec8(    out,n,cpy  )); } break;
           #ifdef _BWT
-    case 20:if(n > BLKBWTMAX*Mb) printf("blocksize too big for bwt.max=%d\n", BLKBWTMAX);
-            else {   TM("20:bwt                                  ",l=rcbwtenc(in,n,out,lev,threads,flag), n,l, CCPY:rcbwtdec(  out,n,cpy,lev, threads));} break;
+    case 20:                                                                                            /*if(n > BLKBWTMAX*Mb) printf("blocksize too big for bwt.max=%d\n", BLKBWTMAX);else*/ 
+            {   TM("20:bwt                                  ",l=rcbwtenc(in,n,out,lev,threads,flag), n,l, CCPY:rcbwtdec(  out,n,cpy,lev, threads));} break;
       #endif
     case 26:if(z==1){TM("26:rcg-8     gamma                      ",l=rcgenc8(    in,n,out,r), n,l, CCPY:rcgdec8(    out,n,cpy,r));   break;}
             if(z==2){TM("26:rcg-16    gamma                      ",l=rcgenc16(   in,n,out,r), n,l, CCPY:rcgdec16(   out,n,cpy,r));   break;}
@@ -583,7 +597,7 @@ unsigned bench(unsigned char *in, unsigned n, unsigned char *out, unsigned char 
       #endif
     default: return 0;
   }
-  if(l && !xcheck) { memcheck(in,n,cpy); }
+  if(l && !xcheck) { memcheck(in,n,cpy,cmp,""); }
   return l;
 }
 #endif //NO_BENCH
@@ -778,13 +792,14 @@ int main(int argc, char* argv[]) {
       { "help",     0, 0, 'h'},
       { 0,          0, 0, 0}
     };
-    if((c = getopt_long(argc, argv, "0:1:2:3:4:5:6:7:8:9:a:b:B:cde:fF:g:G:hH:I:J:k:K:l:m:noO:p:P:q:Q:r:RS:t:T:UV:v:x:XY:zZ:", long_options, &optind)) == -1) break;
+    if((c = getopt_long(argc, argv, "0:1:2:3:4:5:6:7:8:9:a:b:B:cC:de:fF:g:G:hH:I:J:k:K:l:m:noO:p:P:q:Q:r:RS:t:T:UV:v:x:XY:zZ:", long_options, &optind)) == -1) break;
     switch(c) {
       case 0:
         printf("Option %s", long_options[optind].name);
         if(optarg) printf(" with arg %s", optarg);  printf ("\n");
         break;
       case 'b': bsize = argtol(optarg, MB); if(bsize < 16) bsize = 16;/*else if(bsize > BLKMAX*Mb) bsize = BLKMAX*Mb;*/ break;
+      case 'C': cmp = atoi(optarg); break;
       case 'e': scmd = optarg; dobench++; break;
       case 't': threads = atoi(optarg); threads = CLAMP(threads, 1, 64); break;
       case 'f': utf8_o8++; break;
@@ -910,7 +925,7 @@ int main(int argc, char* argv[]) {
     uint64_t clen = 0;
     for(fno = optind; fno < argc; fno++) {
       uint64_t filen;
-      int      n;
+      int64_t   n;
       char     *finame = argv[fno];
       FILE     *fi = fopen(finame, "rb");                                           if(!fi ) { perror(finame); continue; }   if(verbose>2) printf("'%s'\n", finame);
 
@@ -922,7 +937,7 @@ int main(int argc, char* argv[]) {
 
       in  = vmalloc(b*4/3);    if(!in)  ERR(E_MEM);
       out = vmalloc(b*4/3);    if(!out) ERR(E_MEM);
-      cpy = vmalloc(b*4/3);    if(!cpy) ERR(E_MEM);
+      /*if(cmp)*/ { cpy = vmalloc(b*4/3);    if(!cpy) ERR(E_MEM); }
       unsigned tid = 0;
       if((n = strlen(finame)) >= 3) {                     // auto method determination based on filename
         unsigned char *p = finame+n-3;
