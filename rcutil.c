@@ -235,7 +235,7 @@ size_t lzpenc(unsigned char *__restrict in, size_t inlen, unsigned char *__restr
   if(hbits > LZPHBITS && !(htab = calloc(1u<<hbits, 4))) { htab = _htab; hbits = LZPHBITS; }
   
   lenmin = CLAMP(lenmin, LZPLENMIN, 32*4); lenmin &= ~3;              
-  if(inlen <= lenmin+4) { op = out_; goto end; }                                   printf("\nH=%d,L=%d %zu\n", hbits, lenmin, inlen); fflush(stdout);
+  if(inlen <= lenmin+4) { op = out_; goto end; }                                   //printf("\nH=%d,L=%d %zu\n", hbits, lenmin, inlen); fflush(stdout);
   *op++ = ((hbits-LZPHBITS)/2)<<5 | ((lenmin/4) - 1);
 
   for(cx = ctou32(op) = ctou32(ip), cx = BSWAP32(cx), op += 4, ip += 4; ip < (in+inlen)-lenmin-(32+4);) { 
@@ -255,7 +255,7 @@ size_t lzpenc(unsigned char *__restrict in, size_t inlen, unsigned char *__restr
   }
   while(ip < in+inlen) { unsigned c = *ip++; emitch(c, op); }                                   
   end: if(htab != _htab) free(htab);
-  if(op >= out_) { *out = 0xff; memcpy(out+1, in, inlen); return inlen+1; }                        printf("clen=%zu ", (size_t)(op-out));
+  if(op >= out_) { *out = 0xff; memcpy(out+1, in, inlen); return inlen+1; }                        //printf("clen=%zu ", (size_t)(op-out));
   return op - out;
 }
   #endif
