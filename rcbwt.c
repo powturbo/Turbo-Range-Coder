@@ -78,12 +78,22 @@ static inline unsigned calcmod(size_t len) { return len < 2?2:(1u<<__bsr32(len))
 
   #ifndef NCOMP
 #define FS (1<<20)
-static size_t sample(unsigned char *in, size_t n, unsigned i, unsigned j, unsigned char *out) {
+static size_t sample0(unsigned char *in, size_t n, unsigned i, unsigned j, unsigned char *out) {
   if(n < (size_t)i*j) { memcpy(out, in, n); return n; }
   size_t segment_size = n / (size_t)i;
   for(unsigned k = 0; k < i; k++)                                   // copy first j consecutive bytes of segment k
     memcpy(out + (size_t)k * j, in + (size_t)k * segment_size, j);
   return (size_t)i*j;
+}
+
+static int sample(char *in, size_t n, unsigned i, unsigned j, char *out) {
+  if(n < j) { memcpy(out, in, n); return n; }
+  size_t segment_size = n / (size_t)i;
+  for (unsigned k = 0; k < i; k++) {
+    size_t start = (size_t)k * segment_size; //  copy first j consecutive bytes of segment k
+    memcpy(out + (size_t)k * (size_t)j, in + start, (size_t)j);
+  }
+  return n;
 }
 
 static size_t bwtenc(unsigned char *in, size_t inlen, unsigned char *out, unsigned char *pidx, int xbwt16, int threads, int v) {
@@ -160,7 +170,7 @@ size_t rcbwtenc(unsigned char *in, size_t inlen, unsigned char *out, unsigned le
   unsigned char *op    = out, *out_ = out+inlen, *_bwt = vmalloc(inlen+(1<<20)), *bwt = _bwt, *ip = in;
   if(lev > 9) lev = 9;
   if(!lev) lenmin = 0;                                                               if(!bwt) { op = out_; goto e; }
-  if(!threads) threads = 1;
+  if(!threads) threads = 1;                                                          //{ int nrev;  histopt(in, inlen, lev>=8, &nrev);}
   if(lenmin == 1) { int nrev;                                                        
     size_t slen = sample(in, inlen, 16, 16*1024, out);     
     lenmin = histopt(out, slen, lev>=8, &nrev);
