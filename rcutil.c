@@ -110,7 +110,7 @@ void vfree(void *address) {
 
 //--------------------------- lzp preprocessor (lenmin >= 8) ------------------------------------------------------------------------
 #define LZPESC                 255
-#define emitmatch(_l_,_op_)    { unsigned _l = _l_-lenmin+1; *_op_++ = LZPESC; while(_l >= 254) { *_op_++ = 254; _l -= 254; if(op >= out_) goto end; } *_op_++ = _l; }
+#define emitmatch(_l_,_op_)    { size_t _l = _l_-lenmin+1; *_op_++ = LZPESC; while(_l >= 254) { *_op_++ = 254; _l -= 254; if(op >= out_) goto end; } *_op_++ = _l; }
 #define emitch(_ch_,_op_)      { *_op_++ = _ch_; if(_ch_ == LZPESC) *_op_++ = 0; if(op >= out_) goto end; }
 
 #define C32                    123456791u
@@ -118,7 +118,7 @@ void vfree(void *address) {
 
 #ifdef __AVX2__
 #define matchlen(ip, cp, cl) \
-  unsigned char *ip_ = in + inlen - 32;\
+  unsigned char *ip_ = in + (inlen - 32);\
   for(;;) {\
     if(ip+cl >= ip_) break;\
     __m256i a = _mm256_loadu_si256((const __m256i *)(ip+cl)), b = _mm256_loadu_si256((const __m256i *)(cp+cl));\
@@ -129,7 +129,7 @@ void vfree(void *address) {
   for(; ip+cl < in+inlen && ip[cl] == cp[cl]; cl++);      
 #elif 0 //defined(__SSE2__)
 #define matchlen(ip, cp, cl) \
-    unsigned char *ip_ = in + inlen - 16;\
+    unsigned char *ip_ = in + (inlen - 16);\
     for(;;) {\
       if(ip+cl >= ip_) break;\
       unsigned m = ~((unsigned)_mm_movemask_epi8(_mm_cmpeq_epi8(_mm_loadu_si128((__m128i *)(ip+cl   )), _mm_loadu_si128((__m128i *)(cp+cl   )))));\
@@ -138,7 +138,7 @@ void vfree(void *address) {
     }
 #else
 #define matchlen(ip, cp, cl) \
-  unsigned char *ip_ = in + inlen - 32;\
+  unsigned char *ip_ = in + (inlen - 32);\
   for(;;) {\
     if(ip+cl > ip_) break;\
     if(ctou64(ip+cl) != ctou64(cp+cl)) break; cl += 8;\
@@ -232,16 +232,16 @@ size_t lzpenc(unsigned char *__restrict in, size_t inlen, unsigned char *__restr
   
   hbits = hbits?hbits:(inlen >= (1u<<24)?20:LZPHBITS);
   hbits = CLAMP(hbits, LZPHBITS, 22); hbits &= ~1; /*16,18,20,22*/    
-  if(hbits > LZPHBITS && !(htab = calloc(1<<hbits, 4))) { htab = _htab; hbits = LZPHBITS; }
+  if(hbits > LZPHBITS && !(htab = calloc(1u<<hbits, 4))) { htab = _htab; hbits = LZPHBITS; }
   
   lenmin = CLAMP(lenmin, LZPLENMIN, 32*4); lenmin &= ~3;              
-  if(inlen <= lenmin+4) { op = out_; goto end; }                                   //printf("\nH=%d,L=%d %zu\n", hbits, lenmin, inlen); fflush(stdout);
+  if(inlen <= lenmin+4) { op = out_; goto end; }                                   printf("\nH=%d,L=%d %zu\n", hbits, lenmin, inlen); fflush(stdout);
   *op++ = ((hbits-LZPHBITS)/2)<<5 | ((lenmin/4) - 1);
 
-  for(cx = ctou32(op) = ctou32(ip), cx = BSWAP32(cx), op += 4, ip += 4; ip < in+inlen-lenmin-(32+4);) { 
+  for(cx = ctou32(op) = ctou32(ip), cx = BSWAP32(cx), op += 4, ip += 4; ip < (in+inlen)-lenmin-(32+4);) { 
     unsigned       h4 = LZPHASH(cx, hbits);
     unsigned char *cp = in + htab[h4];
-             htab[h4] = ip - in;
+             htab[h4] = (unsigned)(ip - in);
     if(ctou64(ip) != ctou64(cp) || ctou64(ip+lenmin-8) != ctou64(cp+lenmin-8) ) { unsigned c = *ip++; cx = BSWAP32(ctou32(ip-4)); emitch(c, op); continue; }  
     size_t cl = 64/8;
     matchlen(ip, cp, cl);
@@ -255,7 +255,7 @@ size_t lzpenc(unsigned char *__restrict in, size_t inlen, unsigned char *__restr
   }
   while(ip < in+inlen) { unsigned c = *ip++; emitch(c, op); }                                   
   end: if(htab != _htab) free(htab);
-  if(op >= out_) { *out = 0xff; memcpy(out+1, in, inlen); return inlen+1; }
+  if(op >= out_) { *out = 0xff; memcpy(out+1, in, inlen); return inlen+1; }                        printf("clen=%zu ", (size_t)(op-out));
   return op - out;
 }
   #endif
@@ -345,13 +345,13 @@ size_t lzpdec(unsigned char *in, size_t inlen, unsigned char *out, size_t outlen
     unsigned    c, h4 = LZPHASH(cx, hbits);
     unsigned char *cp = out + htab[h4],*op_;
              htab[h4] = op - out;
-    if((c = *ip++) != LZPESC) { cx = cx << 8 | (*op++ = c); continue; }
+    if((c = *ip++) != LZPESC) { *op++ = c; cx = BSWAP32(ctou32(op-4)); continue; }
     if(*ip) { 
-      c = 0; do { if(ip >= in_) return 0; c += *ip; } while(*ip++ == 254);
+      size_t c = 0; do { if(ip >= in_) return 0; c += *ip; } while(*ip++ == 254);
       op_ = op+c+lenmin-1;                                                  if(op_ > out_) return 0;  
       for(;op < op_; *op++ = *cp++);
       cx = BSWAP32(ctou32(op-4));
-    } else { ip++; cx = cx << 8 | (*op++ = LZPESC);                         if(ip > in_) return 0; }
+    } else { ip++; *op++ = LZPESC; cx = BSWAP32(ctou32(op-4));                         if(ip > in_) return 0; }
   }
   while(op < out + outlen) *op++ = *ip++;
   if(htab != _htab) free(htab);
