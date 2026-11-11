@@ -690,7 +690,7 @@ static void usage(char *pgm) {
 }
 
 //----------------------------- File compression header serialization ----------------------------------------------------
-#if 1
+#if 0
 typedef struct hd {                                                                                     // main header
   unsigned bsize;
   unsigned short magic;
