@@ -210,7 +210,7 @@
 |205242368|100.00%   |$\color{green}{\textbf{17405.22}}$|$\color{green}{\textbf{18395.84}}$|10 |$\color{green}{\textbf{memcpy}}$|access_log_Jul95|
 
 #### - [CLP log/json compression](https://docs.yscope.com/clp/main/user-docs/resources-datasets) using [TurboBench](https://github.com/powturbo/TurboBench) (BwtSatan = TurboRC -e20)
-|C Size|ratio%|C MB/s|D MB/s|Rank|Name|2026/10|
+|C Size|ratio%|C MB/s|D MB/s|Rank|Name|2026/11|
 |--------:|-----:|--------:|--------:|----------------|----------------|------------------------------|
 |211743448|  2.02%   |$\color{green}{\textbf{104.96}}$|$\color{green}{\textbf{166.49}}$|3🥇|$\color{green}{\textbf{bwtsatan 9}}$|cockroach.node1.log|
 |211767848|  2.02%   |$\color{green}{\textbf{121.27}}$|$\color{green}{\textbf{177.21}}$|1👑|$\color{green}{\textbf{bwtsatan 8}}$|cockroach.node1.log|
@@ -219,7 +219,7 @@
 |267697716|  2.55%   |31.65|67.63|5🥉|bsc 0e2|cockroach.node1.log|
 |434411520|  4.13%   |150.00|||CLP 3|cockroach.node1.log|
 
-|C Size|ratio%|C MB/s|D MB/s|Rank|Name|2026/10|
+|C Size|ratio%|C MB/s|D MB/s|Rank|Name|2026/11|
 |--------:|-----:|--------:|--------:|----------------|----------------|------------------------------|
 |21712748|  0.25%   |$\color{green}{\textbf{406.85}}$|$\color{green}{\textbf{772.12}}$|1👑|$\color{green}{\textbf{bwtsatan 8}}$|elasticsearch.log|
 |21735160|  0.25%   |358.65|723.76|3🥇|bwtsatan 9|elasticsearch.log|
@@ -230,7 +230,7 @@
 |49049600|  0.57%   |11.39 |      |   |CLP 19|elasticsearch.log|
 
 
-|C Size|ratio%|C MB/s|D MB/s|Rank|Name|2026/10|
+|C Size|ratio%|C MB/s|D MB/s|Rank|Name|2026/11|
 |--------:|-----:|--------:|--------:|----------------|----------------|------------------------------|
 |30123628|  1.40%   |$\color{green}{\textbf{112.97}}$|$\color{green}{\textbf{200.93}}$|3🥇|$\color{green}{\textbf{bwtsatan 9}}$|hive-24hr.tar|
 |30144608|  1.40%   |$\color{green}{\textbf{141.85}}$|$\color{green}{\textbf{213.82}}$|2🏆|$\color{green}{\textbf{bwtsatan 8}}$|hive-24hr.tar|
@@ -240,7 +240,7 @@
 |36435456|  1.69%   |37.34|83.41|7 |bsc 0e2|hive-24hr.tar|
 |42084147|  1.95%   |83.48|133.05|4🥈|kanzi 7|hive-24hr.tar|
 
-|C Size|ratio%|C MB/s|D MB/s|Rank|Name|2026/10|
+|C Size|ratio%|C MB/s|D MB/s|Rank|Name|2026/11|
 |--------:|-----:|--------:|--------:|----------------|----------------|------------------------------|
 |274554794|  0.39%   |$\color{green}{\textbf{284.81}}$|$\color{green}{\textbf{542.61}}$|3🥇|$\color{green}{\textbf{bwtsatan 9}}$|mongodb.tar|
 |274610450|  0.39%   |$\color{green}{\textbf{320.66}}$|$\color{green}{\textbf{576.68}}$|1👑|$\color{green}{\textbf{bwtsatan 8}}$|mongodb.tar|
@@ -250,7 +250,7 @@
 |485053806|  0.70%   |78.30|215.54|5🥉|bsc 0|mongodb.tar|
 |502791034|  0.72%   |10.50|||CLP 19|mongodb.tar|
 
-|C Size|ratio%|C MB/s|D MB/s|Rank|Name|2026/10|
+|C Size|ratio%|C MB/s|D MB/s|Rank|Name|2026/11|
 |--------:|-----:|--------:|--------:|----------------|----------------|------------------------------|
 |656628102|  1.85%   |$\color{green}{\textbf{151.99}}$|$\color{green}{\textbf{222.84}}$|1👑|$\color{green}{\textbf{bwtsatan 8x -b2047m}}$|openstack-24hr.tar|
 |656669010|  1.85%   |132.35|210.32|3🥇|bwtsatan 9x -b2047m|openstack-24hr.tar|
@@ -260,7 +260,7 @@
 |843991040|  2.38%   |10.00|||CLP 19|openstack-24hr.tar|
 |972564480|  2.75%   |264.00| | |CLP 3|openstack-24hr.tar|
 
-|C Size|ratio%|C MB/s|D MB/s|Rank|Name|2026/10|
+|C Size|ratio%|C MB/s|D MB/s|Rank|Name|2026/11|
 |--------:|-----:|--------:|--------:|----------------|----------------|------------------------------|
 |4549138|  1.10%   |$\color{green}{\textbf{182.79}}$|$\color{green}{\textbf{274.52}}$|2🏆|$\color{green}{\textbf{bwtsatan 8}}$|postgresql.tar|
 |4552798|  1.11%   |153.00|252.35|4🥈|bwtsatan 9|postgresql.tar|
