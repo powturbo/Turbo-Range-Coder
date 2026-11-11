@@ -88,7 +88,7 @@ static size_t sample(unsigned char *in, size_t n, unsigned i, unsigned j, unsign
 
 static size_t bwtenc(unsigned char *in, size_t inlen, unsigned char *out, unsigned char *pidx, int xbwt16, int threads, int v) {
   unsigned char *op = out, *ip, *in_ = in+inlen, *oq = pidx;                                                 
-  unsigned iplen, bsize = inlen > BWT_BSIZE?BWT_BSIZE:inlen;             
+  size_t iplen, bsize = inlen > BWT_BSIZE?BWT_BSIZE:inlen;             
     #ifndef _LIBSAIS16
   xbwt16 = 0;
     #endif
@@ -171,7 +171,7 @@ size_t rcbwtenc(unsigned char *in, size_t inlen, unsigned char *out, unsigned le
   if(lenmin) {                                                                       if(v) { printf("lenmin=%u ", lenmin); fflush(stdout); }
     switch(lenmin) {
         #ifdef _FASTA
-      case 2: iplen = fastaenc(in, inlen, bwt, inlen); ip = bwt; pre = PRE_FASTA;   if(v) { printf("Fasta:%zu->%zu ", inlen, iplen); fflush(stdout); } 
+      case 2: iplen = fastaenc(in, inlen, bwt, inlen); ip = bwt; pre = PRE_FASTA;    if(v) { printf("Fasta:%zu->%zu ", inlen, iplen); fflush(stdout); } 
         break;
       case 3: { size_t flen = fastaenc(in, inlen, out, inlen);                      // [4 bytes fasta length][lzp data]
         iplen = lzpenc(out, flen, bwt+4, 12, LZPHBITS) + 4;
@@ -179,7 +179,7 @@ size_t rcbwtenc(unsigned char *in, size_t inlen, unsigned char *out, unsigned le
       } break;
         #endif
         #ifdef _EXE
-      case 4: if(exeenc(in, inlen, bwt)) { ip = bwt; pre = PRE_EXE; }               if(v) { printf("exe:%d ", pre == PRE_EXE); fflush(stdout); }
+      case 4: if(exeenc(in, inlen, bwt)) { ip = bwt; pre = PRE_EXE; }                if(v) { printf("exe:%d ", pre == PRE_EXE); fflush(stdout); }
         break;
         #endif  
       default: 
@@ -199,7 +199,7 @@ size_t rcbwtenc(unsigned char *in, size_t inlen, unsigned char *out, unsigned le
   flag |= pre;
 
   *op++ = flag;                                    
-  if(flag & 0x8f) { ctou32(op) = iplen; op += 4; }                                   // store bwt length whenever preprocessing changed the data
+  if(flag & 0x8f) { /*ctou32(op) = iplen;*/ memcpy(op, &iplen, 5); op += 5; }                                   // store bwt length whenever preprocessing changed the data
   op += bwtenc(ip, iplen, bwt, op, xbwt16, threads, v);
   switch(lev) {
     case  0: memcpy(op, bwt, iplen); op += iplen; vfree(_bwt); return op - out;
@@ -221,7 +221,7 @@ size_t rcbwtenc(unsigned char *in, size_t inlen, unsigned char *out, unsigned le
   #ifndef NDECOMP
 static size_t bwtdec(unsigned char *in, size_t inlen, unsigned char *out, size_t outlen, unsigned char *pidx, int xbwt16, int threads, int v) {
   unsigned char *ip = in, *iq = pidx, *op = out, *out_ = out+outlen;                                                 
-  unsigned oplen, bsize = outlen > BWT_BSIZE?BWT_BSIZE:outlen;
+  size_t oplen, bsize = outlen > BWT_BSIZE?BWT_BSIZE:outlen;
     #ifndef _LIBSAIS16
   xbwt16 = 0;
     #endif
@@ -234,7 +234,7 @@ static size_t bwtdec(unsigned char *in, size_t inlen, unsigned char *out, size_t
     obwt_unbwt_biPSIv2(ip, op, sa, oplen, bwtidx);
       #else
     unsigned idxs[256];
-    unsigned oplen_ = xbwt16?oplen/2:oplen, mod = calcmod(oplen_/SR), idxsn = *iq++ + 1;
+    size_t oplen_ = xbwt16?oplen/2:oplen, mod = calcmod(oplen_/SR), idxsn = *iq++ + 1;
     memcpy(idxs, iq, idxsn*sizeof(idxs[0])); iq += idxsn*sizeof(idxs[0]);
         #ifdef _LIBSAIS16
     if(xbwt16) { 
@@ -273,7 +273,7 @@ size_t rcbwtdec(unsigned char *in, size_t outlen, unsigned char *out, unsigned l
 
   if(lev > 9) lev = 9;
   if(!threads) threads = 1;
-  if(flag & 0x8f) { oplen = ctou32(ip); ip += 4; }                              // preprocessed length (lzp/utf8/...)
+  if(flag & 0x8f) { oplen = 0; memcpy(&oplen, ip, 5); ip += 5; }                              // preprocessed length (lzp/utf8/...)
   unsigned char *_bwt = vmalloc(oplen+128), *op = out, *bwt = _bwt; if(!_bwt) die("malloc failed\n");
   if(flag & 0x8f) { op = _bwt; bwt = out; }                                     // unbwt -> _bwt, then postprocess -> out
 
@@ -302,8 +302,8 @@ size_t rcbwtdec(unsigned char *in, size_t outlen, unsigned char *out, unsigned l
       #ifdef _FASTA
     case PRE_FASTA: fastadec(op, oplen, out, outlen); break;
     case PRE_FLZP: { 
-      unsigned l = ctou32(op); unsigned char *t = vmalloc(l+128); if(!t) die("malloc failed\n");
-      lzpdec(op+4, oplen-4, t, l);
+      size_t l = 0; memcpy(&l, op, 5); unsigned char *t = vmalloc(l+128); if(!t) die("malloc failed\n");
+      lzpdec(op+5, oplen-5, t, l);
       fastadec(t, l, out, outlen); 
       vfree(t);
     } break;
