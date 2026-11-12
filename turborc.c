@@ -76,22 +76,19 @@ void *bsc_malloc(size_t s) { return malloc(s); }
 #define NO_RC
 #endif
 
-unsigned bwtx, lzp_force, utf8_o8, utf8_sort, utf8_no, lzp_nrev, bwt_nratio;
-int BGFREQMIN = 50, BGMAX = 250, utf8_itmax;
-#define BWT_OPTIONS(z) (bwt_flag(z==2, verbose) | bwt_lzp(lzp_force, lzp_nrev, lzp_lenmin) | bwt_utf8(utf8_o8, utf8_no, utf8_sort, utf8_itmax, bwt_nratio)) 
+int BGFREQMIN = 50, BGMAX = 250;
 
-#define MAGIC     0x154 // 12 bits
-#define BLKMAX    3584
-#define BLKBWTMAX 2047
+unsigned verbose, lzp_force, utf8_o8, utf8_sort, utf8_no, lzp_nrev, bwt_nratio, utf8_itmax, lzp_lenmin = 1;
+#define BWT_OPTIONS(usize) (bwt_flag(usize==2, verbose) | bwt_lzp(lzp_force, lzp_nrev, lzp_lenmin) | bwt_utf8(utf8_o8, utf8_no, utf8_sort, utf8_itmax, bwt_nratio)) 
 
-#define CODEC_MAX 32  // max. id for file compression
-int verbose;
+#define MAGIC     0x155 // 12 bits
+#define CODEC_MAX 32    // max. id for file compression
+
 enum { E_FOP=1, E_FCR, E_FRD, E_FWR, E_MEM, E_CORR, E_MAG, E_CODEC, E_FSAME };
-
 static char *errs[] = {"", "open error", "create error", "read error", "write error", "malloc failed", "file corrupted", "no TurboRc file", "no codec", "input and output files are same" };
 
 // program parameters
-static unsigned xnibble, lzp_lenmin = 1, lev=9, threads=1, xtpbyte=-1, cmp = 2;
+static unsigned xnibble, lev=9, threads=1, xtpbyte=-1, cmp = 2;
 unsigned prm1=5, prm2=6;
 
 //       0       1        2         3         4         5         6         7,       8        9        10      11      12      13      14       15
@@ -288,19 +285,6 @@ size_t befgen(FILE *fi, unsigned char *out, size_t outsize, int fmt, int isize, 
   return op - out;
 }
 
-/*int memcheck(unsigned char *in, unsigned n, unsigned char *cpy) {
-  int i;
-  for(i = 0; i < n; i++)
-    if(in[i] != cpy[i]) {
-      printf("ERROR in[%d]=%x dec[%d]=%x\n", i, in[i], i, cpy[i]);  //getchar();
-      //in[n]=0;
-      //fprintf(stderr, "%s\n\n", in); 
-      //fprintf(stderr, "%s", in+i); exit(0);
-      return i+1;
-    }
-  return 0;
-}*/
-
 int memcheck(unsigned char *in, size_t n, unsigned char *cpy, int cmp, char *finame) {
   size_t i;
   if(cmp <= 1)
@@ -439,7 +423,7 @@ unsigned quantb;
 #define OSIZE(_n_) ((_n_)*4/3)
 #define ID_RC16 8
 unsigned bench(unsigned char *in, size_t n, unsigned char *out, unsigned char *cpy, int id, int r, int z) { //rcxor(in, n); return n;
-  unsigned i, m, flag = BWT_OPTIONS(z), on = OSIZE(n);
+  unsigned i, m, on = OSIZE(n);
   size_t l = 0;
   cdf_t cdf[0x100+1];
   if(xnibble)                                                                                                       // use only low nibble
@@ -478,7 +462,7 @@ unsigned bench(unsigned char *in, size_t n, unsigned char *out, unsigned char *c
             else    {TM("19:bec       Bit EC                     ",l=becenc8(    in,n,out),   n,l, CCPY:becdec8(    out,n,cpy  )); } break;
           #ifdef _BWT
     case 20:                                                                                            /*if(n > BLKBWTMAX*Mb) printf("blocksize too big for bwt.max=%d\n", BLKBWTMAX);else*/ 
-            {   TM("20:bwt                                  ",l=rcbwtenc(in,n,out,lev,threads,flag), n,l, CCPY:rcbwtdec(  out,n,cpy,lev, threads));} break;
+            {   TM("20:bwt                                  ",l=rcbwtenc(in,n,out,lev,threads,BWT_OPTIONS(z)), n,l, CCPY:rcbwtdec(  out,n,cpy,lev, threads));} break;
       #endif
     case 26:if(z==1){TM("26:rcg-8     gamma                      ",l=rcgenc8(    in,n,out,r), n,l, CCPY:rcgdec8(    out,n,cpy,r));   break;}
             if(z==2){TM("26:rcg-16    gamma                      ",l=rcgenc16(   in,n,out,r), n,l, CCPY:rcgdec16(   out,n,cpy,r));   break;}
@@ -568,7 +552,7 @@ unsigned bench(unsigned char *in, size_t n, unsigned char *out, unsigned char *c
                      TM("80:bwt libsais                          ",l=libsais_bwt(in,out,sa,n,0,0), n,n, libsais_unbwt(out,cpy,sa,n,0,l)); free(sa);} break;
         #endif
       #endif
-    case 81:         TM("81:utf8 preprocessor                    ",l=utf8enc(in,n,out, flag|BWT_NRATIO),n,l,CCPY:utf8dec(out,n,cpy)); break;
+    case 81:         TM("81:utf8 preprocessor                    ",l=utf8enc(in,n,out, BWT_OPTIONS(z)|BWT_NRATIO),n,l,CCPY:utf8dec(out,n,cpy)); break;
     case 82:         TM("82:lzp                                  ",l=lzpenc( in,n,out,lzp_lenmin,0),                n,l,CCPY:lzpdec( out,l,cpy,n)); break;
     case 83:         TM("83:bitenc                               ",l=bitenc( in,n,out),                         n,l,     bitdec(out,n,cpy)); break;
       #ifndef _NDELTA
@@ -592,7 +576,7 @@ unsigned bench(unsigned char *in, size_t n, unsigned char *out, unsigned char *c
       #ifdef _FASTA
     case 88:         TM("84 fasta simple                         ",l=fastasenc(in,n,out),                       n,l,fastasdec(out,l,cpy)); break;
     case 89:         TM("85 fasta                                ",l=fastaenc(in,n,out, n),                     n,l,fastadec( out,l,cpy,n)); break;
-//    case 86:         TM("86 fasta0                               ",l=fastaenc0(in,n,out),                       n,l,CCPY:fastadec0(out,l,cpy)); break;
+//  case 86:         TM("86 fasta0                               ",l=fastaenc0(in,n,out),                       n,l,CCPY:fastadec0(out,l,cpy)); break;
       #endif
 
       #ifdef _EXT
@@ -607,9 +591,9 @@ unsigned bench(unsigned char *in, size_t n, unsigned char *out, unsigned char *c
 
 static void usage(char *pgm) {
     #ifdef _BWTSATAN
-  fprintf(stderr, "\nBwtSatan 23.05 Copyright (c) 2018-2026 Powturbo %s\n", __DATE__);
+  fprintf(stderr, "\nBwtSatan 26.11 Copyright (c) 2018-2026 Powturbo %s\n", __DATE__);
     #else
-  fprintf(stderr, "\nTurboRC 23.05 Copyright (c) 2018-2026 Powturbo %s\n", __DATE__);
+  fprintf(stderr, "\nTurboRC 26.11 Copyright (c) 2018-2026 Powturbo %s\n", __DATE__);
         #endif
   fprintf(stderr, "\n Usage: %s <options> <infile1> <outfile>\n", pgm);
   fprintf(stderr, "<options>\n");
@@ -690,17 +674,17 @@ static void usage(char *pgm) {
 }
 
 //----------------------------- File compression header serialization ----------------------------------------------------
-typedef struct hd {                                                                                     // main header
+typedef struct hd {                                                                // main header
   size_t         bsize;
   unsigned short magic;
   unsigned char  codec, lev, prm1, prm2, prdid;
 } hd_t;
-typedef struct chdb {                                                                       // block header
+typedef struct chdb {                                                              // block header
   size_t bsize, inlen, clen;
 } hdb_t;
 
-int hdwr(hd_t *hd, FILE *fo) {                                 //printf("hdw[codec=%d ", hd->codec);                                            //if(powof2(hd->bsize)) b = ctz32(hd->bsize)<<1; // file header  else
-  unsigned hdlen = 0, u32 = hd->codec << 12 | hd->magic;       //bsize:12 + codec:8 + magic:12 = 32 bits
+int hdwr(hd_t *hd, FILE *fo) {                                                     //printf("hdw[codec=%d ", hd->codec);                                    
+  unsigned hdlen = 0, u32 = hd->codec << 12 | hd->magic;                           //bsize:12 + codec:8 + magic:12 = 32 bits
   u32 |= (unsigned)hd->bsize << 20;                            
   if(fwrite(&u32, 1, 4, fo) != 4) return -E_FWR;               hdlen  = 4; // blocksize
   unsigned short u16 = ((hd->bsize >= (1<<12)?0x8000:0)) | hd->lev<<10 | hd->prm2<<6 | hd->prm1<<2 | (hd->prdid-1); // bsize:1 + reserved:1 + lev:4 + prm2:4 + prm1:4 + prdid:2 = 16 bits
@@ -708,16 +692,16 @@ int hdwr(hd_t *hd, FILE *fo) {                                 //printf("hdw[cod
   if(hd->bsize >= (1<<12)) {
     unsigned bsize = hd->bsize >> 12;
     if(fwrite(&bsize, 1, 4, fo) != 4) return -E_FWR;           hdlen += 4;
-  }                                                            //printf("bsize=%zu hdlen=%d] ", hd->bsize, hdlen);
+  }                                                                                //printf("bsize=%zu hdlen=%d] ", hd->bsize, hdlen);
   return hdlen;
 }
 
-int hdrd(hd_t *hd, FILE *fi) {                                                                                                  // file header
+int hdrd(hd_t *hd, FILE *fi) {                                                     // file header
   unsigned hdlen, u32;
   unsigned short u16;
   if(fread(&u32, 1, 4, fi) != 4) return -E_FRD;                  hdlen  = 4;
   if((u32&0xfffu) != MAGIC) return -E_MAG;
-  if((hd->codec  = (char)(u32>>12)) > CODEC_MAX)     return -E_CODEC;                   //printf("hdr[codec=%d ", hd->codec);   
+  if((hd->codec  = (char)(u32>>12)) > CODEC_MAX)     return -E_CODEC;              //printf("hdr[codec=%d ", hd->codec);   
   if(fread(&u16, 1, 2, fi) != 2)                     return -E_FRD;
   hd->prdid =  (u16&3)+1;                                        hdlen += 2;
   hd->prm1  =  (u16>> 2)&0xf;
@@ -730,40 +714,40 @@ int hdrd(hd_t *hd, FILE *fi) {                                                  
     unsigned bsize;
     if(fread(&bsize, 1, 4, fi) != 4) return -E_FRD;             hdlen += 4;
     hd->bsize = (uint64_t)bsize << 12 | hd->bsize;
-  }                                                                         //printf("bsize=%zu hdlen=%d] ", hd->bsize, hdlen);fflush(stdout);
+  }                                                                                //printf("bsize=%zu hdlen=%d] ", hd->bsize, hdlen);fflush(stdout);
   return hdlen;
 }                        
 
-int hdbwr(hdb_t *hdb, FILE *fo) {                                            //printf("hdbw[clen:%zu ", hdb->clen);                                                   // block header
-  unsigned h = hdb->clen >= (1<<30),                                           // block length > 1GB?
+int hdbwr(hdb_t *hdb, FILE *fo) {                                                  //printf("hdbw[clen:%zu ", hdb->clen);      // block header
+  unsigned h = hdb->clen >= (1<<30),                                               // block length > 1GB?
          u32 = (hdb->clen << 2) | ((h?1:0) << 1) |  ((hdb->inlen < hdb->bsize)?1:0), // compressed length lsb = 30bits + large block size? + last block?
        hdlen;                                                             
   if(fwrite(&u32, 1, 4, fo) != 4) return -E_FWR;        hdlen  = 4;           
-  if(h) {                                                                     //printf("L");  
-    unsigned char u8 = hdb->clen >> 30;                                       // compressed length msb
+  if(h) {                                                                          //printf("L");  
+    unsigned char u8 = hdb->clen >> 30;                                            // compressed length msb
     if(fwrite(&u8, 1, 1, fo) != 1) return -E_FWR;       hdlen += 1;
   }
-  if(hdb->inlen < hdb->bsize) {                                                                    // length of last block < block size
+  if(hdb->inlen < hdb->bsize) {                                                    // length of last block < block size
     if(fwrite(&hdb->inlen, 1, 5, fo) != 5) return -E_FWR;
-                                                       hdlen +=5;                 //printf("llen=%zu ", hdb->inlen);  
-  }                                                                               //printf("bdlen=%d]", hdlen);  
+                                                       hdlen +=5;                  //printf("llen=%zu ", hdb->inlen);  
+  }                                                                                //printf("bdlen=%d]", hdlen);  
   return hdlen;
 }
 
-int hdbrd(hdb_t *hdb, FILE *fi) {                                                 //printf("hdbr[");
+int hdbrd(hdb_t *hdb, FILE *fi) {                                                  //printf("hdbr[");
   unsigned hdlen, u32;
   hdb->inlen = hdb->bsize;
   if(fread(&u32, 1, 4, fi) != 4) return -E_FRD;          hdlen  = 4;
   hdb->clen = u32>>2;                                                           
-  if(u32&2) {                                                                     //printf("L");  
+  if(u32&2) {                                                                      //printf("L");  
     unsigned char u8;
     if(fread(&u8, 1, 1, fi) != 1) return -E_FRD;        hdlen += 1;
     hdb->clen = (uint64_t)u8 << 30 | hdb->clen;
-  }                                                                               //printf("clen=%zu ", hdb->clen);
+  }                                                                                //printf("clen=%zu ", hdb->clen);
   if(u32&1) {    
-    hdb->inlen = 0;                                                               // last block
-    if(fread(&hdb->inlen, 1, 5, fi) != 5) return -E_FRD; hdlen  += 5;             //printf("llen=%zu ", hdb->inlen);  
-  }                                                                               //printf("bdlen=%d]", hdlen);                                                                    
+    hdb->inlen = 0;                                                                // last block
+    if(fread(&hdb->inlen, 1, 5, fi) != 5) return -E_FRD; hdlen  += 5;              //printf("llen=%zu ", hdb->inlen);  
+  }                                                                                //printf("bdlen=%d]", hdlen);                                                                    
   return hdlen;
 }
 
@@ -773,10 +757,10 @@ static int cmpsna(const void *a, const void *b) { return CMPSA(a, b, len_t, len)
 
 //---------------------------------------------- main : benchmark + file compression ----------------------------------------------
 int main(int argc, char* argv[]) {
-  size_t   bsize = 2047*Mb; //libsais max. //2047*Mb; 
+  size_t   bsize = 2047*Mb;
   unsigned prdid = RC_PRD_S;
   int      xstdout=0, xstdin=0, decomp=0, codec=0, dobench=0, cmp=1, c, digit_optind=0, decs=0, divs=0, skiph=0, isize=4, dfmt=0, mdelta=0, kid=0, osize=1;
-  char     *scmd = NULL, prids[8]="s", *keysep = NULL;                                                  //fdbg = fopen("test.dat", "wb"); if(!fdbg) perror("fopen failed");
+  char     *scmd = NULL, prids[8]="s", *keysep = NULL;                             //fdbg = fopen("test.dat", "wb"); if(!fdbg) perror("fopen failed");
   #define CODECNUM 256
   len_t    lens[CODECNUM] = { 0 };
   for(c = 0; c < CODECNUM; c++)
@@ -808,7 +792,7 @@ int main(int argc, char* argv[]) {
         printf("Option %s", long_options[optind].name);
         if(optarg) printf(" with arg %s", optarg);  printf ("\n");
         break;
-      case 'b': bsize = argtol(optarg, MB); if(bsize < 16) bsize = 16;/*else if(bsize > BLKMAX*Mb) bsize = BLKMAX*Mb;*/ break;
+      case 'b': bsize = argtol(optarg, MB); if(bsize < 16) bsize = 16; break;
       case 'C': cmp = atoi(optarg); break;
       case 'e': scmd = optarg; dobench++; break;
       case 't': threads = atoi(optarg); threads = CLAMP(threads, 1, 64); break;
@@ -869,7 +853,7 @@ int main(int argc, char* argv[]) {
 
       case 'R': lzp_nrev++;    break;
       case 'U': utf8_no++;    break;
-      case 'X': bwtx++;    break;
+      //case 'X': bwtx++;    break;
       case 'S': utf8_sort = atoi(optarg); break;
       case 'z': lzp_force++; break;
       case 'r': { char *p = optarg; if(*p >= '0' && *p <= '9') { prm1 = p[0]-'0'; prm2 = p[1]-'0'; } if(prm1>9) prm1=9; if(prm2>9) prm2=9; } break;
@@ -924,7 +908,7 @@ int main(int argc, char* argv[]) {
   if(dobench) { //---------------------------------- Benchmark -----------------------------------------------------
     char _scmd[33];
     int  fno=0, nblk = 0, nid = 0, cminid=0, cminl = (unsigned)-1;
-    sprintf(_scmd, "1-%d", ID_MEMCPY);                                                      if(verbose>2) printf("BENCHMARK ARGS: fno=%d,optind=%d,argc=%d\n", fno, optind, argc);
+    sprintf(_scmd, "1-%d", ID_MEMCPY);                                              if(verbose>2) printf("BENCHMARK ARGS: fno=%d,optind=%d,argc=%d\n", fno, optind, argc);
     printf("      size   ratio       E MB/s    D MB/s  function prdid=");
     switch(prdid) {
       case 1: printf("'s(5)'\n"); break;
@@ -940,10 +924,10 @@ int main(int argc, char* argv[]) {
       FILE     *fi = fopen(finame, "rb");                                           if(!fi ) { perror(finame); continue; }   if(verbose>2) printf("'%s'\n", finame);
 
       fseeko(fi, 0, SEEK_END);
-      filen = ftello(fi);                                                                                                           if(!filen) { printf("file empty: '%s'\n",finame); continue; }
+      filen = ftello(fi);                                                           if(!filen) { printf("file empty: '%s'\n",finame); continue; }
       fseeko(fi, 0, SEEK_SET);
 
-      size_t b = (filen < bsize && !dfmt)?filen:bsize, tpbyte=0;                            if(verbose>2) printf("bsize=%zu b=%zu ", bsize, b);
+      size_t b = (filen < bsize && !dfmt)?filen:bsize, tpbyte=0;                    if(verbose>2) printf("bsize=%zu b=%zu ", bsize, b);
 
       in  = vmalloc(b*4/3);    if(!in)  ERR(E_MEM);
       out = vmalloc(b*4/3);    if(!out) ERR(E_MEM);
@@ -965,7 +949,7 @@ int main(int argc, char* argv[]) {
       }
       for(;;) {
         n = dfmt?befgen(fi, in, b, dfmt, isize, osize, kid, skiph, decs, divs, keysep, mdelta):fread(in, 1, b, fi);
-        if(n <= 0) break;                                                       if(verbose>2) printf("read=%u t=%zd\n", n, tpbyte);     //memcpy(cpy, in, n); fpstat(in, n/2, cpy, -2, NULL);
+        if(n <= 0) break;                                                            if(verbose>2) printf("read=%u t=%zd\n", n, tpbyte);     //memcpy(cpy, in, n); fpstat(in, n/2, cpy, -2, NULL);
         switch(tpbyte) {
             #ifdef _TP
           case 22:  tpenc(in, n, out, 2); memcpy(in, out, n); break;
