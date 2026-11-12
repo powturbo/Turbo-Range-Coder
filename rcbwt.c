@@ -93,7 +93,7 @@ static int sample(char *in, size_t n, unsigned i, unsigned j, char *out) {
     size_t start = (size_t)k * segment_size; //  copy first j consecutive bytes of segment k
     memcpy(out + (size_t)k * (size_t)j, in + start, (size_t)j);
   }
-  return n;
+  return (size_t)i*j;
 }
 
 static size_t bwtenc(unsigned char *in, size_t inlen, unsigned char *out, unsigned char *pidx, int xbwt16, int threads, int v) {
@@ -168,12 +168,12 @@ size_t rcbwtenc(unsigned char *in, size_t inlen, unsigned char *out, unsigned le
   unsigned      lenmin = opts & 0xff, xbwt16 = (opts & BWT_BWT16)?0x40:0, v = opts & BWT_VERBOSE, nutf8 = (opts & BWT_UTF8_NO)?1:0,
                 lzprev = (lev>=LZPRLEV && !(opts & BWT_LZP_NREV))?0x20:0, forcelzp = (opts & BWT_LZP_FORCE)?1:0, pre = PRE_NONE; 
   unsigned char *op    = out, *out_ = out+inlen, *_bwt = vmalloc(inlen+(1<<20)), *bwt = _bwt, *ip = in;
-  if(lev > 9) lev = 9;
+  if(lev > 9) lev = 9;                                                               //if(v) { printf("lenmin=%u lev=%d ", lenmin, lev);}
   if(!lev) lenmin = 0;                                                               if(!bwt) { op = out_; goto e; }
   if(!threads) threads = 1;                                                          //{ int nrev;  histopt(in, inlen, lev>=8, &nrev);}
   if(lenmin == 1) { int nrev;                                                        
     size_t slen = sample(in, inlen, 16, 16*1024, out);     
-    lenmin = histopt(out, slen, lev>=8, &nrev);
+    lenmin = histopt(out, slen, lev>=8, &nrev);                                      //if(v) { printf("slen=%zu->lenmin=%u ", slen, lenmin);}
     if(!(opts & BWT_LZP_NREV)) lzprev = nrev?0:0x20;
   } 
   unsigned flag = xbwt16 | lzprev;
@@ -209,7 +209,7 @@ size_t rcbwtenc(unsigned char *in, size_t inlen, unsigned char *out, unsigned le
   flag |= pre;
 
   *op++ = flag;                                    
-  if(flag & 0x8f) { /*ctou32(op) = iplen;*/ memcpy(op, &iplen, 5); op += 5; }                                   // store bwt length whenever preprocessing changed the data
+  if(flag & 0x8f) { memcpy(op, &iplen, 5); op += 5; }                                // store bwt length whenever preprocessing changed the data
   op += bwtenc(ip, iplen, bwt, op, xbwt16, threads, v);
   switch(lev) {
     case  0: memcpy(op, bwt, iplen); op += iplen; vfree(_bwt); return op - out;
