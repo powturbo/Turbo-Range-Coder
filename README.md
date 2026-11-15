@@ -196,12 +196,12 @@
 |359610522| 36.0|**21.51**|**42.38**|**bzip2**|
 
 #### - Text log file:[NASA access log](https://ita.ee.lbl.gov/html/contrib/NASA-HTTP.html) 200MB  
-|C Size|ratio%|C MB/s|D MB/s|Rank|Name|2026/10|
+|C Size|ratio%|C MB/s|D MB/s|Rank|Name|2026/11|
 |--------:|-----:|--------:|--------:|----------------|----------------|------------------------------|
-|8243238|  4.02%   |$\color{green}{\textbf{79.92}}$|$\color{green}{\textbf{108.49}}$|2🏆|$\color{green}{\textbf{TurboRC 20e8}}$|access_log_Jul95|
-|8244226|  4.02%   |68.75|100.40|4🥈|TurboRC 20e9|access_log_Jul95|
-|8425042|  4.10%   |$\color{green}{\textbf{126.27}}$|$\color{green}{\textbf{246.64}}$|1👑|$\color{green}{\textbf{TurboRC 20e7t4}}$|access_log_Jul95|
-|8425042|  4.10%   |97.02|179.81|3🥇|TurboRC 20e7|access_log_Jul95|
+|8233779|  4.01%   |$\color{green}{\textbf{73.63}}$|$\color{green}{\textbf{105.63}}$|4🥈|$\color{green}{\textbf{bwtsatan 9}}$|access_log_Jul95|
+|8245695|  4.02%   |$\color{green}{\textbf{90.31}}$|$\color{green}{\textbf{133.25}}$|3🥇|$\color{green}{\textbf{bwtsatan 8}}$|access_log_Jul95|
+|8443179|  4.11%   |$\color{green}{\textbf{113.99}}$|$\color{green}{\textbf{216.71}}$|2🏆|$\color{green}{\textbf{bwtsatan 7}}$|access_log_Jul95|
+|8587111|  4.18%   |$\color{green}{\textbf{127.32}}$|$\color{green}{\textbf{292.50}}$|1👑|$\color{green}{\textbf{bwtsatan 4}}$|access_log_Jul95|
 |9138568|  4.45%   |5.26|5.46|8 |bzip3 512|access_log_Jul95|
 |9449012|  4.60%   |20.29|41.56|5🥉|bsc 0e2|access_log_Jul95|
 |9717048|  4.73%   |12.01|7.45|9 |bcm|access_log_Jul95|
@@ -212,49 +212,51 @@
 #### - [CLP log/json compression](https://docs.yscope.com/clp/main/user-docs/resources-datasets) using [TurboBench](https://github.com/powturbo/TurboBench) (BwtSatan = TurboRC -e20)
 |C Size|ratio%|C MB/s|D MB/s|Rank|Name|2026/11|
 |--------:|-----:|--------:|--------:|----------------|----------------|------------------------------|
-|211743448|  2.02%   |$\color{green}{\textbf{104.96}}$|$\color{green}{\textbf{166.49}}$|3🥇|$\color{green}{\textbf{bwtsatan 9}}$|cockroach.node1.log|
-|211767848|  2.02%   |$\color{green}{\textbf{121.27}}$|$\color{green}{\textbf{177.21}}$|1👑|$\color{green}{\textbf{bwtsatan 8}}$|cockroach.node1.log|
-|214648516|  2.04%   |23.25|25.24|4🥈|bzip3 512|cockroach.node1.log|
-|216660396|  2.06%   |$\color{green}{\textbf{156.26}}$|$\color{green}{\textbf{318.82}}$|2🏆|$\color{green}{\textbf{bwtsatan 7}}$|cockroach.node1.log|
-|267697716|  2.55%   |31.65|67.63|5🥉|bsc 0e2|cockroach.node1.log|
+|208314082|  1.98%   |$\color{green}{\textbf{84.62}}$|$\color{green}{\textbf{143.50}}$|5🥉|$\color{green}{\textbf{bwtsatan 9}}$|cockroach.node1.log|
+|208474918|  1.98%   |$\color{green}{\textbf{100.62}}$|$\color{green}{\textbf{186.27}}$|3🥇|$\color{green}{\textbf{bwtsatan 8}}$|cockroach.node1.log|
+|212769578|  2.03%   |$\color{green}{\textbf{138.97}}$|$\color{green}{\textbf{371.51}}$|1👑|$\color{green}{\textbf{bwtsatan 7}}$|cockroach.node1.log|
+|214648516|  2.04%   |23.25|25.24|4|bzip3 512|cockroach.node1.log|
+|216163394|  2.06%   |$\color{green}{\textbf{148.62}}$|$\color{green}{\textbf{467.33}}$|2🏆|$\color{green}{\textbf{bwtsatan 4}}$|cockroach.node1.log|
+|267697716|  2.55%   |31.65|67.63|5🥈|bsc 0e2|cockroach.node1.log|
 |434411520|  4.13%   |150.00|||CLP 3|cockroach.node1.log|
 
 |C Size|ratio%|C MB/s|D MB/s|Rank|Name|2026/11|
 |--------:|-----:|--------:|--------:|----------------|----------------|------------------------------|
-|21712748|  0.25%   |$\color{green}{\textbf{406.85}}$|$\color{green}{\textbf{772.12}}$|1👑|$\color{green}{\textbf{bwtsatan 8}}$|elasticsearch.log|
-|21735160|  0.25%   |358.65|723.76|3🥇|bwtsatan 9|elasticsearch.log|
-|22436580|  0.26%   |$\color{green}{\textbf{532.46}}$|$\color{green}{\textbf{1647.23}}$|2🏆|$\color{green}{\textbf{bwtsatan 7}}$|elasticsearch.log|
+|21715608|  0.25%   |$\color{green}{\textbf{375.34}}$|$\color{green}{\textbf{1016.96}}$|2🏆|$\color{green}{\textbf{bwtsatan 8}}$|elasticsearch.log|
+|21725324|  0.25%   |331.32|766.17|4🥈|bwtsatan 9|elasticsearch.log|
+|22460544|  0.26%   |$\color{green}{\textbf{484.11}}$|$\color{green}{\textbf{2151.12}}$|3🥇|$\color{green}{\textbf{bwtsatan 7}}$|elasticsearch.log|
+|22923748|  0.27%   |$\color{green}{\textbf{492.19}}$|$\color{green}{\textbf{2479.52}}$|1👑|$\color{green}{\textbf{bwtsatan 4}}$|elasticsearch.log|
 |30904714|  0.36%   |46.85|62.38|6 |bzip3 512|elasticsearch.log|
 |31122700|  0.36%   |100.81|236.72|5🥉|bsc 0e2|elasticsearch.log|
-|39703881|  0.46%   |267.47|521.73|4🥈|kanzi 7|elasticsearch.log|
+|39703881|  0.46%   |267.47|521.73|4|kanzi 7|elasticsearch.log|
 |49049600|  0.57%   |11.39 |      |   |CLP 19|elasticsearch.log|
-
 
 |C Size|ratio%|C MB/s|D MB/s|Rank|Name|2026/11|
 |--------:|-----:|--------:|--------:|----------------|----------------|------------------------------|
-|30123628|  1.40%   |$\color{green}{\textbf{112.97}}$|$\color{green}{\textbf{200.93}}$|3🥇|$\color{green}{\textbf{bwtsatan 9}}$|hive-24hr.tar|
-|30144608|  1.40%   |$\color{green}{\textbf{141.85}}$|$\color{green}{\textbf{213.82}}$|2🏆|$\color{green}{\textbf{bwtsatan 8}}$|hive-24hr.tar|
-|30857040|  1.43%   |$\color{green}{\textbf{178.61}}$|$\color{green}{\textbf{389.29}}$|1👑|$\color{green}{\textbf{bwtsatan 7}}$|hive-24hr.tar|
+|29312289|  1.36%   |$\color{green}{\textbf{165.96}}$|$\color{green}{\textbf{316.51}}$|1👑|$\color{green}{\textbf{bwtsatan 8}}$|hive-24hr.tar|
+|29319197|  1.36%   |141.81|246.25|3🥇|bwtsatan 9|hive-24hr.tar|
+|29860429|  1.38%   |139.44|$\color{green}{\textbf{506.46}}$|4🥈|$\color{green}{\textbf{bwtsatan 7}}$|hive-24hr.tar|
+|30316817|  1.41%   |$\color{green}{\textbf{209.83}}$|$\color{green}{\textbf{653.84}}$|2🏆|$\color{green}{\textbf{bwtsatan 4}}$|hive-24hr.tar|
 |31426560|  1.46%   |19.78|     |  |CLP 19|hive-24hr.tar|
 |33146648|  1.54%   |18.41|19.97|8 |bzip3 512|hive-24hr.tar|
 |36435456|  1.69%   |37.34|83.41|7 |bsc 0e2|hive-24hr.tar|
-|42084147|  1.95%   |83.48|133.05|4🥈|kanzi 7|hive-24hr.tar|
+|42084147|  1.95%   |83.48|133.05|4|kanzi 7|hive-24hr.tar|
 
 |C Size|ratio%|C MB/s|D MB/s|Rank|Name|2026/11|
 |--------:|-----:|--------:|--------:|----------------|----------------|------------------------------|
-|274554794|  0.39%   |$\color{green}{\textbf{284.81}}$|$\color{green}{\textbf{542.61}}$|3🥇|$\color{green}{\textbf{bwtsatan 9}}$|mongodb.tar|
-|274610450|  0.39%   |$\color{green}{\textbf{320.66}}$|$\color{green}{\textbf{576.68}}$|1👑|$\color{green}{\textbf{bwtsatan 8}}$|mongodb.tar|
+|262869595|  0.38%   |$\color{green}{\textbf{313.09}}$|$\color{green}{\textbf{774.44}}$|1👑|$\color{green}{\textbf{bwtsatan 8}}$|mongodb.tar|
+|263127199|  0.38%   |275.63|594.47|3🥇|bwtsatan 9|mongodb.tar|
+|268173023|  0.39%   |$\color{green}{\textbf{384.18}}$|$\color{green}{\textbf{1468.02}}$|2🏆|$\color{green}{\textbf{bwtsatan 7}}$|mongodb.tar|
 |275093394|  0.40%   |40.55|46.68|6 |bzip3 512|mongodb.tar|
-|279664350|  0.40%   |$\color{green}{\textbf{412.07}}$|$\color{green}{\textbf{1095.35}}$|2🏆|$\color{green}{\textbf{bwtsatan 7}}$|mongodb.tar|
 |465340600|  0.67%   |74.33|181.88|7 |bsc 0e2|mongodb.tar|
 |485053806|  0.70%   |78.30|215.54|5🥉|bsc 0|mongodb.tar|
 |502791034|  0.72%   |10.50|||CLP 19|mongodb.tar|
 
 |C Size|ratio%|C MB/s|D MB/s|Rank|Name|2026/11|
 |--------:|-----:|--------:|--------:|----------------|----------------|------------------------------|
-|656628102|  1.85%   |$\color{green}{\textbf{151.99}}$|$\color{green}{\textbf{222.84}}$|1👑|$\color{green}{\textbf{bwtsatan 8x -b2047m}}$|openstack-24hr.tar|
-|656669010|  1.85%   |132.35|210.32|3🥇|bwtsatan 9x -b2047m|openstack-24hr.tar|
-|666507010|  1.88%   |$\color{green}{\textbf{152.21}}$|$\color{green}{\textbf{337.53}}$|2🏆|$\color{green}{\textbf{bwtsatan 7x -b2047m}}$|openstack-24hr.tar|
+|628277699|  1.77%   |$\color{green}{\textbf{142.17}}$|$\color{green}{\textbf{234.08}}$|3🥇|$\color{green}{\textbf{bwtsatan 9}}$|openstack-24hr.tar|
+|628921787|  1.78%   |$\color{green}{\textbf{164.69}}$|$\color{green}{\textbf{294.79}}$|2🏆|$\color{green}{\textbf{bwtsatan 8}}$|openstack-24hr.tar|
+|641641771|  1.81%   |$\color{green}{\textbf{185.99}}$|$\color{green}{\textbf{479.95}}$|1👑|$\color{green}{\textbf{bwtsatan 7}}$|openstack-24hr.tar|
 |801468704|  2.26%   |42.39|84.54|4🥈|bsc 0e2|openstack-24hr.tar|
 |826207693|  2.33%   |23.13|25.43|5🥉|bzip3 512|openstack-24hr.tar|
 |843991040|  2.38%   |10.00|||CLP 19|openstack-24hr.tar|
@@ -262,13 +264,13 @@
 
 |C Size|ratio%|C MB/s|D MB/s|Rank|Name|2026/11|
 |--------:|-----:|--------:|--------:|----------------|----------------|------------------------------|
-|4549138|  1.10%   |$\color{green}{\textbf{182.79}}$|$\color{green}{\textbf{274.52}}$|2🏆|$\color{green}{\textbf{bwtsatan 8}}$|postgresql.tar|
-|4552798|  1.11%   |153.00|252.35|4🥈|bwtsatan 9|postgresql.tar|
-|4686638|  1.14%   |$\color{green}{\textbf{301.26}}$|$\color{green}{\textbf{679.05}}$|1👑|$\color{green}{\textbf{bwtsatan 7t4}}$|postgresql.tar|
-|4686638|  1.14%   |233.74|503.87|3🥇|bwtsatan 7|postgresql.tar|
-|4909031|  1.19%   |27.34|30.10|7 |bzip3 512|postgresql.tar|
+|4524475|  1.10%   |$\color{green}{\textbf{188.24}}$|$\color{green}{\textbf{342.89}}$|4🥈|$\color{green}{\textbf{bwtsatan 9}}$|postgresql.tar|
+|4550199|  1.10%   |$\color{green}{\textbf{192.22}}$|$\color{green}{\textbf{352.34}}$|3🥇|$\color{green}{\textbf{bwtsatan 8}}$|postgresql.tar|
+|4695211|  1.14%   |$\color{green}{\textbf{255.33}}$|$\color{green}{\textbf{661.98}}$|2🏆|$\color{green}{\textbf{bwtsatan 7}}$|postgresql.tar|
+|4753411|  1.15%   |$\color{green}{\textbf{274.69}}$|$\color{green}{\textbf{828.65}}$|1👑|$\color{green}{\textbf{bwtsatan 4}}$|postgresql.tar|
+|4909031|  1.19%   |27.34|30.10|7 |bzip3 512🥉|postgresql.tar|
 |6785858|  1.65%   |33.91|84.32|6 |bsc 0e2|postgresql.tar|
-|6862874|  1.67%   |76.62|148.41|5🥉|kanzi 7|postgresql.tar|
+|6862874|  1.67%   |76.62|148.41|5|kanzi 7|postgresql.tar|
 |7472304|  1.81%   |11.70|12.47|11 |bcm|postgresql.tar|
 |8082307|  1.96%   |11.17|113.64|10 |bzip2|postgresql.tar|
 |8089600|  1.96%   |16.24| | |CLP 19|postgresql.tar|
