@@ -101,13 +101,14 @@
 | 23521656| 23.52%|   50.43|   82.32|66:ansb    |  bitwise ans                |
 |100000012|100.00%|16495.29|16050.82|79:memcpy  |                             |
 
-## BWT Benchmark: TurboRC/BwtSatan vs the best BWT compressors (2026-10)
+## BWT Benchmark: TurboRC/BwtSatan vs the best BWT compressors (2026-11)
 - [bsc](https://github.com/IlyaGrebnov/libbsc)
 - [bzip3](https://github.com/kspalaiologos/bzip3)
 - [bzip2](https://github.com/asimonov-im/bzip2)
+- [kanzi](https://github.com/flanglet/kanzi-cpp)
 
 #### - [Enceladus_Cassini_mosaic_global_100m_schenk2024.tif](https://astrogeology.usgs.gov/search/map/enceladus-cassini-global-mosaic-100m-schenk) - 518.340.175 bytes
-|C Size|ratio%|C MB/s|D MB/s|Rank|2026/10|
+|C Size|ratio%|C MB/s|D MB/s|Rank|2026/11|
 |--------:|-----:|--------:|--------:|----------------|----------------|
 |320482718| 61.83%   |$\color{green}{\textbf{8.14}}$|$\color{green}{\textbf{11.41}}$|5🥉|$\color{green}{\textbf{bwtsatan 9}}$|
 |320722119| 61.87%   |8.02|6.57|7 |bzip3 512|
@@ -331,4 +332,4 @@ See examples in "turborc.c"
 * **References:**
   * <a name="a"></a>[Entropy Coder Benchmark](https://sites.google.com/site/powturbo/entropy-coder) 
 
-Last update: 12 Nov 2026
+Last update: 16 Nov 2026
