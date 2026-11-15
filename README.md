@@ -269,7 +269,7 @@
 |4550199|  1.10%   |$\color{green}{\textbf{192.22}}$|$\color{green}{\textbf{352.34}}$|3🥇|$\color{green}{\textbf{bwtsatan 8}}$|postgresql.tar|
 |4695211|  1.14%   |$\color{green}{\textbf{255.33}}$|$\color{green}{\textbf{661.98}}$|2🏆|$\color{green}{\textbf{bwtsatan 7}}$|postgresql.tar|
 |4753411|  1.15%   |$\color{green}{\textbf{274.69}}$|$\color{green}{\textbf{828.65}}$|1👑|$\color{green}{\textbf{bwtsatan 4}}$|postgresql.tar|
-|4909031|  1.19%   |27.34|30.10|7 |bzip3 512🥉|postgresql.tar|
+|4909031|  1.19%   |27.34|30.10|7🥉 |bzip3 512|postgresql.tar|
 |6785858|  1.65%   |33.91|84.32|6 |bsc 0e2|postgresql.tar|
 |6862874|  1.67%   |76.62|148.41|5|kanzi 7|postgresql.tar|
 |7472304|  1.81%   |11.70|12.47|11 |bcm|postgresql.tar|
